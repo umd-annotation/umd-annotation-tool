@@ -1,0 +1,13 @@
+version: "3.8"
+services:
+
+  girder:
+    volumes:
+      - ./server:/opt/UMD/src
+      - ./docker/server_setup.py:/server_setup.py
+    command: ["--dev"]
+
+
+  girder_worker_default:
+    volumes:
+      - ./server:/opt/UMD/src
