@@ -657,6 +657,8 @@ export default defineComponent({
 
     };
 
+    const annotating = computed(() => context.state.active === 'ActorSideBar');
+
     provideAnnotator(
       {
         annotatorPreferences: toRef(clientSettings, 'annotatorPreferences'),
@@ -687,6 +689,7 @@ export default defineComponent({
 
     return {
       /* props */
+      annotating,
       aggregateController,
       confidenceFilters: trackFilters.confidenceFilters,
       cameraStore,
@@ -785,10 +788,11 @@ export default defineComponent({
           v-bind="{
             editingMode, visibleModes, editingTrack, recipes,
             multiSelectActive, editingDetails,
-            groupEditActive: editingGroupId !== null,
+            groupEditActive: editingGroupId !== null, annotating,
           }"
           :tail-settings.sync="clientSettings.annotatorPreferences.trackTails"
           @set-annotation-state="handler.setAnnotationState"
+          @annotator="context.toggle('UMDAnnotation')"
           @exit-edit="handler.trackAbort"
         >
           <template slot="delete-controls">

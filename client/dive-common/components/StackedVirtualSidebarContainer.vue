@@ -14,7 +14,7 @@ export default defineComponent({
   props: {
     width: {
       type: Number,
-      default: 300,
+      default: 500,
     },
     enableSlot: {
       type: Boolean,

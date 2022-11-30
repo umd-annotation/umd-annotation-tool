@@ -23,7 +23,7 @@ export default defineComponent({
   props: {
     width: {
       type: Number,
-      default: 300,
+      default: 500,
     },
     subCategory: {
       type: String as PropType<'Timeline' | 'Filtering'>,
