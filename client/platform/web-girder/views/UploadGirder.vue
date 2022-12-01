@@ -9,7 +9,7 @@ import {
 import {
   fileSuffixRegex,
 } from 'platform/web-girder/constants';
-import { makeViameFolder, postProcess } from 'platform/web-girder/api';
+import { makeViameFolder, postProcess, ingestVideo } from 'platform/web-girder/api';
 
 export default Vue.extend({
   name: 'GirderUpload',
@@ -103,11 +103,13 @@ export default Vue.extend({
       // eslint-disable-next-line no-param-reassign
       pendingUpload.uploading = true;
       const skipTranscoding = !!pendingUpload.skipTranscoding;
+      const UMDIngest = !!pendingUpload.UMDIngest;
       let folder = this.location;
       if (!createSubFolders) {
         folder = await this.createUploadFolder(name, fps, pendingUpload.type);
         if (folder) {
-          await this.uploadFiles(pendingUpload.name, folder, files, uploaded, skipTranscoding);
+          await this.uploadFiles(pendingUpload.name, folder, files,
+            uploaded, skipTranscoding, UMDIngest);
           this.remove(pendingUpload);
         }
       } else {
@@ -121,7 +123,7 @@ export default Vue.extend({
           folder = await (this.createUploadFolder(subname, fps, subtype));
           if (folder) {
             // eslint-disable-next-line no-await-in-loop
-            await this.uploadFiles(subname, folder, subfile, uploaded, skipTranscoding);
+            await this.uploadFiles(subname, folder, subfile, uploaded, skipTranscoding, UMDIngest);
           }
         }
         this.remove(pendingUpload);
@@ -141,15 +143,20 @@ export default Vue.extend({
         throw error;
       }
     },
-    async uploadFiles(name, folder, files, uploaded, skipTranscoding = false) {
+    async uploadFiles(name, folder, files, uploaded, skipTranscoding = false, UMDIngest = false) {
       // function called after mixins upload finishes
       const postUpload = async (data) => {
         uploaded.push({
           folder,
           results: data.results,
         });
+        console.log(`Upload files UMDIngest: ${UMDIngest}`);
         try {
-          await postProcess(folder._id, false, skipTranscoding);
+          if (!UMDIngest) {
+            await postProcess(folder._id, false, skipTranscoding);
+          } else {
+            await ingestVideo(folder._id);
+          }
         } catch (err) {
           this.$emit('error', { err, name });
         }

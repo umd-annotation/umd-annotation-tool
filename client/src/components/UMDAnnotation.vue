@@ -49,7 +49,6 @@ export default defineComponent({
       // load existing attributes
       if (selectedTrackIdRef.value !== null) {
         const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
-        console.log(track);
         Object.keys(track.attributes).forEach((key) => {
           if (key.includes(userLogin.value)) {
             const replaced = key.replace(`${userLogin.value}_`, '');
