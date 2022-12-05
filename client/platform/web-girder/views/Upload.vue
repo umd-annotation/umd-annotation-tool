@@ -505,7 +505,7 @@ export default defineComponent({
               />
               <v-checkbox
                 v-model="pendingUpload.UMDIngest"
-                label="UMD Ingeest"
+                label="UMD Ingest"
               />
               <v-tooltip
                 open-delay="200"

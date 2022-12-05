@@ -35,9 +35,9 @@ export default defineComponent({
     const handler = useHandler();
     const restClient = useGirderRest();
     const cameraStore = useCameraStore();
-    const arrousal = ref(0);
+    const arousal = ref(0);
     const valence = ref(0);
-    const emotionsList = ref(['Anger', 'Anticipation', 'Joy', 'Trust', 'Fear', 'Surprise', 'Sadness', 'Disgust']);
+    const baseEmotionsList = ['Anger', 'Anticipation', 'Joy', 'Trust', 'Fear', 'Surprise', 'Sadness', 'Disgust'];
     const emotionsAdhered: Ref<string[]> = ref([]);
     const emotionsNotAdhered: Ref<string[]> = ref([]);
     const normList = ref([]);
@@ -45,63 +45,91 @@ export default defineComponent({
     const changePointImpact = ref(0);
     const changePointComment = ref('');
     const userLogin = ref('');
-    const checkAttributes = () => {
+    const adheredEmotionsList = computed(() => (
+      baseEmotionsList.filter((item) => !emotionsNotAdhered.value.includes(item))));
+    const notAdheredEmotionsList = computed(() => (
+      baseEmotionsList.filter((item) => !emotionsAdhered.value.includes(item))));
+
+    const checkAttributes = (trackNum: number | null, loadValues = false) => {
       // load existing attributes
-      if (selectedTrackIdRef.value !== null) {
-        const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
+      let hasAttributes = false;
+      if (trackNum !== null) {
+        const track = cameraStore.getAnyTrack(trackNum);
         Object.keys(track.attributes).forEach((key) => {
           if (key.includes(userLogin.value)) {
-            const replaced = key.replace(`${userLogin.value}_`, '');
-            if (replaced === 'Valence') {
-              valence.value = track.attributes[key] as number;
-            }
-            if (replaced === 'Arrousal') {
-              arrousal.value = track.attributes[key] as number;
-            }
-            if (replaced === 'AdheredEmotions') {
-              emotionsAdhered.value = (track.attributes[key] as string).split('_');
-            }
-            if (replaced === 'NotAdheredEmotions') {
-              emotionsNotAdhered.value = (track.attributes[key] as string).split('_');
-            }
-          }
-        });
-        track.features.forEach((feature) => {
-          const currentFrame = feature.frame;
-          if (feature.attributes) {
-            Object.keys(feature.attributes).forEach((key) => {
-              if (key.includes(userLogin.value) && feature.attributes) {
-                const attribute = feature.attributes[key];
-                const replaced = key.replace(`${userLogin.value}_`, '');
-                if (replaced === 'Impact') {
-                  changePointImpact.value = attribute as number;
-                  changePointFrame.value = currentFrame;
-                }
-                if (replaced === 'Comment') {
-                  changePointComment.value = attribute as string;
-                  changePointFrame.value = currentFrame;
-                }
+            hasAttributes = true;
+            if (loadValues) {
+              const replaced = key.replace(`${userLogin.value}_`, '');
+              if (replaced === 'Valence') {
+                valence.value = track.attributes[key] as number;
               }
-            });
+              if (replaced === 'Arousal') {
+                arousal.value = track.attributes[key] as number;
+              }
+              if (replaced === 'AdheredEmotions') {
+                emotionsAdhered.value = (track.attributes[key] as string).split('_');
+              }
+              if (replaced === 'NotAdheredEmotions') {
+                emotionsNotAdhered.value = (track.attributes[key] as string).split('_');
+              }
+            }
           }
         });
-        // Next get changePoint attributes
+        if (loadValues) {
+          track.features.forEach((feature) => {
+            const currentFrame = feature.frame;
+            if (feature.attributes) {
+              Object.keys(feature.attributes).forEach((key) => {
+                if (key.includes(userLogin.value) && feature.attributes) {
+                  const attribute = feature.attributes[key];
+                  const replaced = key.replace(`${userLogin.value}_`, '');
+                  if (replaced === 'Impact') {
+                    changePointImpact.value = attribute as number;
+                    changePointFrame.value = currentFrame;
+                  }
+                  if (replaced === 'Comment') {
+                    changePointComment.value = attribute as string;
+                    changePointFrame.value = currentFrame;
+                  }
+                }
+              });
+            }
+          });
+          if (loadValues) {
+            handler.trackSeek(track.begin);
+          }
+        }
       }
+      return hasAttributes;
     };
 
     const initialize = async () => {
       const user = await restClient.fetchUser();
       userLogin.value = user.login;
+      if (selectedTrackIdRef.value === null) {
+        handler.trackSelect(0, false);
+        checkAttributes(0);
+      }
     };
     initialize();
-
+    checkAttributes(selectedTrackIdRef.value, true);
     watch(selectedTrackIdRef, () => {
-      checkAttributes();
+      checkAttributes(selectedTrackIdRef.value, true);
     });
 
     const setCheckpoint = () => {
       changePointFrame.value = frame.value;
     };
+
+    const hasPrevious = computed(() => (
+      selectedTrackIdRef.value !== null && selectedTrackIdRef.value > 0));
+
+    const hasNext = computed(() => {
+      if (selectedTrackIdRef.value !== null) {
+        return checkAttributes(selectedTrackIdRef.value);
+      }
+      return false;
+    });
 
     const submit = () => {
       // Need to get information and set it for the track attributes
@@ -109,7 +137,7 @@ export default defineComponent({
         const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
         // Set attributes;
         track.setAttribute(`${userLogin.value}_Valence`, valence.value);
-        track.setAttribute(`${userLogin.value}_Arrousal`, arrousal.value);
+        track.setAttribute(`${userLogin.value}_Arousal`, arousal.value);
         track.setAttribute(`${userLogin.value}_AdheredEmotions`, emotionsAdhered.value.join('_'));
         track.setAttribute(`${userLogin.value}_NotAdheredEmotions`, emotionsNotAdhered.value.join('_'));
         // set Change Point Information
@@ -126,7 +154,7 @@ export default defineComponent({
         const oldTrackNum = selectedTrackIdRef.value;
         handler.trackSelectNext(1);
         if (selectedTrackIdRef.value !== null && selectedTrackIdRef.value !== oldTrackNum) {
-          arrousal.value = 0;
+          arousal.value = 0;
           valence.value = 0;
           emotionsAdhered.value = [];
           emotionsNotAdhered.value = [];
@@ -139,11 +167,25 @@ export default defineComponent({
     const goToChangePoint = () => {
       //Need to set this up
     };
+    const changeTrack = (direction: -1 | 1) => {
+      arousal.value = 0;
+      valence.value = 0;
+      emotionsAdhered.value = [];
+      emotionsNotAdhered.value = [];
+      changePointFrame.value = -1;
+      changePointImpact.value = 0;
+      changePointComment.value = '';
+
+      handler.trackSelectNext(direction);
+    };
     return {
+      hasPrevious,
+      hasNext,
       selectedTrackIdRef,
-      arrousal,
+      arousal,
       valence,
-      emotionsList,
+      adheredEmotionsList,
+      notAdheredEmotionsList,
       emotionsAdhered,
       emotionsNotAdhered,
       frame,
@@ -153,6 +195,7 @@ export default defineComponent({
       setCheckpoint,
       submit,
       goToChangePoint,
+      changeTrack,
     };
   },
 });
@@ -166,7 +209,26 @@ export default defineComponent({
   >
     <template>
       <v-container>
-        <h2>Segment {{ selectedTrackIdRef }}</h2>
+        <v-row dense>
+          <h2>Segment {{ selectedTrackIdRef }}</h2>
+          <v-spacer />
+          <v-btn
+            color="primary"
+            :disabled="!hasPrevious"
+            class="mx-2"
+            @click="changeTrack(-1)"
+          >
+            Prev
+          </v-btn>
+          <v-btn
+            color="primary"
+            :disabled="!hasNext"
+            class="mx-2"
+            @click="changeTrack(1)"
+          >
+            Next
+          </v-btn>
+        </v-row>
         <p>
           Some instruction text to indicate to the annotator what to do.
           This could be lengthy to provide more detailed instructions or not.
@@ -174,8 +236,8 @@ export default defineComponent({
         <v-row>
           <v-col>
             <v-slider
-              v-model="arrousal"
-              label="Arrousal"
+              v-model="arousal"
+              label="Arousal"
               min="1"
               max="1000"
               step="1"
@@ -197,7 +259,7 @@ export default defineComponent({
           <v-col>
             <v-select
               v-model="emotionsAdhered"
-              :items="emotionsList"
+              :items="adheredEmotionsList"
               chips
               label="Emotions Adhered To"
               multiple
@@ -212,7 +274,7 @@ export default defineComponent({
           <v-col>
             <v-select
               v-model="emotionsNotAdhered"
-              :items="emotionsList"
+              :items="notAdheredEmotionsList"
               chips
               label="Emotions Not Adhered To"
               multiple
