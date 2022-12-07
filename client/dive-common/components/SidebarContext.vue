@@ -30,7 +30,8 @@ export default defineComponent({
       :width="width"
       tile
       outlined
-      class="d-flex flex-column sidebar"
+      class="d-flex flex-column"
+      :class="{ sidebar: !mode, modesidebar: mode }"
       style="z-index:1;"
     >
       <div v-if="!mode" class="d-flex align-center mx-1">
@@ -69,6 +70,11 @@ export default defineComponent({
 .sidebar {
   height: calc(100vh - 112px);
   overflow-y: hidden;
+}
+.modesidebar {
+  overflow-y: hidden;
+  height: calc(100vh - 64px);
+
 }
 .sidebar-content {
   overflow-y: auto;

@@ -191,13 +191,24 @@ export default function useModeManager({
 
   function seekNearest(track: Track, begin = false) {
     // Seek to the nearest point in the track.
-    console.log(`Seeking to the begin: ${begin}`);
     const { frame } = aggregateController.value;
     if (frame.value < track.begin || begin) {
       aggregateController.value.seek(track.begin);
     } else if (frame.value > track.end) {
       aggregateController.value.seek(track.end);
     }
+  }
+
+  function seekToFrame(frame: number) {
+    aggregateController.value.seek(frame);
+  }
+
+  function replayFromFrame(frame: number) {
+    aggregateController.value.seek(frame);
+    aggregateController.value.play();
+  }
+  function pausePlayback() {
+    aggregateController.value.pause();
   }
 
   async function _setLinkingTrack(trackId: TrackId) {
@@ -786,6 +797,9 @@ export default function useModeManager({
       unstageFromMerge: handleUnstageFromMerge,
       startLinking: handleStartLinking,
       stopLinking: handleStopLinking,
+      seekToFrame,
+      replayFromFrame,
+      pausePlayback,
     },
   };
 }

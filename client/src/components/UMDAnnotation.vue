@@ -3,8 +3,8 @@ import {
   computed, defineComponent, ref, Ref, watch, PropType,
 } from '@vue/composition-api';
 
+import TooltipBtn from 'vue-media-annotator/components/TooltipButton.vue';
 import StackedVirtualSidebarContainer from 'dive-common/components/StackedVirtualSidebarContainer.vue';
-import { replace } from 'lodash';
 import { useGirderRest } from 'platform/web-girder/plugins/girder';
 import {
   useCameraStore,
@@ -18,7 +18,7 @@ export default defineComponent({
 
   components: {
     StackedVirtualSidebarContainer,
-
+    TooltipBtn,
   },
 
   props: {
@@ -39,8 +39,8 @@ export default defineComponent({
     const handler = useHandler();
     const restClient = useGirderRest();
     const cameraStore = useCameraStore();
-    const arousal = ref(0);
-    const valence = ref(0);
+    const arousal = ref(1);
+    const valence = ref(1);
     const baseEmotionsList = ['Anger', 'Anticipation', 'Joy', 'Trust', 'Fear', 'Surprise', 'Sadness', 'Disgust'];
     const multiSpeakerOptions = ref(['FALSE', 'TRUE', 'noann']);
     const multiSpeaker: Ref<'FALSE' | 'TRUE' | 'noann'> = ref('FALSE');
@@ -49,7 +49,7 @@ export default defineComponent({
     const normsSelected: Ref<string[]> = ref([]);
     const normsObject: Ref<Record<string, 'adhered' |'violate' | 'noann' | 'EMPTY_NA'>> = ref({});
     const changePointFrame = ref(-1);
-    const changePointImpact = ref(0);
+    const changePointImpact = ref(1);
     const changePointComment = ref('');
     const userLogin = ref('');
 
@@ -123,6 +123,7 @@ export default defineComponent({
       checkAttributes(selectedTrackIdRef.value, true);
     });
 
+
     const setCheckpoint = () => {
       changePointFrame.value = frame.value;
     };
@@ -137,7 +138,7 @@ export default defineComponent({
       return false;
     });
 
-    const submit = () => {
+    const submit = async () => {
       // Need to get information and set it for the track attributes
       if (selectedTrackIdRef.value !== null) {
         const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
@@ -169,28 +170,29 @@ export default defineComponent({
         const oldTrackNum = selectedTrackIdRef.value;
         handler.trackSelectNext(1, true);
         if (selectedTrackIdRef.value !== null && selectedTrackIdRef.value !== oldTrackNum) {
-          arousal.value = 0;
-          valence.value = 0;
+          arousal.value = 1;
+          valence.value = 1;
           emotionsList.value = [];
           normsObject.value = {};
           multiSpeaker.value = 'FALSE';
           changePointFrame.value = -1;
-          changePointImpact.value = 0;
+          changePointImpact.value = 1;
           changePointComment.value = '';
         }
       }
     };
     const goToChangePoint = () => {
       //Need to set this up
+      handler.seekToFrame(changePointFrame.value);
     };
     const changeTrack = (direction: -1 | 1) => {
-      arousal.value = 0;
-      valence.value = 0;
+      arousal.value = 1;
+      valence.value = 1;
       emotionsList.value = [];
       normsObject.value = {};
       multiSpeaker.value = 'FALSE';
       changePointFrame.value = -1;
-      changePointImpact.value = 0;
+      changePointImpact.value = 1;
       changePointComment.value = '';
 
       handler.trackSelectNext(direction, true);
@@ -207,6 +209,45 @@ export default defineComponent({
         }
       }
     };
+
+    let framePlaying = -1;
+    const seekBegin = () => {
+      if (selectedTrackIdRef.value !== null) {
+        const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
+        handler.seekToFrame(track.begin);
+      }
+    };
+    const seekEnd = () => {
+      if (selectedTrackIdRef.value !== null) {
+        const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
+        handler.seekToFrame(track.end);
+      }
+    };
+    const playSegment = () => {
+      if (selectedTrackIdRef.value !== null) {
+        const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
+        handler.replayFromFrame(track.begin);
+        framePlaying = track.end;
+      }
+    };
+    watch(() => frame.value, () => {
+      if (framePlaying !== -1 && frame.value >= framePlaying) {
+        handler.pausePlayback();
+        framePlaying = -1;
+      }
+    });
+
+    const disableChangePoint = computed(() => {
+      if (selectedTrackIdRef.value !== null) {
+        const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
+        if (frame.value > track.end || frame.value < frame.end) {
+          return true;
+        }
+        return false;
+      }
+      return true;
+    });
+
     return {
       hasPrevious,
       hasNext,
@@ -224,12 +265,16 @@ export default defineComponent({
       changePointFrame,
       changePointImpact,
       changePointComment,
+      disableChangePoint,
       setCheckpoint,
       submit,
       goToChangePoint,
       changeTrack,
       updateNorm,
       syncNorms,
+      seekBegin,
+      seekEnd,
+      playSegment,
     };
   },
 });
@@ -242,7 +287,29 @@ export default defineComponent({
       dense
       class="scroll-sticky"
     >
-      <h2>Segment {{ selectedTrackIdRef }}</h2>
+      <h2 class="mr-4 mt-1">
+        Segment {{ selectedTrackIdRef }}
+      </h2>
+      <div class="ml-2 mt-2">
+        <tooltip-btn
+          small
+          icon="mdi-skip-previous"
+          tooltip-text="Seek to first frame of segment"
+          @click="seekBegin"
+        />
+        <tooltip-btn
+          small
+          icon="mdi-replay"
+          tooltip-text="Playback current Segment"
+          @click="playSegment"
+        />
+        <tooltip-btn
+          small
+          icon="mdi-skip-next"
+          tooltip-text="Seek to end of the frame"
+          @click="seekEnd"
+        />
+      </div>
       <v-spacer />
       <v-btn
         color="primary"
@@ -265,6 +332,19 @@ export default defineComponent({
       Some instruction text to indicate to the annotator what to do.
       This could be lengthy to provide more detailed instructions or not.
     </p>
+    <v-alert
+      v-if="(disableChangePoint && mode && mode !== 'changepoint')"
+      dense
+      outlined
+      type="warning"
+    >
+      The video is currently outside of the selected segment:
+      <br>
+      <b>Segment {{ selectedTrackIdRef }}</b>
+      <br>
+      Please note that when submitting information it should be relevant to the current segment.
+    </v-alert>
+
     <div v-if="mode ==='valence' || mode ==='review'">
       <v-row>
         <v-col>
@@ -348,20 +428,42 @@ export default defineComponent({
     </div>
     <div v-if="mode ==='changepoint' || mode === 'review'">
       <v-row v-if="(changePointFrame == -1)">
-        <v-btn @click="setCheckpoint">
+        <v-btn
+          :disable="disableChangePoint"
+          @click="setCheckpoint"
+        >
           Set ChangePoint {{ frame }}
         </v-btn>
       </v-row>
       <div v-if="(changePointFrame != -1)">
-        <v-row>
-          <v-btn @click="setCheckpoint">
-            Set Changepoint to {{ frame }}
+        <h4> Current ChangePoint : {{ changePointFrame }}</h4>
+        <v-row class="mt-2 ml-2">
+          <v-btn
+            v-if="(frame !== changePointFrame && !disableChangePoint)"
+            :disable="disableChangePoint"
+            outlined
+            @click="setCheckpoint"
+          >
+            Set Changepoint to current frame: {{ frame }}
           </v-btn>
         </v-row>
-        <h4> Current ChangePoint : {{ changePointFrame }}</h4>
-        <v-btn @click="goToChangePoint">
-          Go to ChangePoint
-        </v-btn>
+        <v-alert
+          v-if="disableChangePoint"
+          dense
+          outlined
+          type="warning"
+        >
+          Setting ChangePoint is disabled because the current frame {{ frame }}
+          is outside of the current Segment Range
+        </v-alert>
+        <v-row class="mt-2 ml-2">
+          <v-btn
+            outlined
+            @click="goToChangePoint"
+          >
+            Go to ChangePoint
+          </v-btn>
+        </v-row>
         <v-row>
           <v-col>
             <v-slider
@@ -385,7 +487,7 @@ export default defineComponent({
       </div>
     </div>
 
-    <v-row v-if="(changePointFrame != -1)">
+    <v-row>
       <v-col>
         <v-btn
           color="success"
