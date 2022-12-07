@@ -1,13 +1,125 @@
 import csv
 import io
 import json
+import math
 from pathlib import Path
 
 from dive_server import crud_annotation
+from girder.models.user import User
 from girder.utility import ziputil
 
+normMap = {
+    "Apology": 101,
+    "Criticism": 102,
+    "Greeting": 103,
+    "Request": 104,
+    "Persuasion": 105,
+    "Thanks": 106,
+    "Taking Leave": 107,
+    "Admiration": 108,
+    "Finalizing Negotiation/Deal": 109,
+    "Refusing a Request": 110,
+}
 
-def export_segment_tab(tracks, folderId, fps, userId):
+
+def bin_value(value):
+    return math.floor(value / 200) + 1
+
+
+def export_norms_tab(tracks, folderId, fps, userMap):
+    csvFile = io.StringIO()
+    writer = csv.writer(csvFile, delimiter='\t')
+    writer.writerow(
+        [
+            "user_id",
+            "file_id",
+            "segment_id",
+            "norm",
+            "status",
+        ]
+    )
+    for t in tracks:
+        if 'attributes' in t.keys():
+            attributes = t['attributes']
+            userDataFound = {}
+            for key in attributes.keys():
+                if '_Norms' in key:
+                    login = key.replace('_Norms', '')
+                    mapped = userMap[login]
+                    if mapped not in userDataFound.keys():
+                        userDataFound[mapped] = {}
+                    norms = attributes[key]
+                    for normKey in norms.keys():
+                        if normKey in normMap.keys():
+                            # record the norm
+                            userDataFound[mapped][normMap[normKey]] = norms[normKey]
+            for key in userDataFound.keys():
+                for normKey in userDataFound[key].keys():
+                    columns = [
+                        key,
+                        folderId,
+                        f'{folderId}_{t["id"]:04}',
+                        normKey,
+                        userDataFound[key][normKey],
+                    ]
+                    writer.writerow(columns)
+                    yield csvFile.getvalue()
+                    csvFile.seek(0)
+                    csvFile.truncate(0)
+    yield csvFile.getvalue()
+
+
+def export_valence_tab(tracks, folderId, fps, userMap):
+    csvFile = io.StringIO()
+    writer = csv.writer(csvFile, delimiter='\t')
+    writer.writerow(
+        [
+            "user_id",
+            "file_id",
+            "segment_id",
+            "valence_continuous",
+            "valence_binned",
+            "arousal_continuous",
+            "arousal_binned",
+        ]
+    )
+    for t in tracks:
+        if 'attributes' in t.keys():
+            attributes = t['attributes']
+            userDataFound = {}
+            for key in attributes.keys():
+                if '_Valence' in key:
+                    login = key.replace('_Valence', '')
+                    mapped = userMap[login]
+                    if mapped not in userDataFound.keys():
+                        userDataFound[mapped] = {}
+                    userDataFound[mapped]['valence_continuous'] = attributes[key]
+                    userDataFound[mapped]['valence_binned'] = bin_value(attributes[key])
+                if '_Arousal' in key:
+                    login = key.replace('_Arousal', '')
+                    mapped = userMap[login]
+                    if mapped not in userDataFound.keys():
+                        userDataFound[mapped] = {}
+                    userDataFound[mapped]['arousal_continuous'] = attributes[key]
+                    userDataFound[mapped]['arousal_binned'] = bin_value(attributes[key])
+            for key in userDataFound.keys():
+                columns = [
+                    key,
+                    folderId,
+                    f'{folderId}_{t["id"]:04}',
+                    userDataFound[key]['valence_continuous'],
+                    userDataFound[key]['valence_binned'],
+                    userDataFound[key]['arousal_continuous'],
+                    userDataFound[key]['arousal_binned'],
+                ]
+                writer.writerow(columns)
+                yield csvFile.getvalue()
+                csvFile.seek(0)
+                csvFile.truncate(0)
+    yield csvFile.getvalue()
+
+
+def export_segment_tab(tracks, folderId, fps, userMap):
     csvFile = io.StringIO()
     writer = csv.writer(csvFile, delimiter='\t')
     writer.writerow(
@@ -19,8 +131,8 @@ def export_segment_tab(tracks, folderId, fps, userId):
         ]
     )
     for t in tracks:
-        start = t['begin'] * fps
-        end = t['end'] * fps
+        start = t['begin'] * (1 / fps)
+        end = t['end'] * (1 / fps)
         columns = [folderId, f'{folderId}_{t["id"]:04}', start, end]
         writer.writerow(columns)
         yield csvFile.getvalue()
@@ -29,21 +141,62 @@ def export_segment_tab(tracks, folderId, fps, userId):
     yield csvFile.getvalue()
 
 
-def generate_tab(tracks, folderId, fps, userId, type):
+def export_emotions_tab(tracks, folderId, fps, userMap):
+    csvFile = io.StringIO()
+    writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
+    writer.writerow(["user_id", "file_id", "segment_id", "emotion", "multi_speaker"])
+    for t in tracks:
+        if 'attributes' in t.keys():
+            attributes = t['attributes']
+            userDataFound = {}
+            for key in attributes.keys():
+                if '_Emotions' in key:
+                    login = key.replace('_Emotions', '')
+                    mapped = userMap[login]
+                    if mapped not in userDataFound.keys():
+                        userDataFound[mapped] = {}
+                    base = ','.join(attributes[key].split('_'))
+                    userDataFound[mapped]['Emotions'] = base
+                if '_MultiSpeaker' in key:
+                    login = key.replace('_MultiSpeaker', '')
+                    mapped = userMap[login]
+                    if mapped not in userDataFound.keys():
+                        userDataFound[mapped] = {}
+                    userDataFound[mapped]['MultiSpeaker'] = attributes[key]
+            for key in userDataFound.keys():
+                columns = [
+                    key,
+                    folderId,
+                    f'{folderId}_{t["id"]:04}',
+                    f'"{userDataFound[key]["Emotions"]}"',
+                    userDataFound[key]['MultiSpeaker'],
+                ]
+                writer.writerow(columns)
+                yield csvFile.getvalue()
+                csvFile.seek(0)
+                csvFile.truncate(0)
+
+
+def generate_tab(tracks, folderId, fps, userMap, type):
     def downloadGenerator():
         if type == 'segment':
-            for data in export_segment_tab(tracks, folderId, fps, userId):
+            for data in export_segment_tab(tracks, folderId, fps, userMap):
+                yield data
+        if type == 'valence':
+            for data in export_valence_tab(tracks, folderId, fps, userMap):
+                yield data
+        if type == 'emotions':
+            for data in export_emotions_tab(tracks, folderId, fps, userMap):
+                yield data
+        if type == 'norms':
+            for data in export_norms_tab(tracks, folderId, fps, userMap):
                 yield data
 
     return downloadGenerator
 
 
-def convert_to_zips(tracks, folder, fps, userId):
+def convert_to_zips(tracks, folder, fps, userMap):
     folderId = folder['_id']
-
-    def makeSegmentGen(tracks, folderId, fps, userId):
-        segment_gen = generate_tab(tracks, folderId, fps, userId, 'segment')
-        return segment_gen
 
     def stream():
         z = ziputil.ZipGenerator()
@@ -57,8 +210,20 @@ def convert_to_zips(tracks, folder, fps, userId):
 
         for data in z.addFile(makeDiveJson, Path(f'{zip_path}annotations.json')):
             yield data
-        seg_gen = makeSegmentGen(tracks, folderId, fps, userId)
+        seg_gen = generate_tab(tracks, folderId, fps, userMap, 'segment')
         for data in z.addFile(seg_gen, Path(f'{zip_path}segment_tab.tab')):
+            yield data
+        tracks.rewind()
+        valence_gen = generate_tab(tracks, folderId, fps, userMap, 'valence')
+        for data in z.addFile(valence_gen, Path(f'{zip_path}valence_tab.tab')):
+            yield data
+        tracks.rewind()
+        emotion_gen = generate_tab(tracks, folderId, fps, userMap, 'emotions')
+        for data in z.addFile(emotion_gen, Path(f'{zip_path}emotions_tab.tab')):
+            yield data
+        tracks.rewind()
+        norm_gen = generate_tab(tracks, folderId, fps, userMap, 'norms')
+        for data in z.addFile(norm_gen, Path(f'{zip_path}norms_tab.tab')):
             yield data
         yield z.footer()
 

@@ -6,6 +6,7 @@ from girder.api.rest import Resource
 from girder.constants import AccessType, TokenScope
 from girder.models.folder import Folder
 from girder.models.token import Token
+from girder.models.user import User
 from girder_jobs.models.job import Job
 
 from UMD_tasks import constants, tasks
@@ -36,8 +37,13 @@ class UMD_Dataset(Resource):
     ):
         user = self.getCurrentUser()
         tracks = crud_annotation.TrackItem().list(folderId)
+        users = list(User().find())
+        userMap = {}
+        for item in users:
+            userMap[item["login"]] = item["_id"]
+
         fps = folderId['meta']['fps']
-        gen = UMD_export.convert_to_zips(tracks, folderId, fps, user['_id'])
+        gen = UMD_export.convert_to_zips(tracks, folderId, fps, userMap)
         zip_name = "batch_export.zip"
         setContentDisposition(zip_name, mime='application/zip')
         return gen
