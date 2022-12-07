@@ -1,6 +1,6 @@
 <script lang="ts">
 import {
-  computed, defineComponent, ref, Ref, watch, PropType,
+  computed, defineComponent, ref, Ref, watch, PropType, onMounted,
 } from '@vue/composition-api';
 
 import TooltipBtn from 'vue-media-annotator/components/TooltipButton.vue';
@@ -117,7 +117,7 @@ export default defineComponent({
         checkAttributes(0);
       }
     };
-    initialize();
+    onMounted(() => initialize());
     checkAttributes(selectedTrackIdRef.value, true);
     watch(selectedTrackIdRef, () => {
       checkAttributes(selectedTrackIdRef.value, true);
@@ -240,7 +240,7 @@ export default defineComponent({
     const disableChangePoint = computed(() => {
       if (selectedTrackIdRef.value !== null) {
         const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
-        if (frame.value > track.end || frame.value < frame.end) {
+        if (frame.value > track.end || frame.value < track.begin) {
           return true;
         }
         return false;

@@ -165,7 +165,7 @@ export default defineComponent({
         x-small
         color="orange"
         depressed
-        :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'emotions' } }"
+        :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'emotion' } }"
       >
         Emotion
       </v-btn>

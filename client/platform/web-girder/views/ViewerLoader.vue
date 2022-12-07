@@ -1,6 +1,6 @@
 <script lang="ts">
 import {
-  computed, defineComponent, onBeforeUnmount, onMounted, ref, toRef, watch,
+  computed, defineComponent, onBeforeUnmount, onMounted, ref, Ref, toRef, watch,
 } from '@vue/composition-api';
 
 import Viewer from 'dive-common/components/Viewer.vue';
