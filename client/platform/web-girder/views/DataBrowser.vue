@@ -139,6 +139,46 @@ export default defineComponent({
       >
         Launch Annotator
       </v-btn>
+      <v-btn
+        v-if="isAnnotationFolder(item)"
+        class="ml-2"
+        x-small
+        color="red"
+        depressed
+        :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'valence' } }"
+      >
+        Valence
+      </v-btn>
+      <v-btn
+        v-if="isAnnotationFolder(item)"
+        class="ml-2"
+        x-small
+        color="green"
+        depressed
+        :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'norms' } }"
+      >
+        Norms
+      </v-btn>
+      <v-btn
+        v-if="isAnnotationFolder(item)"
+        class="ml-2"
+        x-small
+        color="orange"
+        depressed
+        :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'emotions' } }"
+      >
+        Emotion
+      </v-btn>
+      <v-btn
+        v-if="isAnnotationFolder(item)"
+        class="ml-2"
+        x-small
+        color="purple"
+        depressed
+        :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'changepoint' } }"
+      >
+        ChangePoint
+      </v-btn>
       <v-chip
         v-if="(item.foreign_media_id)"
         color="white"

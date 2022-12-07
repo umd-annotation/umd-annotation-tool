@@ -50,6 +50,11 @@ export default Vue.extend({
       type: Object as PropType<{ before: number; after: number }>,
       default: () => ({ before: 20, after: 10 }),
     },
+    annotating: {
+      type: Boolean,
+      default: false,
+    },
+
   },
   data() {
     return {
@@ -246,6 +251,18 @@ export default Vue.extend({
       </v-btn>
       <slot name="delete-controls" />
       <v-spacer />
+      <span class="pb-1">
+        <v-btn
+          :color="annotating ? 'primary' : ''"
+          class="mx-1 mode-button"
+          small
+          @click="$emit('annotator')"
+        >
+          UMD Annotator
+          <v-icon>mdi-draw</v-icon>
+        </v-btn>
+      </span>
+
       <span class="pb-1">
         <span class="mr-1 px-3 py-1">
           <v-icon class="pr-1">

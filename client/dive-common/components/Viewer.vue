@@ -44,8 +44,12 @@ import clientSettingsSetup, { clientSettings } from 'dive-common/store/settings'
 import { useApi, FrameImage, DatasetType } from 'dive-common/apispec';
 import { usePrompt } from 'dive-common/vue-utilities/prompt-service';
 import context from 'dive-common/store/context';
+import ImageEnhancementsVue from 'vue-media-annotator/components/ImageEnhancements.vue';
+import RevisionHistoryVue from 'platform/web-girder/views/RevisionHistory.vue';
 import GroupSidebarVue from './GroupSidebar.vue';
 import MultiCamToolsVue from './MultiCamTools.vue';
+import TypeThresholdVue from './TypeThreshold.vue';
+import AttributesSideBarVue from './AttributesSideBar.vue';
 
 export interface ImageDataItem {
   url: string;
@@ -79,6 +83,10 @@ export default defineComponent({
     readOnlyMode: {
       type: Boolean,
       default: false,
+    },
+    mode: {
+      type: String,
+      default: undefined,
     },
   },
   setup(props, ctx) {
@@ -594,6 +602,32 @@ export default defineComponent({
           .concat(". If you don't know how to resolve this, please contact the server administrator.");
         throw err;
       }
+      if (props.mode) {
+        context.unregister({
+          description: 'Group Manager',
+          component: GroupSidebarVue,
+        });
+        context.unregister({
+          component: MultiCamToolsVue,
+          description: 'Multi Camera Tools',
+        });
+        context.unregister({
+          component: ImageEnhancementsVue,
+          description: 'Image Enhancements',
+        });
+        context.unregister({
+          component: TypeThresholdVue,
+          description: 'Threshold Controls',
+        });
+        context.unregister({
+          component: AttributesSideBarVue,
+          description: 'Attribute Details',
+        });
+        context.unregister({
+          component: RevisionHistoryVue,
+          description: 'Revision History',
+        });
+      }
     };
     loadData();
 
@@ -657,6 +691,8 @@ export default defineComponent({
 
     };
 
+    const annotating = computed(() => context.state.active === 'ActorSideBar');
+
     provideAnnotator(
       {
         annotatorPreferences: toRef(clientSettings, 'annotatorPreferences'),
@@ -685,8 +721,10 @@ export default defineComponent({
       useAttributeFilters,
     );
 
+
     return {
       /* props */
+      annotating,
       aggregateController,
       confidenceFilters: trackFilters.confidenceFilters,
       cameraStore,
@@ -780,15 +818,19 @@ export default defineComponent({
         </div>
       </span>
       <v-spacer />
-      <template #extension>
+      <template
+        v-if="!mode"
+        #extension
+      >
         <EditorMenu
           v-bind="{
             editingMode, visibleModes, editingTrack, recipes,
             multiSelectActive, editingDetails,
-            groupEditActive: editingGroupId !== null,
+            groupEditActive: editingGroupId !== null, annotating,
           }"
           :tail-settings.sync="clientSettings.annotatorPreferences.trackTails"
           @set-annotation-state="handler.setAnnotationState"
+          @annotator="context.toggle('UMDAnnotation')"
           @exit-edit="handler.trackAbort"
         >
           <template slot="delete-controls">
@@ -868,6 +910,7 @@ export default defineComponent({
       style="min-width: 700px;"
     >
       <sidebar
+        v-if="!mode"
         :enable-slot="context.state.active !== 'TypeThreshold'"
         @import-types="trackFilters.importTypes($event)"
         @track-seek="aggregateController.seek($event)"
@@ -920,6 +963,7 @@ export default defineComponent({
                 v-bind="{
                   imageData: imageData[camera], videoUrl: videoUrl[camera],
                   updateTime, frameRate, originalFps, camera, brightness, intercept }"
+                @ready="context.toggle('UMDAnnotation')"
               >
                 <LayerManager :camera="camera" />
               </component>
@@ -962,7 +1006,9 @@ export default defineComponent({
           </v-progress-circular>
         </div>
       </v-col>
-      <slot name="right-sidebar" />
+      <slot
+        name="right-sidebar"
+      />
     </v-row>
   </v-main>
 </template>

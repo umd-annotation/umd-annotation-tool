@@ -6,6 +6,7 @@ import ImageEnhancements from 'vue-media-annotator/components/ImageEnhancements.
 import GroupSidebar from 'dive-common/components/GroupSidebar.vue';
 import AttributesSideBar from 'dive-common/components/AttributesSideBar.vue';
 import MultiCamTools from 'dive-common/components/MultiCamTools.vue';
+import UMDAnnotation from 'vue-media-annotator/components/UMDAnnotation.vue';
 
 Vue.use(Install);
 
@@ -47,6 +48,11 @@ const componentMap: Record<string, ComponentMapItem> = {
     description: 'Attribute Details',
     component: AttributesSideBar,
   },
+  [UMDAnnotation.name]: {
+    description: 'UMD Annotator',
+    component: UMDAnnotation,
+  },
+
 };
 
 function register(item: ComponentMapItem) {

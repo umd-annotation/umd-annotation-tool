@@ -101,7 +101,7 @@ export default defineComponent({
       default: undefined,
     },
   },
-  setup(props) {
+  setup(props, { emit }) {
     const cameraInitializer = injectCameraInitializer();
     const {
       state: data,
@@ -162,6 +162,7 @@ export default defineComponent({
         data.frame = Math.floor(newFrame);
         data.flick = Math.round(video.currentTime * Flick);
         data.syncedFrame = data.frame;
+        props.updateTime(data);
         geoViewer.value.scheduleAnimationFrame(syncWithVideo);
       }
       data.currentTime = video.currentTime;
@@ -235,6 +236,7 @@ export default defineComponent({
       // See https://github.com/Kitware/dive/issues/447 for more details.
       seek(0);
       data.ready = true;
+      emit('ready', true);
       data.volume = video.volume;
       data.speed = video.playbackRate;
       data.currentTime = video.currentTime;

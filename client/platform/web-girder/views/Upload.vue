@@ -42,6 +42,7 @@ export interface PendingUpload {
   fps: number;
   uploading: boolean;
   skipTranscoding?: boolean;
+  UMDIngest?: boolean;
 }
 interface GirderUpload {
   formatSize: (a: number) => string;
@@ -501,6 +502,10 @@ export default defineComponent({
               <v-checkbox
                 v-model="pendingUpload.skipTranscoding"
                 label="Skip Transcoding"
+              />
+              <v-checkbox
+                v-model="pendingUpload.UMDIngest"
+                label="UMD Ingest"
               />
               <v-tooltip
                 open-delay="200"

@@ -109,7 +109,7 @@ export interface Handler {
   /* toggle selection mode for track */
   trackSelect(AnnotationId: AnnotationId | null, edit: boolean): void;
   /* select next track in the list */
-  trackSelectNext(delta: number): void;
+  trackSelectNext(delta: number, begin?: boolean): void;
   /* split track */
   trackSplit(AnnotationId: AnnotationId | null, frame: number): void;
   /* Add new empty track and select it */
@@ -166,6 +166,10 @@ export interface Handler {
   linkCameraTrack(baseTrackId: AnnotationId, linkTrackId: AnnotationId, camera: string): void;
   startLinking(camera: string): void;
   stopLinking(): void;
+  seekToFrame(frame: number): void;
+  replayFromFrame(frame: number): void;
+  pausePlayback(): void;
+
 
 }
 const HandlerSymbol = Symbol('handler');
@@ -206,7 +210,9 @@ function dummyHandler(handle: (name: string, args: unknown[]) => void): Handler 
     linkCameraTrack(...args) { handle('linkCameraTrack', args); },
     startLinking(...args) { handle('startLinking', args); },
     stopLinking(...args) { handle('stopLinking', args); },
-
+    seekToFrame(...args) { handle('seekToFrame', args); },
+    replayFromFrame(...args) { handle('replayFromFrame', args); },
+    pausePlayback(...args) { handle('pausePlayback', args); },
   };
 }
 

@@ -6,7 +6,11 @@ export default defineComponent({
   props: {
     width: {
       type: Number,
-      default: 300,
+      default: 500,
+    },
+    mode: {
+      type: String,
+      default: undefined,
     },
   },
   setup() {
@@ -26,10 +30,11 @@ export default defineComponent({
       :width="width"
       tile
       outlined
-      class="d-flex flex-column sidebar"
+      class="d-flex flex-column"
+      :class="{ sidebar: !mode, modesidebar: mode }"
       style="z-index:1;"
     >
-      <div class="d-flex align-center mx-1">
+      <div v-if="!mode" class="d-flex align-center mx-1">
         <v-select
           :items="options"
           :value="context.state.active"
@@ -65,6 +70,11 @@ export default defineComponent({
 .sidebar {
   height: calc(100vh - 112px);
   overflow-y: hidden;
+}
+.modesidebar {
+  overflow-y: hidden;
+  height: calc(100vh - 64px);
+
 }
 .sidebar-content {
   overflow-y: auto;

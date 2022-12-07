@@ -109,9 +109,39 @@ export default defineComponent({
         x-small
         color="primary"
         depressed
-        :to="{ name: 'viewer', params: { id: item._id } }"
+        :to="{ name: 'viewer', params: { id: item._id, mode:'valence' } }"
       >
-        Launch Annotator
+        Valence
+      </v-btn>
+      <v-btn
+        v-if="isAnnotationFolder(item)"
+        class="ml-2"
+        x-small
+        color="primary"
+        depressed
+        :to="{ name: 'viewer', params: { id: item._id, mode:'norms' } }"
+      >
+        Norms
+      </v-btn>
+      <v-btn
+        v-if="isAnnotationFolder(item)"
+        class="ml-2"
+        x-small
+        color="primary"
+        depressed
+        :to="{ name: 'viewer', params: { id: item._id, mode:'emotion' } }"
+      >
+        Emotion
+      </v-btn>
+      <v-btn
+        v-if="isAnnotationFolder(item)"
+        class="ml-2"
+        x-small
+        color="primary"
+        depressed
+        :to="{ name: 'viewer', params: { id: item._id, mode:'changepoint' } }"
+      >
+        ChangePoint
       </v-btn>
     </template>
     <template #no-data>

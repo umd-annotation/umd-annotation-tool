@@ -189,14 +189,26 @@ export default function useModeManager({
       : interpolateTrack;
   }
 
-  function seekNearest(track: Track) {
+  function seekNearest(track: Track, begin = false) {
     // Seek to the nearest point in the track.
     const { frame } = aggregateController.value;
-    if (frame.value < track.begin) {
+    if (frame.value < track.begin || begin) {
       aggregateController.value.seek(track.begin);
     } else if (frame.value > track.end) {
       aggregateController.value.seek(track.end);
     }
+  }
+
+  function seekToFrame(frame: number) {
+    aggregateController.value.seek(frame);
+  }
+
+  function replayFromFrame(frame: number) {
+    aggregateController.value.seek(frame);
+    aggregateController.value.play();
+  }
+  function pausePlayback() {
+    aggregateController.value.pause();
   }
 
   async function _setLinkingTrack(trackId: TrackId) {
@@ -629,12 +641,12 @@ export default function useModeManager({
     handleSelectTrack(trackId, editingTrack.value);
   }
 
-  function handleSelectNext(delta: number) {
+  function handleSelectNext(delta: number, begin = false) {
     const newTrack = selectNextTrack(delta);
     /** Only allow selectNext when not in group editing mode. */
     if (newTrack !== null && editingGroupId.value === null) {
       handleSelectTrack(newTrack, false);
-      seekNearest(cameraStore.getAnyTrack(newTrack));
+      seekNearest(cameraStore.getAnyTrack(newTrack), begin);
     }
   }
 
@@ -785,6 +797,9 @@ export default function useModeManager({
       unstageFromMerge: handleUnstageFromMerge,
       startLinking: handleStartLinking,
       stopLinking: handleStopLinking,
+      seekToFrame,
+      replayFromFrame,
+      pausePlayback,
     },
   };
 }

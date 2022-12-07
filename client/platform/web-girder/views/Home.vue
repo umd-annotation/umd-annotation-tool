@@ -153,14 +153,17 @@ export default defineComponent({
             <template #actions>
               <div class="pa-2">
                 <Clone
+                  v-if="false"
                   v-bind="{ buttonOptions, menuOptions }"
                   :dataset-id="locationInputs.length === 1 ? locationInputs[0] : null"
                 />
                 <run-training-menu
+                  v-if="false"
                   v-bind="{ buttonOptions, menuOptions }"
                   :selected-dataset-ids="locationInputs"
                 />
                 <run-pipeline-menu
+                  v-if="false"
                   v-bind="{ buttonOptions, menuOptions }"
                   :selected-dataset-ids="locationInputs"
                   :running-pipelines="runningPipelines"
@@ -188,6 +191,7 @@ export default defineComponent({
         </v-col>
         <v-col :cols="9">
           <v-toolbar
+            v-if="false"
             dense
             class="mb-4"
             rounded

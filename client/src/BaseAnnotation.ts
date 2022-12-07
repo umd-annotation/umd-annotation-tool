@@ -163,6 +163,12 @@ export default abstract class BaseAnnotation {
     this.notify('attributes', { key, value: oldval });
   }
 
+  removeAttribute(key: string, value = undefined) {
+    const oldval = this.attributes[key];
+    this.attributes[key] = value;
+    this.notify('attributes', { key, value: oldval });
+  }
+
   /**
    * Figure out if any confidence pairs are above any corresponding thresholds
    */

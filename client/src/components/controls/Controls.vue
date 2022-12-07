@@ -135,6 +135,7 @@ export default defineComponent({
           <slot name="middle" />
         </v-col>
         <v-col
+          v-if="false"
           class="pl-1 py-1 shrink d-flex"
           align="right"
         >
