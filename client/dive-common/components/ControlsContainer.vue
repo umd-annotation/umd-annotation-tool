@@ -44,7 +44,7 @@ export default defineComponent({
     },
   },
   setup(_, { emit }) {
-    const currentView = ref('Detections');
+    const currentView = ref('Events');
     const ticks = ref([0.25, 0.5, 0.75, 1.0, 2.0, 4.0, 8.0]);
     const cameraStore = useCameraStore();
     const multiCam = ref(cameraStore.camMap.value.size > 1);

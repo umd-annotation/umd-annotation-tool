@@ -184,14 +184,14 @@ export default defineComponent({
         {
           bind: 'up',
           handler: () => {
-            trackSelectNext(-1);
+            trackSelectNext(-1, true);
           },
           disabled,
         },
         {
           bind: 'down',
           handler: () => {
-            trackSelectNext(1);
+            trackSelectNext(1, true);
           },
           disabled,
         },

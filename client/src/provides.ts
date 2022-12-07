@@ -109,7 +109,7 @@ export interface Handler {
   /* toggle selection mode for track */
   trackSelect(AnnotationId: AnnotationId | null, edit: boolean): void;
   /* select next track in the list */
-  trackSelectNext(delta: number): void;
+  trackSelectNext(delta: number, begin?: boolean): void;
   /* split track */
   trackSplit(AnnotationId: AnnotationId | null, frame: number): void;
   /* Add new empty track and select it */

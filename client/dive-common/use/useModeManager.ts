@@ -189,10 +189,11 @@ export default function useModeManager({
       : interpolateTrack;
   }
 
-  function seekNearest(track: Track) {
+  function seekNearest(track: Track, begin = false) {
     // Seek to the nearest point in the track.
+    console.log(`Seeking to the begin: ${begin}`);
     const { frame } = aggregateController.value;
-    if (frame.value < track.begin) {
+    if (frame.value < track.begin || begin) {
       aggregateController.value.seek(track.begin);
     } else if (frame.value > track.end) {
       aggregateController.value.seek(track.end);
@@ -629,12 +630,12 @@ export default function useModeManager({
     handleSelectTrack(trackId, editingTrack.value);
   }
 
-  function handleSelectNext(delta: number) {
+  function handleSelectNext(delta: number, begin = false) {
     const newTrack = selectNextTrack(delta);
     /** Only allow selectNext when not in group editing mode. */
     if (newTrack !== null && editingGroupId.value === null) {
       handleSelectTrack(newTrack, false);
-      seekNearest(cameraStore.getAnyTrack(newTrack));
+      seekNearest(cameraStore.getAnyTrack(newTrack), begin);
     }
   }
 

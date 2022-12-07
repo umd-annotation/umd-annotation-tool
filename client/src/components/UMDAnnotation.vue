@@ -1,6 +1,6 @@
 <script lang="ts">
 import {
-  computed, defineComponent, ref, Ref, watch,
+  computed, defineComponent, ref, Ref, watch, PropType,
 } from '@vue/composition-api';
 
 import StackedVirtualSidebarContainer from 'dive-common/components/StackedVirtualSidebarContainer.vue';
@@ -26,9 +26,13 @@ export default defineComponent({
       type: Number,
       default: 500,
     },
+    mode: {
+      type: String as PropType<'valence' | 'norms' | 'changepoint' | 'emotion' | 'review'>,
+      default: 'review',
+    },
   },
 
-  setup() {
+  setup(props, { emit }) {
     const selectedTrackIdRef = useSelectedTrackId();
 
     const { frame } = useTime();
@@ -38,17 +42,16 @@ export default defineComponent({
     const arousal = ref(0);
     const valence = ref(0);
     const baseEmotionsList = ['Anger', 'Anticipation', 'Joy', 'Trust', 'Fear', 'Surprise', 'Sadness', 'Disgust'];
-    const emotionsAdhered: Ref<string[]> = ref([]);
-    const emotionsNotAdhered: Ref<string[]> = ref([]);
-    const normList = ref([]);
+    const multiSpeakerOptions = ref(['FALSE', 'TRUE', 'noann']);
+    const multiSpeaker: Ref<'FALSE' | 'TRUE' | 'noann'> = ref('FALSE');
+    const emotionsList: Ref<string[]> = ref([]);
+    const baseNormsList = ['Apology', 'Critism', 'Greeting', 'Request', 'Persuasion', 'Thanks', 'Taking Leave', 'Admiration', 'Finalizing Negotiating/Deal', 'Refusing a Request'];
+    const normsSelected: Ref<string[]> = ref([]);
+    const normsObject: Ref<Record<string, 'adhered' |'violate' | 'noann' | 'EMPTY_NA'>> = ref({});
     const changePointFrame = ref(-1);
     const changePointImpact = ref(0);
     const changePointComment = ref('');
     const userLogin = ref('');
-    const adheredEmotionsList = computed(() => (
-      baseEmotionsList.filter((item) => !emotionsNotAdhered.value.includes(item))));
-    const notAdheredEmotionsList = computed(() => (
-      baseEmotionsList.filter((item) => !emotionsAdhered.value.includes(item))));
 
     const checkAttributes = (trackNum: number | null, loadValues = false) => {
       // load existing attributes
@@ -66,11 +69,14 @@ export default defineComponent({
               if (replaced === 'Arousal') {
                 arousal.value = track.attributes[key] as number;
               }
-              if (replaced === 'AdheredEmotions') {
-                emotionsAdhered.value = (track.attributes[key] as string).split('_');
+              if (replaced === 'Emotions') {
+                emotionsList.value = (track.attributes[key] as string).split('_');
               }
-              if (replaced === 'NotAdheredEmotions') {
-                emotionsNotAdhered.value = (track.attributes[key] as string).split('_');
+              if (replaced === 'MultiSpeaker') {
+                multiSpeaker.value = (track.attributes[key] as 'TRUE' | 'FALSE' | 'noann');
+              }
+              if (replaced === 'Norms') {
+                normsObject.value = (track.attributes[key] as Record<string, 'adhered' |'violate' | 'noann' | 'EMPTY_NA'>);
               }
             }
           }
@@ -96,7 +102,7 @@ export default defineComponent({
             }
           });
           if (loadValues) {
-            handler.trackSeek(track.begin);
+            emit('seek', track.begin);
           }
         }
       }
@@ -107,7 +113,7 @@ export default defineComponent({
       const user = await restClient.fetchUser();
       userLogin.value = user.login;
       if (selectedTrackIdRef.value === null) {
-        handler.trackSelect(0, false);
+        handler.trackSelectNext(1, true);
         checkAttributes(0);
       }
     };
@@ -136,28 +142,38 @@ export default defineComponent({
       if (selectedTrackIdRef.value !== null) {
         const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
         // Set attributes;
-        track.setAttribute(`${userLogin.value}_Valence`, valence.value);
-        track.setAttribute(`${userLogin.value}_Arousal`, arousal.value);
-        track.setAttribute(`${userLogin.value}_AdheredEmotions`, emotionsAdhered.value.join('_'));
-        track.setAttribute(`${userLogin.value}_NotAdheredEmotions`, emotionsNotAdhered.value.join('_'));
+        if (props.mode === 'valence' || props.mode === 'review') {
+          track.setAttribute(`${userLogin.value}_Valence`, valence.value);
+          track.setAttribute(`${userLogin.value}_Arousal`, arousal.value);
+        }
+        if (props.mode === 'emotion' || props.mode === 'review') {
+          track.setAttribute(`${userLogin.value}_Emotions`, emotionsList.value.join('_'));
+          track.setAttribute(`${userLogin.value}_MultiSpeaker`, multiSpeaker.value);
+        }
+        if (props.mode === 'norms' || props.mode === 'review') {
+          track.setAttribute(`${userLogin.value}_Norms`, normsObject.value);
+        }
         // set Change Point Information
-        if (changePointFrame.value !== -1) {
-          if (track.getFeature(changePointFrame.value)[0] === null
+        if (props.mode === 'changepoint' || props.mode === 'review') {
+          if (changePointFrame.value !== -1) {
+            if (track.getFeature(changePointFrame.value)[0] === null
           || !track.getFeature(changePointFrame.value)[0]?.keyframe) {
-            track.toggleKeyframe(changePointFrame.value);
+              track.toggleKeyframe(changePointFrame.value);
+            }
+            track.setFeatureAttribute(changePointFrame.value, `${userLogin.value}_Impact`, changePointImpact.value);
+            track.setFeatureAttribute(changePointFrame.value, `${userLogin.value}_Comment`, changePointComment.value);
           }
-          track.setFeatureAttribute(changePointFrame.value, `${userLogin.value}_Impact`, changePointImpact.value);
-          track.setFeatureAttribute(changePointFrame.value, `${userLogin.value}_Comment`, changePointComment.value);
         }
         // save the file
         handler.save();
         const oldTrackNum = selectedTrackIdRef.value;
-        handler.trackSelectNext(1);
+        handler.trackSelectNext(1, true);
         if (selectedTrackIdRef.value !== null && selectedTrackIdRef.value !== oldTrackNum) {
           arousal.value = 0;
           valence.value = 0;
-          emotionsAdhered.value = [];
-          emotionsNotAdhered.value = [];
+          emotionsList.value = [];
+          normsObject.value = {};
+          multiSpeaker.value = 'FALSE';
           changePointFrame.value = -1;
           changePointImpact.value = 0;
           changePointComment.value = '';
@@ -170,13 +186,26 @@ export default defineComponent({
     const changeTrack = (direction: -1 | 1) => {
       arousal.value = 0;
       valence.value = 0;
-      emotionsAdhered.value = [];
-      emotionsNotAdhered.value = [];
+      emotionsList.value = [];
+      normsObject.value = {};
+      multiSpeaker.value = 'FALSE';
       changePointFrame.value = -1;
       changePointImpact.value = 0;
       changePointComment.value = '';
 
-      handler.trackSelectNext(direction);
+      handler.trackSelectNext(direction, true);
+    };
+
+    const updateNorm = (item: string, value: 'adhered' | 'violate' | 'noann' | 'EMPTY_NA') => {
+      normsObject.value[item] = value;
+    };
+    const syncNorms = () => {
+      const keys = Object.keys(normsObject.value);
+      for (let i = 0; i < keys.length; i += 1) {
+        if (!normsSelected.value.includes(keys[i])) {
+          delete normsObject.value[keys[i]];
+        }
+      }
     };
     return {
       hasPrevious,
@@ -184,10 +213,13 @@ export default defineComponent({
       selectedTrackIdRef,
       arousal,
       valence,
-      adheredEmotionsList,
-      notAdheredEmotionsList,
-      emotionsAdhered,
-      emotionsNotAdhered,
+      emotionsList,
+      baseEmotionsList,
+      multiSpeakerOptions,
+      multiSpeaker,
+      baseNormsList,
+      normsSelected,
+      normsObject,
       frame,
       changePointFrame,
       changePointImpact,
@@ -196,6 +228,8 @@ export default defineComponent({
       submit,
       goToChangePoint,
       changeTrack,
+      updateNorm,
+      syncNorms,
     };
   },
 });
@@ -203,135 +237,173 @@ export default defineComponent({
 
 
 <template>
-  <StackedVirtualSidebarContainer
-    :width="width"
-    :enable-slot="false"
-  >
-    <template>
-      <v-container>
-        <v-row dense>
-          <h2>Segment {{ selectedTrackIdRef }}</h2>
-          <v-spacer />
-          <v-btn
-            color="primary"
-            :disabled="!hasPrevious"
-            class="mx-2"
-            @click="changeTrack(-1)"
-          >
-            Prev
-          </v-btn>
-          <v-btn
-            color="primary"
-            :disabled="!hasNext"
-            class="mx-2"
-            @click="changeTrack(1)"
-          >
-            Next
-          </v-btn>
-        </v-row>
-        <p>
-          Some instruction text to indicate to the annotator what to do.
-          This could be lengthy to provide more detailed instructions or not.
-        </p>
+  <v-container>
+    <v-row
+      dense
+      class="scroll-sticky"
+    >
+      <h2>Segment {{ selectedTrackIdRef }}</h2>
+      <v-spacer />
+      <v-btn
+        color="primary"
+        :disabled="!hasPrevious"
+        class="mx-2"
+        @click="changeTrack(-1)"
+      >
+        Prev
+      </v-btn>
+      <v-btn
+        color="primary"
+        :disabled="!hasNext"
+        class="mx-2"
+        @click="changeTrack(1)"
+      >
+        Next
+      </v-btn>
+    </v-row>
+    <p class="mt-8">
+      Some instruction text to indicate to the annotator what to do.
+      This could be lengthy to provide more detailed instructions or not.
+    </p>
+    <div v-if="mode ==='valence' || mode ==='review'">
+      <v-row>
+        <v-col>
+          <v-slider
+            v-model="arousal"
+            label="Arousal"
+            min="1"
+            max="1000"
+            step="1"
+          />
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col>
+          <v-slider
+            v-model="valence"
+            label="Valence"
+            min="1"
+            max="1000"
+            step="1"
+          />
+        </v-col>
+      </v-row>
+    </div>
+    <div v-if="mode ==='emotion' || mode === 'review'">
+      <v-row>
+        <v-col>
+          <v-select
+            v-model="emotionsList"
+            :items="baseEmotionsList"
+            chips
+            label="Emotions"
+            multiple
+            clearable
+            persistent-hint
+            deletable-chips
+          />
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col>
+          <v-select
+            v-model="multiSpeaker"
+            :items="multiSpeakerOptions"
+            label="Multi Speaker"
+            persistent-hint
+          />
+        </v-col>
+      </v-row>
+    </div>
+    <div v-if="mode === 'norms' || mode ==='review'">
+      <v-row>
+        <v-col>
+          <v-select
+            v-model="normsSelected"
+            :items="baseNormsList"
+            chips
+            label="Norms"
+            multiple
+            clearable
+            persistent-hint
+            deletable-chips
+            @change="syncNorms"
+          />
+        </v-col>
+      </v-row>
+      <v-row
+        v-for="item in normsSelected"
+        :key="`${item}`"
+      >
+        <v-col>
+          <v-select
+            :value="normsObject[item]"
+            :items="['adhere', 'violate', 'noann', 'EMPTY_NA']"
+            :label="`${item} Status`"
+            persistent-hint
+            @change="updateNorm(item, $event)"
+          />
+        </v-col>
+      </v-row>
+    </div>
+    <div v-if="mode ==='changepoint' || mode === 'review'">
+      <v-row v-if="(changePointFrame == -1)">
+        <v-btn @click="setCheckpoint">
+          Set ChangePoint {{ frame }}
+        </v-btn>
+      </v-row>
+      <div v-if="(changePointFrame != -1)">
         <v-row>
-          <v-col>
-            <v-slider
-              v-model="arousal"
-              label="Arousal"
-              min="1"
-              max="1000"
-              step="1"
-            />
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-            <v-slider
-              v-model="valence"
-              label="Valence"
-              min="1"
-              max="1000"
-              step="1"
-            />
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-            <v-select
-              v-model="emotionsAdhered"
-              :items="adheredEmotionsList"
-              chips
-              label="Emotions Adhered To"
-              multiple
-              solo
-              clearable
-              persistent-hint
-              deletable-chips
-            />
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-            <v-select
-              v-model="emotionsNotAdhered"
-              :items="notAdheredEmotionsList"
-              chips
-              label="Emotions Not Adhered To"
-              multiple
-              solo
-              clearable
-              persistent-hint
-              deletable-chips
-            />
-          </v-col>
-        </v-row>
-        <v-row v-if="(changePointFrame == -1)">
           <v-btn @click="setCheckpoint">
-            Set CheckPoint {{ frame }}
+            Set Changepoint to {{ frame }}
           </v-btn>
         </v-row>
-        <div v-if="(changePointFrame != -1)">
-          <v-row>
-            <v-btn @click="setCheckpoint">
-              Set Changepoint to {{ frame }}
-            </v-btn>
-          </v-row>
-          <h4> Current ChangePoint : {{ changePointFrame }}</h4>
-          <v-btn @click="goToChangePoint">
-            Go to ChangePoint
-          </v-btn>
-          <v-row>
-            <v-col>
-              <v-slider
-                v-model="changePointImpact"
-                label="Impact"
-                min="1"
-                max="5"
-                step="1"
-              />
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col>
-              <v-textarea
-                v-model="changePointComment"
-                outlined
-                label="Comment"
-              />
-            </v-col>
-          </v-row>
-        </div>
-        <v-row v-if="(changePointFrame != -1)">
+        <h4> Current ChangePoint : {{ changePointFrame }}</h4>
+        <v-btn @click="goToChangePoint">
+          Go to ChangePoint
+        </v-btn>
+        <v-row>
           <v-col>
-            <v-btn
-              color="success"
-              @click="submit"
-            >
-              Submit
-            </v-btn>
+            <v-slider
+              v-model="changePointImpact"
+              label="Impact"
+              min="1"
+              max="5"
+              step="1"
+            />
           </v-col>
         </v-row>
-      </v-container>
-    </template>
-  </StackedVirtualSidebarContainer>
+        <v-row>
+          <v-col>
+            <v-textarea
+              v-model="changePointComment"
+              outlined
+              label="Comment"
+            />
+          </v-col>
+        </v-row>
+      </div>
+    </div>
+
+    <v-row v-if="(changePointFrame != -1)">
+      <v-col>
+        <v-btn
+          color="success"
+          @click="submit"
+        >
+          Submit
+        </v-btn>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
+
+<style scoped lang="scss">
+.scroll-sticky {
+  z-index: 99;
+  position: -webkit-sticky; /* Safari */
+  position: sticky;
+  top: 0px;
+  background-color: rgb(30, 30, 30);
+}
+</style>

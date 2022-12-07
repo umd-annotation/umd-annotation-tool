@@ -74,6 +74,7 @@ export default defineComponent({
 
   setup(props, ctx) {
     const { prompt } = usePrompt();
+    const mode: Ref<'valence' | 'norms' | 'changepoint' | 'emotion' | 'review'> = ref(ctx.root.$route.query.mode as string || 'review');
     const viewerRef = ref();
     const store = useStore();
     const brandData = toRef(store.state.Brand, 'brandData');
@@ -151,6 +152,7 @@ export default defineComponent({
       currentJob,
       runningPipelines,
       routeRevision,
+      mode,
     };
   },
 });
@@ -163,6 +165,7 @@ export default defineComponent({
     ref="viewerRef"
     :revision="revisionNum"
     :read-only-mode="!!getters['Jobs/datasetRunningState'](id)"
+    :mode="mode"
   >
     <template #title>
       <ViewerAlert />
@@ -181,37 +184,40 @@ export default defineComponent({
       </v-tabs>
     </template>
     <template #title-right>
-      <RunPipelineMenu
-        v-bind="{ buttonOptions, menuOptions }"
-        :selected-dataset-ids="[id]"
-        :running-pipelines="runningPipelines"
-        :read-only-mode="revisionNum !== undefined"
-      />
-      <ImportAnnotations
-        :button-options="buttonOptions"
-        :menu-options="menuOptions"
-        :read-only-mode="!!getters['Jobs/datasetRunningState'](id) || revisionNum !== undefined"
-        :dataset-id="id"
-        block-on-unsaved
-      />
-      <Export
-        v-bind="{ buttonOptions, menuOptions }"
-        :dataset-ids="[id]"
-        block-on-unsaved
-      />
-      <Clone
-        v-if="$store.state.Dataset.meta"
-        v-bind="{ buttonOptions, menuOptions }"
-        :dataset-id="id"
-        :revision="revisionNum"
-      />
+      <template v-if="!mode">
+        <RunPipelineMenu
+          v-bind="{ buttonOptions, menuOptions }"
+          :selected-dataset-ids="[id]"
+          :running-pipelines="runningPipelines"
+          :read-only-mode="revisionNum !== undefined"
+        />
+        <ImportAnnotations
+          :button-options="buttonOptions"
+          :menu-options="menuOptions"
+          :read-only-mode="!!getters['Jobs/datasetRunningState'](id) || revisionNum !== undefined"
+          :dataset-id="id"
+          block-on-unsaved
+        />
+        <Export
+          v-bind="{ buttonOptions, menuOptions }"
+          :dataset-ids="[id]"
+          block-on-unsaved
+        />
+        <Clone
+          v-if="$store.state.Dataset.meta"
+          v-bind="{ buttonOptions, menuOptions }"
+          :dataset-id="id"
+          :revision="revisionNum"
+        />
+      </template>
     </template>
     <template #right-sidebar>
-      <SidebarContext>
+      <SidebarContext :mode="mode">
         <template #default="{ name, subCategory }">
           <component
             :is="name"
             :sub-category="subCategory"
+            :mode="mode"
             @update:revision="routeRevision"
           />
         </template>

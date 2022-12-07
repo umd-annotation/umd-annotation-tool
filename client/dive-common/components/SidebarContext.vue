@@ -8,6 +8,10 @@ export default defineComponent({
       type: Number,
       default: 500,
     },
+    mode: {
+      type: String,
+      default: undefined,
+    },
   },
   setup() {
     const options = computed(() => Object.entries(context.componentMap).map(([value, entry]) => ({
@@ -29,7 +33,7 @@ export default defineComponent({
       class="d-flex flex-column sidebar"
       style="z-index:1;"
     >
-      <div class="d-flex align-center mx-1">
+      <div v-if="!mode" class="d-flex align-center mx-1">
         <v-select
           :items="options"
           :value="context.state.active"
