@@ -74,7 +74,9 @@ export default defineComponent({
 
   setup(props, ctx) {
     const { prompt } = usePrompt();
-    const mode: Ref<'valence' | 'norms' | 'changepoint' | 'emotion' | 'review'> = ref(ctx.root.$route.query.mode as string || 'review');
+    const mode: Ref<'valence' | 'norms' | 'changepoint' | 'emotion' | 'review'> = ref(
+      ctx.root.$route.query.mode as 'valence' | 'norms' | 'changepoint' | 'emotion' | 'review',
+    );
     const viewerRef = ref();
     const store = useStore();
     const brandData = toRef(store.state.Brand, 'brandData');

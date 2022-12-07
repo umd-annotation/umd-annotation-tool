@@ -1,13 +1,13 @@
+from datetime import datetime, timedelta
+from pathlib import Path
 import re
 import shutil
 import signal
-from datetime import datetime, timedelta
-from pathlib import Path
 import subprocess
 from subprocess import Popen
-from tempfile import mktemp
-from typing import IO, Callable, Optional, Any, Dict, List, Union
 import tempfile
+from tempfile import mktemp
+from typing import IO, Any, Callable, Dict, List, Optional, Union
 
 from girder_client import GirderClient
 from girder_worker.task import Task
@@ -16,6 +16,7 @@ from girder_worker.utils import JobManager, JobStatus
 TIMEOUT_COUNT = 'timeout_count'
 TIMEOUT_LAST_CHECKED = 'last_checked'
 TIMEOUT_CHECK_INTERVAL = 30
+
 
 class CanceledError(RuntimeError):
     pass
@@ -42,6 +43,7 @@ def check_canceled(task: Task, context: dict, force=True):
                 f"cancellation. {err}"
             )
     return False
+
 
 def stream_subprocess(
     task: Task,
@@ -107,6 +109,7 @@ def stream_subprocess(
 
         return stdout
 
+
 def get_video_filename(folderId: str, girder_client: GirderClient) -> Optional[str]:
     """
     Searches a folderId for videos that are compatible with training/pipelines
@@ -143,16 +146,12 @@ def download_source_media(girder_client: GirderClient, folder, dest: Path) -> Li
     Download source media for folder from girder
     """
     if fromMeta(folder, 'type') == 'image-sequence':
-        image_items = girder_client.get(
-            'meva/valid_images', {'folderId': folder["_id"]}
-        )
+        image_items = girder_client.get('meva/valid_images', {'folderId': folder["_id"]})
         for item in image_items:
             girder_client.downloadItem(str(item["_id"]), str(dest))
         return [str(dest / item['name']) for item in image_items]
     elif fromMeta(folder, 'type') == 'video':
-        clip_meta = girder_client.get(
-            "meva_detection/clip_meta", {'folderId': folder['_id']}
-        )
+        clip_meta = girder_client.get("meva_detection/clip_meta", {'folderId': folder['_id']})
         destination_path = str(dest / clip_meta['video']['name'])
         girder_client.downloadFile(str(clip_meta['video']['_id']), destination_path)
         return [destination_path]
