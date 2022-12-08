@@ -5,6 +5,8 @@ import math
 from pathlib import Path
 
 from dive_server import crud_annotation
+from girder.constants import AccessType
+from girder.models.folder import Folder
 from girder.models.user import User
 from girder.utility import ziputil
 
@@ -24,6 +26,48 @@ normMap = {
 
 def bin_value(value):
     return math.floor(value / 200) + 1
+
+
+def export_changepoint_tab(tracks, folderId, fps, userMap):
+    csvFile = io.StringIO()
+    writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
+    writer.writerow(["user_id", "file_id", "timestamp", "impact_scalar", "comment"])
+    for t in tracks:
+        if 'features' in t.keys():
+            features = t['features']
+            userDataFound = {}
+            for feature in features:
+                if 'attributes' in feature.keys():
+                    attributes = feature['attributes']
+                    for key in attributes.keys():
+                        if '_Impact' in key:
+                            login = key.replace('_Impact', '')
+                            mapped = userMap[login]
+                            if mapped not in userDataFound.keys():
+                                userDataFound[mapped] = {}
+                            userDataFound[mapped]['Impact'] = attributes[key]
+                            userDataFound[mapped]['Timestamp'] = feature['frame']
+                        if '_Comment' in key:
+                            login = key.replace('_Comment', '')
+                            mapped = userMap[login]
+                            if mapped not in userDataFound.keys():
+                                userDataFound[mapped] = {}
+                            userDataFound[mapped]['Comment'] = attributes[key]
+                            userDataFound[mapped]['Timestamp'] = feature['frame']
+
+            for key in userDataFound.keys():
+                columns = [
+                    key,
+                    folderId,
+                    userDataFound[key]['Timestamp'],
+                    userDataFound[key]['Impact'],
+                    userDataFound[key]['Comment'],
+                ]
+                writer.writerow(columns)
+                yield csvFile.getvalue()
+                csvFile.seek(0)
+                csvFile.truncate(0)
+    yield csvFile.getvalue()
 
 
 def export_norms_tab(tracks, folderId, fps, userMap):
@@ -175,6 +219,7 @@ def export_emotions_tab(tracks, folderId, fps, userMap):
                 yield csvFile.getvalue()
                 csvFile.seek(0)
                 csvFile.truncate(0)
+    yield csvFile.getvalue()
 
 
 def generate_tab(tracks, folderId, fps, userMap, type):
@@ -191,40 +236,53 @@ def generate_tab(tracks, folderId, fps, userMap, type):
         if type == 'norms':
             for data in export_norms_tab(tracks, folderId, fps, userMap):
                 yield data
+        if type == 'changepoint':
+            for data in export_changepoint_tab(tracks, folderId, fps, userMap):
+                yield data
 
     return downloadGenerator
 
 
-def convert_to_zips(tracks, folder, fps, userMap):
-    folderId = folder['_id']
-
+def convert_to_zips(folders, userMap, user):
     def stream():
         z = ziputil.ZipGenerator()
-        zip_path = "./"
+        for folderId in folders:
+            folder = Folder().load(folderId, level=AccessType.READ, user=user)
+            print(folder)
+            fps = folder['meta']['fps']
+            tracks = crud_annotation.TrackItem().list(folder)
+            if len(folders) == 1:
+                zip_path = './'
+            else:
+                zip_path = f'./{folder["name"].replace(".mp4","")}/'
 
-        def makeDiveJson():
-            """Include DIVE JSON output annotation file"""
-            annotations = crud_annotation.get_annotations(folder)
-            print(annotations)
-            yield json.dumps(annotations)
+            def makeDiveJson():
+                """Include DIVE JSON output annotation file"""
+                annotations = crud_annotation.get_annotations(folder)
+                print(annotations)
+                yield json.dumps(annotations)
 
-        for data in z.addFile(makeDiveJson, Path(f'{zip_path}annotations.json')):
-            yield data
-        seg_gen = generate_tab(tracks, folderId, fps, userMap, 'segment')
-        for data in z.addFile(seg_gen, Path(f'{zip_path}segment_tab.tab')):
-            yield data
-        tracks.rewind()
-        valence_gen = generate_tab(tracks, folderId, fps, userMap, 'valence')
-        for data in z.addFile(valence_gen, Path(f'{zip_path}valence_tab.tab')):
-            yield data
-        tracks.rewind()
-        emotion_gen = generate_tab(tracks, folderId, fps, userMap, 'emotions')
-        for data in z.addFile(emotion_gen, Path(f'{zip_path}emotions_tab.tab')):
-            yield data
-        tracks.rewind()
-        norm_gen = generate_tab(tracks, folderId, fps, userMap, 'norms')
-        for data in z.addFile(norm_gen, Path(f'{zip_path}norms_tab.tab')):
-            yield data
+            for data in z.addFile(makeDiveJson, Path(f'{zip_path}annotations.json')):
+                yield data
+            seg_gen = generate_tab(tracks, folderId, fps, userMap, 'segment')
+            for data in z.addFile(seg_gen, Path(f'{zip_path}segment_tab.tab')):
+                yield data
+            tracks.rewind()
+            valence_gen = generate_tab(tracks, folderId, fps, userMap, 'valence')
+            for data in z.addFile(valence_gen, Path(f'{zip_path}valence_tab.tab')):
+                yield data
+            tracks.rewind()
+            emotion_gen = generate_tab(tracks, folderId, fps, userMap, 'emotions')
+            for data in z.addFile(emotion_gen, Path(f'{zip_path}emotions_tab.tab')):
+                yield data
+            tracks.rewind()
+            norm_gen = generate_tab(tracks, folderId, fps, userMap, 'norms')
+            for data in z.addFile(norm_gen, Path(f'{zip_path}norms_tab.tab')):
+                yield data
+            tracks.rewind()
+            norm_gen = generate_tab(tracks, folderId, fps, userMap, 'changepoint')
+            for data in z.addFile(norm_gen, Path(f'{zip_path}changepoint_tab.tab')):
+                yield data
         yield z.footer()
 
     return stream

@@ -117,10 +117,10 @@ export default defineComponent({
               },
             }),
           exportDetectionsUrl: getUri({
-            url: 'dive_annotation/export',
+            url: 'UMD_dataset/export',
             params: {
               ...params,
-              folderId: singleDataSetId.value,
+              folderIds: JSON.stringify([singleDataSetId.value]),
               revisionId: revisionId.value,
             },
           }),
@@ -143,6 +143,15 @@ export default defineComponent({
           url: 'dive_dataset/export',
           params: { folderIds: JSON.stringify(props.datasetIds) },
         }),
+        exportAllDetectionsUrl: getUri({
+          url: 'UMD_dataset/export',
+          params: {
+            ...params,
+            folderIds: JSON.stringify(props.datasetIds),
+            revisionId: revisionId.value,
+          },
+        }),
+
       };
     });
     const mediaType = computed(() => {
@@ -351,7 +360,7 @@ export default defineComponent({
             <v-btn
               depressed
               block
-              @click="doExport({ url: exportUrls && exportUrls.exportConfigurationUrl })"
+              @click="doExport({ url: exportUrls && exportUrls.exportDetectionsUrl })"
             >
               Configuration
             </v-btn>
@@ -372,6 +381,20 @@ export default defineComponent({
           </v-card-actions>
         </template>
         <template v-else-if="exportUrls.exportAllUrl !== undefined">
+          <v-card-text class="pb-0">
+            Export Selected Tabular Annotations
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn
+              depressed
+              block
+              @click="doExport({ url: exportUrls && exportUrls.exportAllDetectionsUrl })"
+            >
+              Annotations
+            </v-btn>
+          </v-card-actions>
+
           <v-card-text class="pb-0">
             Zip all media, detections, and edit history from all selected dataset folders
           </v-card-text>
