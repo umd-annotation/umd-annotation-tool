@@ -19,32 +19,35 @@ class UMD_Dataset(Resource):
         self.resourceName = "UMD_dataset"
 
         self.route("POST", ("ingest_video", ":folderId"), self.ingest_video)
-        self.route("GET", ("export", ":folderId"), self.export_tabular)
+        self.route("GET", ("export",), self.export_tabular)
 
     @access.public(scope=TokenScope.DATA_READ, cookie=True)
     @autoDescribeRoute(
-        Description("Export information in tablular form").modelParam(
-            "folderId",
-            description="FolderId to get state from",
-            model=Folder,
-            level=AccessType.WRITE,
-            destName="folderId",
+        Description("Export information in tablular form").jsonParam(
+            "folderIds",
+            "List of track types to filter by",
+            paramType="query",
+            required=True,
+            default=[],
+            requireArray=True,
         )
     )
     def export_tabular(
         self,
-        folderId,
+        folderIds,
     ):
         user = self.getCurrentUser()
-        tracks = crud_annotation.TrackItem().list(folderId)
         users = list(User().find())
         userMap = {}
         for item in users:
             userMap[item["login"]] = item["_id"]
 
-        fps = folderId['meta']['fps']
-        gen = UMD_export.convert_to_zips(tracks, folderId, fps, userMap)
-        zip_name = "batch_export.zip"
+        gen = UMD_export.convert_to_zips(folderIds, userMap, user)
+        if len(folderIds) > 1:
+            zip_name = "batch_export.zip"
+        else:
+            folder = Folder().load(folderIds[0], level=AccessType.READ, user=user)
+            zip_name = f'{folder["name"].replace(".mp4","")}.zip'
         setContentDisposition(zip_name, mime='application/zip')
         return gen
 
