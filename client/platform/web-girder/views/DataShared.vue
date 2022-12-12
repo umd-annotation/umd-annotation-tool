@@ -109,9 +109,9 @@ export default defineComponent({
         x-small
         color="primary"
         depressed
-        :to="{ name: 'viewer', params: { id: item._id, mode:'valence' } }"
+        :to="{ name: 'viewer', params: { id: item._id, mode:'VAE' } }"
       >
-        Valence
+        V/A/E
       </v-btn>
       <v-btn
         v-if="isAnnotationFolder(item)"
@@ -122,16 +122,6 @@ export default defineComponent({
         :to="{ name: 'viewer', params: { id: item._id, mode:'norms' } }"
       >
         Norms
-      </v-btn>
-      <v-btn
-        v-if="isAnnotationFolder(item)"
-        class="ml-2"
-        x-small
-        color="primary"
-        depressed
-        :to="{ name: 'viewer', params: { id: item._id, mode:'emotion' } }"
-      >
-        Emotion
       </v-btn>
       <v-btn
         v-if="isAnnotationFolder(item)"

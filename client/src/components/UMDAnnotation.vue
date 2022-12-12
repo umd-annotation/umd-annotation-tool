@@ -27,7 +27,7 @@ export default defineComponent({
       default: 500,
     },
     mode: {
-      type: String as PropType<'valence' | 'norms' | 'changepoint' | 'emotion' | 'review'>,
+      type: String as PropType<'VAE' | 'norms' | 'changepoint' | 'emotion' | 'review'>,
       default: 'review',
     },
   },
@@ -143,11 +143,11 @@ export default defineComponent({
       if (selectedTrackIdRef.value !== null) {
         const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
         // Set attributes;
-        if (props.mode === 'valence' || props.mode === 'review') {
+        if (props.mode === 'VAE' || props.mode === 'review') {
           track.setAttribute(`${userLogin.value}_Valence`, valence.value);
           track.setAttribute(`${userLogin.value}_Arousal`, arousal.value);
         }
-        if (props.mode === 'emotion' || props.mode === 'review') {
+        if (props.mode === 'VAE' || props.mode === 'review') {
           track.setAttribute(`${userLogin.value}_Emotions`, emotionsList.value.join('_'));
           track.setAttribute(`${userLogin.value}_MultiSpeaker`, multiSpeaker.value);
         }
@@ -345,7 +345,7 @@ export default defineComponent({
       Please note that when submitting information it should be relevant to the current segment.
     </v-alert>
 
-    <div v-if="mode ==='valence' || mode ==='review'">
+    <div v-if="mode ==='VAE' || mode ==='review'">
       <v-row>
         <v-col>
           <v-slider
@@ -369,7 +369,7 @@ export default defineComponent({
         </v-col>
       </v-row>
     </div>
-    <div v-if="mode ==='emotion' || mode === 'review'">
+    <div v-if="mode ==='VAE' || mode === 'review'">
       <v-row>
         <v-col>
           <v-select
@@ -416,13 +416,16 @@ export default defineComponent({
         :key="`${item}`"
       >
         <v-col>
-          <v-select
-            :value="normsObject[item]"
-            :items="['adhere', 'violate', 'noann', 'EMPTY_NA']"
-            :label="`${item} Status`"
-            persistent-hint
-            @change="updateNorm(item, $event)"
-          />
+          <h4>{{ item }}</h4>
+          <v-radio-group v-model="normsObject[item]">
+          <v-radio
+            v-for="n in ['adhere', 'violate', 'noann', 'EMPTY_NA']"
+            :key="n"
+            :label="n"
+            :value="n"
+          ></v-radio>
+          </v-radio-group>
+          <v-divider />
         </v-col>
       </v-row>
     </div>
