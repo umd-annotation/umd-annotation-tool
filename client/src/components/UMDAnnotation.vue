@@ -58,6 +58,7 @@ export default defineComponent({
       let hasAttributes = false;
       if (trackNum !== null) {
         const track = cameraStore.getAnyTrack(trackNum);
+        console.log(track);
         Object.keys(track.attributes).forEach((key) => {
           if (key.includes(userLogin.value)) {
             hasAttributes = true;
@@ -77,6 +78,7 @@ export default defineComponent({
               }
               if (replaced === 'Norms') {
                 normsObject.value = (track.attributes[key] as Record<string, 'adhered' |'violate' | 'noann' | 'EMPTY_NA'>);
+                normsSelected.value = Object.keys(normsObject.value);
               }
             }
           }
@@ -173,6 +175,7 @@ export default defineComponent({
           arousal.value = 1;
           valence.value = 1;
           emotionsList.value = [];
+          normsSelected.value = [];
           normsObject.value = {};
           multiSpeaker.value = 'FALSE';
           changePointFrame.value = -1;
@@ -189,6 +192,7 @@ export default defineComponent({
       arousal.value = 1;
       valence.value = 1;
       emotionsList.value = [];
+      normsSelected.value = [];
       normsObject.value = {};
       multiSpeaker.value = 'FALSE';
       changePointFrame.value = -1;
@@ -417,13 +421,18 @@ export default defineComponent({
       >
         <v-col>
           <h4>{{ item }}</h4>
-          <v-radio-group v-model="normsObject[item]">
-          <v-radio
-            v-for="n in ['adhere', 'violate', 'noann', 'EMPTY_NA']"
-            :key="n"
-            :label="n"
-            :value="n"
-          ></v-radio>
+          <v-radio-group
+            v-model="normsObject[item]"
+            row
+          >
+            <v-radio
+              v-for="n in ['adhere', 'violate', 'noann', 'EMPTY_NA']"
+              :key="n"
+              :label="n"
+              :value="n"
+              class="mx-3"
+              style="min-height:32px; max-height:32px"
+            />
           </v-radio-group>
           <v-divider />
         </v-col>
