@@ -45,7 +45,7 @@ export default defineComponent({
     const multiSpeakerOptions = ref(['FALSE', 'TRUE', 'noann']);
     const multiSpeaker: Ref<'FALSE' | 'TRUE' | 'noann'> = ref('FALSE');
     const emotionsList: Ref<string[]> = ref([]);
-    const baseNormsList = ['Apology', 'Critism', 'Greeting', 'Request', 'Persuasion', 'Thanks', 'Taking Leave', 'Admiration', 'Finalizing Negotiating/Deal', 'Refusing a Request'];
+    const baseNormsList = ['Apology', 'Criticism', 'Greeting', 'Request', 'Persuasion', 'Thanks', 'Taking Leave', 'Admiration', 'Finalizing Negotiating/Deal', 'Refusing a Request'];
     const normsSelected: Ref<string[]> = ref([]);
     const normsObject: Ref<Record<string, 'adhered' |'violate' | 'noann' | 'EMPTY_NA'>> = ref({});
     const changePointFrame = ref(-1);
@@ -134,6 +134,9 @@ export default defineComponent({
       selectedTrackIdRef.value !== null && selectedTrackIdRef.value > 0));
 
     const hasNext = computed(() => {
+      if (props.mode === 'changepoint' || props.mode === 'review') {
+        return true;
+      }
       if (selectedTrackIdRef.value !== null) {
         return checkAttributes(selectedTrackIdRef.value);
       }
@@ -286,7 +289,7 @@ export default defineComponent({
 
 
 <template>
-  <v-container>
+  <v-container class="maincontainer">
     <v-row
       dense
       class="scroll-sticky"
@@ -350,37 +353,70 @@ export default defineComponent({
     </v-alert>
 
     <div v-if="mode ==='VAE' || mode ==='review'">
-      <v-row>
+      <v-row dense>
         <v-col>
-          <v-slider
-            v-model="arousal"
-            label="Arousal"
-            min="1"
-            max="1000"
-            step="1"
-          />
+          <v-row dense>
+            <v-col cols="2">
+              Valence
+            </v-col>
+            <v-col>
+              <v-slider
+                v-model="valence"
+                min="1"
+                max="1000"
+                step="1"
+                dense
+              />
+            </v-col>
+            <v-col cols="1" />
+          </v-row>
+          <v-row dense>
+            <v-col
+              cols="2"
+              class="d-flex justify-end"
+            >
+              <v-icon>mdi-emoticon-sad-outline</v-icon>
+            </v-col>
+            <v-col class="valencegradient" />
+            <v-col cols="1">
+              <v-icon>mdi-emoticon-excited-outline</v-icon>
+            </v-col>
+          </v-row>
         </v-col>
       </v-row>
-      <v-row>
+      <v-row class="mt-4">
         <v-col>
-          <v-slider
-            v-model="valence"
-            label="Valence"
-            min="1"
-            max="1000"
-            step="1"
-          />
+          <v-row dense>
+            <v-col cols="2">
+              Arrousal
+            </v-col>
+            <v-col>
+              <v-slider
+                v-model="arrousal"
+                min="1"
+                max="1000"
+                step="1"
+                dense
+              />
+            </v-col>
+            <v-col cols="1" />
+          </v-row>
         </v-col>
       </v-row>
     </div>
     <div v-if="mode ==='VAE' || mode === 'review'">
       <v-row>
+        <v-col
+          cols="3"
+          class="align-self-center"
+        >
+          Emotions
+        </v-col>
         <v-col>
           <v-select
             v-model="emotionsList"
             :items="baseEmotionsList"
             chips
-            label="Emotions"
             multiple
             clearable
             persistent-hint
@@ -390,12 +426,20 @@ export default defineComponent({
       </v-row>
       <v-row>
         <v-col>
-          <v-select
+          <h4>Multispeaker</h4>
+          <v-radio-group
             v-model="multiSpeaker"
-            :items="multiSpeakerOptions"
-            label="Multi Speaker"
-            persistent-hint
-          />
+            row
+          >
+            <v-radio
+              v-for="n in multiSpeakerOptions"
+              :key="n"
+              :label="n"
+              :value="n"
+              class="mx-3"
+              style="min-height:32px; max-height:32px"
+            />
+          </v-radio-group>
         </v-col>
       </v-row>
     </div>
@@ -519,5 +563,14 @@ export default defineComponent({
   position: sticky;
   top: 0px;
   background-color: rgb(30, 30, 30);
+}
+.valencegradient {
+  background: rgb(255,255,255);
+  background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(0,0,0,1) 100%);
+  clip-path: polygon(0 0, 0 100%, 50% 70%, 100% 100%, 100% 0, 50% 30%);
+
+}
+.maincontainer {
+  font-size: 1.2em !important;
 }
 </style>
