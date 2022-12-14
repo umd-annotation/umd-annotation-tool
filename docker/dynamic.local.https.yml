@@ -1,0 +1,8 @@
+tls:
+  options:
+    defaukt:
+      minVersion: VersionTLS12
+      sniStrict: true
+  certificates:
+    - certFile: "/etc/certs/domain_com.pem"
+      keyFile: "/etc/certs/domain_com.key"
