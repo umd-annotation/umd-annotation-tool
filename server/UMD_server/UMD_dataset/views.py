@@ -1,20 +1,16 @@
-import math
-from girder import logger
+from dive_server import crud_annotation
+from dive_utils import setContentDisposition
 from girder.api import access
-from girder.constants import AccessType
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import Resource
-from girder.constants import SortDir
-from girder.exceptions import RestException
-from girder.models.assetstore import Assetstore
+from girder.constants import AccessType, TokenScope
 from girder.models.folder import Folder
+from girder.models.token import Token
 from girder.models.user import User
-from girder.models.file import File
-from girder.models.item import Item
-from girder.models.token import Token
-from UMD_tasks import constants, tasks
-from girder.models.token import Token
 from girder_jobs.models.job import Job
+
+from UMD_tasks import constants, tasks
+from UMD_utils import UMD_export
 
 
 class UMD_Dataset(Resource):
@@ -22,22 +18,42 @@ class UMD_Dataset(Resource):
         super(UMD_Dataset, self).__init__()
         self.resourceName = "UMD_dataset"
 
-        self.route("GET", ("temp",), self.temp_endpoint)
         self.route("POST", ("ingest_video", ":folderId"), self.ingest_video)
+        self.route("GET", ("export",), self.export_tabular)
 
-    @access.user
+    @access.public(scope=TokenScope.DATA_READ, cookie=True)
     @autoDescribeRoute(
-        Description("Temporary endpoint for the plugin")
-        .pagingParams("created")
+        Description("Export information in tablular form").jsonParam(
+            "folderIds",
+            "List of track types to filter by",
+            paramType="query",
+            required=True,
+            default=[],
+            requireArray=True,
+        )
     )
-    def temp_endpoint(self, params):
-        return True
+    def export_tabular(
+        self,
+        folderIds,
+    ):
+        user = self.getCurrentUser()
+        users = list(User().find())
+        userMap = {}
+        for item in users:
+            userMap[item["login"]] = item["_id"]
 
+        gen = UMD_export.convert_to_zips(folderIds, userMap, user)
+        if len(folderIds) > 1:
+            zip_name = "batch_export.zip"
+        else:
+            folder = Folder().load(folderIds[0], level=AccessType.READ, user=user)
+            zip_name = f'{folder["name"].replace(".mp4","")}.zip'
+        setContentDisposition(zip_name, mime='application/zip')
+        return gen
 
     @access.user
     @autoDescribeRoute(
-        Description("Upload and generate a dataset from the folder")
-        .modelParam(
+        Description("Upload and generate a dataset from the folder").modelParam(
             "folderId",
             description="FolderId to get state from",
             model=Folder,

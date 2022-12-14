@@ -1,6 +1,6 @@
 <script lang="ts">
 import {
-  computed, defineComponent, ref, Ref, watch, PropType,
+  computed, defineComponent, ref, Ref, watch, PropType, onMounted,
 } from '@vue/composition-api';
 
 import TooltipBtn from 'vue-media-annotator/components/TooltipButton.vue';
@@ -27,7 +27,7 @@ export default defineComponent({
       default: 500,
     },
     mode: {
-      type: String as PropType<'valence' | 'norms' | 'changepoint' | 'emotion' | 'review'>,
+      type: String as PropType<'VAE' | 'norms' | 'changepoint' | 'emotion' | 'review'>,
       default: 'review',
     },
   },
@@ -45,7 +45,7 @@ export default defineComponent({
     const multiSpeakerOptions = ref(['FALSE', 'TRUE', 'noann']);
     const multiSpeaker: Ref<'FALSE' | 'TRUE' | 'noann'> = ref('FALSE');
     const emotionsList: Ref<string[]> = ref([]);
-    const baseNormsList = ['Apology', 'Critism', 'Greeting', 'Request', 'Persuasion', 'Thanks', 'Taking Leave', 'Admiration', 'Finalizing Negotiating/Deal', 'Refusing a Request'];
+    const baseNormsList = ['Apology', 'Criticism', 'Greeting', 'Request', 'Persuasion', 'Thanks', 'Taking Leave', 'Admiration', 'Finalizing Negotiating/Deal', 'Refusing a Request'];
     const normsSelected: Ref<string[]> = ref([]);
     const normsObject: Ref<Record<string, 'adhered' |'violate' | 'noann' | 'EMPTY_NA'>> = ref({});
     const changePointFrame = ref(-1);
@@ -58,6 +58,7 @@ export default defineComponent({
       let hasAttributes = false;
       if (trackNum !== null) {
         const track = cameraStore.getAnyTrack(trackNum);
+        console.log(track);
         Object.keys(track.attributes).forEach((key) => {
           if (key.includes(userLogin.value)) {
             hasAttributes = true;
@@ -77,6 +78,7 @@ export default defineComponent({
               }
               if (replaced === 'Norms') {
                 normsObject.value = (track.attributes[key] as Record<string, 'adhered' |'violate' | 'noann' | 'EMPTY_NA'>);
+                normsSelected.value = Object.keys(normsObject.value);
               }
             }
           }
@@ -117,7 +119,7 @@ export default defineComponent({
         checkAttributes(0);
       }
     };
-    initialize();
+    onMounted(() => initialize());
     checkAttributes(selectedTrackIdRef.value, true);
     watch(selectedTrackIdRef, () => {
       checkAttributes(selectedTrackIdRef.value, true);
@@ -132,6 +134,9 @@ export default defineComponent({
       selectedTrackIdRef.value !== null && selectedTrackIdRef.value > 0));
 
     const hasNext = computed(() => {
+      if (props.mode === 'changepoint' || props.mode === 'review') {
+        return true;
+      }
       if (selectedTrackIdRef.value !== null) {
         return checkAttributes(selectedTrackIdRef.value);
       }
@@ -143,11 +148,11 @@ export default defineComponent({
       if (selectedTrackIdRef.value !== null) {
         const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
         // Set attributes;
-        if (props.mode === 'valence' || props.mode === 'review') {
+        if (props.mode === 'VAE' || props.mode === 'review') {
           track.setAttribute(`${userLogin.value}_Valence`, valence.value);
           track.setAttribute(`${userLogin.value}_Arousal`, arousal.value);
         }
-        if (props.mode === 'emotion' || props.mode === 'review') {
+        if (props.mode === 'VAE' || props.mode === 'review') {
           track.setAttribute(`${userLogin.value}_Emotions`, emotionsList.value.join('_'));
           track.setAttribute(`${userLogin.value}_MultiSpeaker`, multiSpeaker.value);
         }
@@ -173,6 +178,7 @@ export default defineComponent({
           arousal.value = 1;
           valence.value = 1;
           emotionsList.value = [];
+          normsSelected.value = [];
           normsObject.value = {};
           multiSpeaker.value = 'FALSE';
           changePointFrame.value = -1;
@@ -189,6 +195,7 @@ export default defineComponent({
       arousal.value = 1;
       valence.value = 1;
       emotionsList.value = [];
+      normsSelected.value = [];
       normsObject.value = {};
       multiSpeaker.value = 'FALSE';
       changePointFrame.value = -1;
@@ -240,7 +247,7 @@ export default defineComponent({
     const disableChangePoint = computed(() => {
       if (selectedTrackIdRef.value !== null) {
         const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
-        if (frame.value > track.end || frame.value < frame.end) {
+        if (frame.value > track.end || frame.value < track.begin) {
           return true;
         }
         return false;
@@ -282,7 +289,7 @@ export default defineComponent({
 
 
 <template>
-  <v-container>
+  <v-container class="maincontainer">
     <v-row
       dense
       class="scroll-sticky"
@@ -345,38 +352,71 @@ export default defineComponent({
       Please note that when submitting information it should be relevant to the current segment.
     </v-alert>
 
-    <div v-if="mode ==='valence' || mode ==='review'">
-      <v-row>
+    <div v-if="mode ==='VAE' || mode ==='review'">
+      <v-row dense>
         <v-col>
-          <v-slider
-            v-model="arousal"
-            label="Arousal"
-            min="1"
-            max="1000"
-            step="1"
-          />
+          <v-row dense>
+            <v-col cols="2">
+              Valence
+            </v-col>
+            <v-col>
+              <v-slider
+                v-model="valence"
+                min="1"
+                max="1000"
+                step="1"
+                dense
+              />
+            </v-col>
+            <v-col cols="1" />
+          </v-row>
+          <v-row dense>
+            <v-col
+              cols="2"
+              class="d-flex justify-end"
+            >
+              <v-icon>mdi-emoticon-sad-outline</v-icon>
+            </v-col>
+            <v-col class="valencegradient" />
+            <v-col cols="1">
+              <v-icon>mdi-emoticon-excited-outline</v-icon>
+            </v-col>
+          </v-row>
         </v-col>
       </v-row>
-      <v-row>
+      <v-row class="mt-4">
         <v-col>
-          <v-slider
-            v-model="valence"
-            label="Valence"
-            min="1"
-            max="1000"
-            step="1"
-          />
+          <v-row dense>
+            <v-col cols="2">
+              Arrousal
+            </v-col>
+            <v-col>
+              <v-slider
+                v-model="arrousal"
+                min="1"
+                max="1000"
+                step="1"
+                dense
+              />
+            </v-col>
+            <v-col cols="1" />
+          </v-row>
         </v-col>
       </v-row>
     </div>
-    <div v-if="mode ==='emotion' || mode === 'review'">
+    <div v-if="mode ==='VAE' || mode === 'review'">
       <v-row>
+        <v-col
+          cols="3"
+          class="align-self-center"
+        >
+          Emotions
+        </v-col>
         <v-col>
           <v-select
             v-model="emotionsList"
             :items="baseEmotionsList"
             chips
-            label="Emotions"
             multiple
             clearable
             persistent-hint
@@ -386,12 +426,20 @@ export default defineComponent({
       </v-row>
       <v-row>
         <v-col>
-          <v-select
+          <h4>Multispeaker</h4>
+          <v-radio-group
             v-model="multiSpeaker"
-            :items="multiSpeakerOptions"
-            label="Multi Speaker"
-            persistent-hint
-          />
+            row
+          >
+            <v-radio
+              v-for="n in multiSpeakerOptions"
+              :key="n"
+              :label="n"
+              :value="n"
+              class="mx-3"
+              style="min-height:32px; max-height:32px"
+            />
+          </v-radio-group>
         </v-col>
       </v-row>
     </div>
@@ -416,13 +464,21 @@ export default defineComponent({
         :key="`${item}`"
       >
         <v-col>
-          <v-select
-            :value="normsObject[item]"
-            :items="['adhere', 'violate', 'noann', 'EMPTY_NA']"
-            :label="`${item} Status`"
-            persistent-hint
-            @change="updateNorm(item, $event)"
-          />
+          <h4>{{ item }}</h4>
+          <v-radio-group
+            v-model="normsObject[item]"
+            row
+          >
+            <v-radio
+              v-for="n in ['adhere', 'violate', 'noann', 'EMPTY_NA']"
+              :key="n"
+              :label="n"
+              :value="n"
+              class="mx-3"
+              style="min-height:32px; max-height:32px"
+            />
+          </v-radio-group>
+          <v-divider />
         </v-col>
       </v-row>
     </div>
@@ -507,5 +563,14 @@ export default defineComponent({
   position: sticky;
   top: 0px;
   background-color: rgb(30, 30, 30);
+}
+.valencegradient {
+  background: rgb(255,255,255);
+  background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(0,0,0,1) 100%);
+  clip-path: polygon(0 0, 0 100%, 50% 70%, 100% 100%, 100% 0, 50% 30%);
+
+}
+.maincontainer {
+  font-size: 1.2em !important;
 }
 </style>

@@ -1,24 +1,26 @@
 from contextlib import suppress
 import json
 import os
+from pathlib import Path
 import shutil
 import subprocess
-import tempfile
-from zipfile import ZIP_DEFLATED, ZipFile
-from pathlib import Path
 from subprocess import Popen
 from sys import meta_path
+import tempfile
 from typing import Dict, List, Optional, Tuple
 from urllib import request
 from urllib.parse import urlparse
-from PIL import Image
-from UMD_tasks import constants, utils
+from zipfile import ZIP_DEFLATED, ZipFile
 
 from GPUtil import getGPUs
+from PIL import Image
 from girder_client import GirderClient
 from girder_worker.app import app
 from girder_worker.task import Task
 from girder_worker.utils import JobManager, JobStatus
+
+from UMD_tasks import constants, utils
+
 
 def get_gpu_environment() -> Dict[str, str]:
     """Get environment variables for using CUDA enabled GPUs."""
@@ -33,15 +35,20 @@ def get_gpu_environment() -> Dict[str, str]:
         env["CUDA_VISIBLE_DEVICES"] = str(gpus[0])
 
     return env
+
+
 class Config:
     def __init__(self):
         self.gpu_process_env = get_gpu_environment()
 
 
-
 @app.task(bind=True, acks_late=True)
 def generate_splits(
-    self: Task, folderId: str, itemId: str, user_id: str, user_login: str, 
+    self: Task,
+    folderId: str,
+    itemId: str,
+    user_id: str,
+    user_login: str,
 ):
     context: dict = {}
     gc: GirderClient = self.girder_client
@@ -116,7 +123,7 @@ def generate_splits(
                 "meta": {},
             }
             track_count += 1
-            current_frame = current_frame + (segment_length* originalFps)
+            current_frame = current_frame + (segment_length * originalFps)
         desfile = str(_working_directory_path / 'generatedAnnotations.json')
         with open(desfile, "w") as outfile:
             outfile.write(json.dumps({"tracks": tracks, "groups": {}, "version": 2}))
@@ -145,4 +152,3 @@ def generate_splits(
             },
         )
         gc.post(f'dive_rpc/postprocess/{folderId}', data={"skipJobs": True})
-

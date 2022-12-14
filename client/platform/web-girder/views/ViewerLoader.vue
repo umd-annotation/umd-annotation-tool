@@ -1,6 +1,6 @@
 <script lang="ts">
 import {
-  computed, defineComponent, onBeforeUnmount, onMounted, ref, toRef, watch,
+  computed, defineComponent, onBeforeUnmount, onMounted, ref, Ref, toRef, watch,
 } from '@vue/composition-api';
 
 import Viewer from 'dive-common/components/Viewer.vue';
@@ -74,7 +74,9 @@ export default defineComponent({
 
   setup(props, ctx) {
     const { prompt } = usePrompt();
-    const mode: Ref<'valence' | 'norms' | 'changepoint' | 'emotion' | 'review'> = ref(ctx.root.$route.query.mode as string || 'review');
+    const mode: Ref<'VAE' | 'norms' | 'changepoint' | 'emotion' | 'review'> = ref(
+      ctx.root.$route.query.mode as 'VAE' | 'norms' | 'changepoint' | 'emotion' | 'review',
+    );
     const viewerRef = ref();
     const store = useStore();
     const brandData = toRef(store.state.Brand, 'brandData');
