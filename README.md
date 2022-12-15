@@ -36,9 +36,9 @@ yarn serve
 Folder: ./server
 
 The backend system copies the existing DIVE Repo and install the DIVE Plugin while removing the extra Bucket_Notifications and RabbitMQ plugins.
-It then installs the BRIAR plugin on top of the DIVE plugin.
+It then installs the UMD plugin on top of the DIVE plugin.
 
-The BRIAR Plugin is separted into:
+The UMD Plugin is separted into:
 
 #### UMD_server
 
@@ -52,8 +52,6 @@ Will contain common function and models for specialized data structures if they 
 ### UMD_tasks
 
 Longer running tasks are implemented in a worker plugin.  Essentially anything that can't be completed in a request thread within 2 seconds will be a task.
-These contains things like importing a large zip file filled with actor check-in photos
-Also exporting the final results of the linking will be done with a longer running taks.
 
 ### Production Deployment (using Traefik SSL)
 
