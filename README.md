@@ -19,7 +19,7 @@ The girder API will be located at http://localhost:8010/girder/api/v1
 
 Folder: ./client
 
-Client is based on a fork of the DIVE Web Interface for the Girder version.  For this project it was easier to manipulate the current DIVE interface instead of making it a plugin and trying to import it. 
+Client is based on a fork of the DIVE Web Interface.  For this project it was easier to manipulate the current DIVE interface instead of making it a plugin and trying to import it. 
 
 To develop the client interface:
 ``` bash
