@@ -11,7 +11,9 @@ import {
   LineChart,
   Timeline,
 } from 'vue-media-annotator/components';
-import { useAttributesFilters, useCameraStore, useSelectedCamera } from '../../src/provides';
+import {
+  useAttributesFilters, useCameraStore, useSelectedCamera, useTime,
+} from '../../src/provides';
 
 export default defineComponent({
   components: {
@@ -45,6 +47,7 @@ export default defineComponent({
   },
   setup(_, { emit }) {
     const currentView = ref('Events');
+    const { maxSegment } = useTime();
     const ticks = ref([0.25, 0.5, 0.75, 1.0, 2.0, 4.0, 8.0]);
     const cameraStore = useCameraStore();
     const multiCam = ref(cameraStore.camMap.value.size > 1);
@@ -102,6 +105,7 @@ export default defineComponent({
       hasGroups,
       attributeData,
       timelineEnabled,
+      maxSegment,
     };
   },
 });
@@ -112,7 +116,9 @@ export default defineComponent({
     dense
     style="position:absolute; bottom: 0px; padding: 0px; margin:0px;"
   >
-    <Controls>
+    <Controls
+      :max-segment="maxSegment"
+    >
       <template slot="timelineControls">
         <div style="min-width: 270px">
           <v-tooltip
@@ -289,6 +295,7 @@ export default defineComponent({
       :max-frame="maxFrame"
       :frame="frame"
       :display="!collapsed"
+      :max-segment="maxSegment"
       @seek="seek"
     >
       <template

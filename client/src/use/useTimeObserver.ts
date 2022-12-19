@@ -21,6 +21,7 @@ export interface Time {
   flick: Readonly<Ref<number>>;
   frameRate: Readonly<Ref<number>>;
   originalFps: Readonly<Ref<number | null>>;
+  maxSegment: Readonly<Ref<number>>;
 }
 
 export type SetTimeFunc = (
@@ -38,6 +39,8 @@ export default function useTimeObserver() {
     flick: 0,
     frameRate: NaN,
     originalFps: null as number | null,
+    maxFrame: 0,
+    maxSegment: -1,
   });
 
   function initialize({ frameRate, originalFps }: {
@@ -50,16 +53,25 @@ export default function useTimeObserver() {
     data.originalFps = originalFps;
   }
 
-  const updateTime: SetTimeFunc = throttle(({ frame, flick }: { frame: number; flick: number }) => {
+  const updateTime: SetTimeFunc = throttle(({ frame, flick, maxFrame }:
+    { frame: number; flick: number; maxFrame?: number }) => {
     data.frame = frame;
     data.flick = flick;
+    if (maxFrame !== undefined) {
+      data.maxFrame = Math.max(maxFrame, data.maxFrame);
+    }
   });
+
+  const setMaxSegment = (segment: number) => {
+    data.maxSegment = Math.max(data.maxSegment, segment);
+  };
 
   const time: Time = toRefs(data);
 
   return {
     initialize,
     updateTime,
+    setMaxSegment,
     time,
   };
 }

@@ -17,6 +17,10 @@ export default {
       type: Boolean,
       default: true,
     },
+    maxSegment: {
+      type: Number,
+      default: -1,
+    },
   },
   data() {
     return {
@@ -50,6 +54,17 @@ export default {
           * ((this.frame - this.startFrame) / (this.endFrame - this.startFrame)),
       );
     },
+    blockedLeftPosition() {
+      if (this.maxSegment === -1) {
+        return null;
+      }
+      return Math.round(
+        this.margin + (this.clientWidth - this.margin)
+          * (((150 + (this.maxSegment + 2) * 450)
+          - this.startFrame) / (this.endFrame - this.startFrame)),
+      );
+    },
+
   },
   watch: {
     maxFrame(value) {
@@ -65,6 +80,9 @@ export default {
     },
     handLeftPosition(value) {
       this.$refs.hand.style.left = `${value || '-10'}px`;
+    },
+    blockedLeftPosition(value) {
+      this.$refs.blocked.style.left = `${value || '-10'}px`;
     },
     frame(frame) {
       if (frame > this.endFrame) {
@@ -167,6 +185,9 @@ export default {
           * (this.endFrame - this.startFrame)
           + this.startFrame,
         );
+        if (this.maxSegment !== -1 && frame > (150 + (this.maxSegment + 2) * 450)) {
+          return;
+        }
         this.$emit('seek', frame);
       }
     },
@@ -245,6 +266,11 @@ export default {
         class="hand"
       />
       <div
+        v-if="maxSegment !== -1"
+        ref="blocked"
+        class="blocked"
+      />
+      <div
         v-if="init && mounted"
         class="child"
       >
@@ -293,6 +319,15 @@ export default {
       width: 0;
       height: 100%;
       border-left: 1px solid #299be3;
+      z-index:1;
+    }
+
+    .blocked {
+      position: absolute;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba($color: #c9c9c9, $alpha: 0.75);
       z-index:1;
     }
 

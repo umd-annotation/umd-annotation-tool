@@ -169,6 +169,7 @@ export interface Handler {
   seekToFrame(frame: number): void;
   replayFromFrame(frame: number): void;
   pausePlayback(): void;
+  setMaxSegment(segment: number): void;
 
 
 }
@@ -213,6 +214,7 @@ function dummyHandler(handle: (name: string, args: unknown[]) => void): Handler 
     seekToFrame(...args) { handle('seekToFrame', args); },
     replayFromFrame(...args) { handle('replayFromFrame', args); },
     pausePlayback(...args) { handle('pausePlayback', args); },
+    setMaxSegment(...args) { handle('setMaxSegment', args); },
   };
 }
 
@@ -291,6 +293,7 @@ function dummyState(): State {
       flick: ref(0),
       frameRate: ref(0),
       originalFps: ref(null),
+      maxSegment: ref(-1),
     },
     trackFilters: trackFilterControls,
     trackStyleManager: new StyleManager({ markChangesPending }),
