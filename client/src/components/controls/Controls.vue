@@ -8,7 +8,13 @@ import { injectAggregateController } from '../annotators/useMediaController';
 
 export default defineComponent({
   name: 'Control',
-  setup() {
+  props: {
+    maxSegment: {
+      type: Number,
+      default: -1,
+    },
+  },
+  setup(props) {
     const data = reactive({
       frame: 0,
       dragging: false,
@@ -26,6 +32,10 @@ export default defineComponent({
     };
     function input(value: number) {
       if (mediaController.frame.value !== value) {
+        if (props.maxSegment !== -1 && value > (150 + (props.maxSegment + 2) * 450)) {
+          // eslint-disable-next-line no-param-reassign
+          value = (150 + (props.maxSegment + 2) * 450);
+        }
         mediaController.seek(value);
       }
       data.frame = value;

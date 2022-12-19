@@ -35,7 +35,7 @@ export default defineComponent({
   setup(props, { emit }) {
     const selectedTrackIdRef = useSelectedTrackId();
 
-    const { frame } = useTime();
+    const { frame, maxSegment } = useTime();
     const handler = useHandler();
     const restClient = useGirderRest();
     const cameraStore = useCameraStore();
@@ -52,13 +52,13 @@ export default defineComponent({
     const changePointImpact = ref(1);
     const changePointComment = ref('');
     const userLogin = ref('');
+    const loadedAttributes = ref(false);
 
     const checkAttributes = (trackNum: number | null, loadValues = false) => {
       // load existing attributes
       let hasAttributes = false;
       if (trackNum !== null) {
         const track = cameraStore.getAnyTrack(trackNum);
-        console.log(track);
         Object.keys(track.attributes).forEach((key) => {
           if (key.includes(userLogin.value)) {
             hasAttributes = true;
@@ -116,13 +116,17 @@ export default defineComponent({
       userLogin.value = user.login;
       if (selectedTrackIdRef.value === null) {
         handler.trackSelectNext(1, true);
-        checkAttributes(0);
+        handler.setMaxSegment(0);
+        loadedAttributes.value = checkAttributes(0);
       }
     };
     onMounted(() => initialize());
-    checkAttributes(selectedTrackIdRef.value, true);
+    loadedAttributes.value = checkAttributes(selectedTrackIdRef.value, true);
     watch(selectedTrackIdRef, () => {
-      checkAttributes(selectedTrackIdRef.value, true);
+      loadedAttributes.value = checkAttributes(selectedTrackIdRef.value, true);
+      if (selectedTrackIdRef.value !== null) {
+        handler.setMaxSegment(selectedTrackIdRef.value);
+      }
     });
 
 
@@ -242,10 +246,20 @@ export default defineComponent({
         handler.pausePlayback();
         framePlaying = -1;
       }
+      if ((props.mode !== 'review' && props.mode !== 'changepoint') && frame.value > (150 + (maxSegment.value + 2) * 450)) {
+        handler.pausePlayback();
+        if (selectedTrackIdRef.value !== null) {
+          const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
+          if (track) {
+            handler.seekToFrame(150 + (maxSegment.value + 2) * 450);
+          }
+        }
+      }
     });
 
-    const disableChangePoint = computed(() => {
-      if (selectedTrackIdRef.value !== null) {
+    const outsideSegment = computed(() => {
+      if ((props.mode !== 'changepoint' && props.mode !== 'review')
+      && selectedTrackIdRef.value !== null) {
         const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
         if (frame.value > track.end || frame.value < track.begin) {
           return true;
@@ -272,7 +286,8 @@ export default defineComponent({
       changePointFrame,
       changePointImpact,
       changePointComment,
-      disableChangePoint,
+      outsideSegment,
+      loadedAttributes,
       setCheckpoint,
       submit,
       goToChangePoint,
@@ -339,19 +354,6 @@ export default defineComponent({
       Some instruction text to indicate to the annotator what to do.
       This could be lengthy to provide more detailed instructions or not.
     </p>
-    <v-alert
-      v-if="(disableChangePoint && mode && mode !== 'changepoint')"
-      dense
-      outlined
-      type="warning"
-    >
-      The video is currently outside of the selected segment:
-      <br>
-      <b>Segment {{ selectedTrackIdRef }}</b>
-      <br>
-      Please note that when submitting information it should be relevant to the current segment.
-    </v-alert>
-
     <div v-if="mode ==='VAE' || mode ==='review'">
       <v-row dense>
         <v-col>
@@ -388,11 +390,11 @@ export default defineComponent({
         <v-col>
           <v-row dense>
             <v-col cols="2">
-              Arrousal
+              Arousal
             </v-col>
             <v-col>
               <v-slider
-                v-model="arrousal"
+                v-model="arousal"
                 min="1"
                 max="1000"
                 step="1"
@@ -485,7 +487,7 @@ export default defineComponent({
     <div v-if="mode ==='changepoint' || mode === 'review'">
       <v-row v-if="(changePointFrame == -1)">
         <v-btn
-          :disable="disableChangePoint"
+          :disable="outsideSegment"
           @click="setCheckpoint"
         >
           Set ChangePoint {{ frame }}
@@ -546,12 +548,24 @@ export default defineComponent({
     <v-row>
       <v-col>
         <v-btn
-          color="success"
+          :color="loadedAttributes ? 'warning' : 'success'"
+          :disabled="outsideSegment"
           @click="submit"
         >
-          Submit
+          {{ loadedAttributes ? 'Update' : 'Submit' }}
         </v-btn>
       </v-col>
+    </v-row>
+    <v-row>
+      <v-alert
+        v-if="(outsideSegment && mode && mode !== 'changepoint')"
+        outlined
+        dense
+        type="warning"
+        class="mx-3"
+      >
+        Outside Current segment.  Return to the segment to submit or update.
+      </v-alert>
     </v-row>
   </v-container>
 </template>

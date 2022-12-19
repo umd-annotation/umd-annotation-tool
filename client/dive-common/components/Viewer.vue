@@ -46,6 +46,8 @@ import { usePrompt } from 'dive-common/vue-utilities/prompt-service';
 import context from 'dive-common/store/context';
 import ImageEnhancementsVue from 'vue-media-annotator/components/ImageEnhancements.vue';
 import RevisionHistoryVue from 'platform/web-girder/views/RevisionHistory.vue';
+import { FormatTextRow, TextData } from 'vue-media-annotator/layers/AnnotationLayers/TextLayer';
+import { FrameDataTrack } from 'vue-media-annotator/layers/LayerTypes';
 import GroupSidebarVue from './GroupSidebar.vue';
 import MultiCamToolsVue from './MultiCamTools.vue';
 import TypeThresholdVue from './TypeThreshold.vue';
@@ -103,7 +105,9 @@ export default defineComponent({
       onResize,
       clear: mediaControllerClear,
     } = useMediaController();
-    const { time, updateTime, initialize: initTime } = useTimeObserver();
+    const {
+      time, updateTime, initialize: initTime, setMaxSegment,
+    } = useTimeObserver();
     const imageData = ref({ singleCam: [] } as Record<string, FrameImage[]>);
     const datasetType: Ref<DatasetType> = ref('image-sequence');
     const datasetName = ref('');
@@ -675,6 +679,7 @@ export default defineComponent({
       selectCamera,
       linkCameraTrack,
       unlinkCameraTrack,
+      setMaxSegment,
     };
 
     const useAttributeFilters = {
@@ -720,6 +725,18 @@ export default defineComponent({
       globalHandler,
       useAttributeFilters,
     );
+
+    const formatTextRow: FormatTextRow = (annotation: FrameDataTrack): TextData[] => [
+      {
+        selected: annotation.track.id === selectedTrackId.value,
+        editing: editingMode.value,
+        type: annotation.styleType[0],
+        confidence: 1,
+        text: `Segment ${annotation.track.id}`,
+        x: 100,
+        y: 55,
+      },
+    ];
 
 
     return {
@@ -777,6 +794,7 @@ export default defineComponent({
       navigateAwayGuard,
       warnBrowserExit,
       reloadAnnotations,
+      formatTextRow,
     };
   },
 });
@@ -965,7 +983,10 @@ export default defineComponent({
                   updateTime, frameRate, originalFps, camera, brightness, intercept }"
                 @ready="context.toggle('UMDAnnotation')"
               >
-                <LayerManager :camera="camera" />
+                <LayerManager
+                  :camera="camera"
+                  :format-text-row="formatTextRow"
+                />
               </component>
             </div>
           </div>
