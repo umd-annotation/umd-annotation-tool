@@ -34,7 +34,10 @@ export default defineComponent({
       :class="{ sidebar: !mode, modesidebar: mode }"
       style="z-index:1;"
     >
-      <div v-if="!mode" class="d-flex align-center mx-1">
+      <div
+        v-if="!mode"
+        class="d-flex align-center mx-1"
+      >
         <v-select
           :items="options"
           :value="context.state.active"

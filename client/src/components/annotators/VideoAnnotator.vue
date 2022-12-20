@@ -2,7 +2,6 @@
 import {
   defineComponent, onBeforeUnmount, PropType, toRef, watch,
 } from '@vue/composition-api';
-import { useTime } from 'vue-media-annotator/provides';
 import { Flick, SetTimeFunc } from '../../use/useTimeObserver';
 import { injectCameraInitializer } from './useMediaController';
 /**

@@ -606,7 +606,7 @@ export default defineComponent({
           .concat(". If you don't know how to resolve this, please contact the server administrator.");
         throw err;
       }
-      if (props.mode) {
+      if (props.mode !== undefined) {
         context.unregister({
           description: 'Group Manager',
           component: GroupSidebarVue,
@@ -848,7 +848,7 @@ export default defineComponent({
           }"
           :tail-settings.sync="clientSettings.annotatorPreferences.trackTails"
           @set-annotation-state="handler.setAnnotationState"
-          @annotator="context.toggle('UMDAnnotation')"
+          @annotator="context.toggle('UMDAnnotationWrapper')"
           @exit-edit="handler.trackAbort"
         >
           <template slot="delete-controls">
@@ -981,7 +981,7 @@ export default defineComponent({
                 v-bind="{
                   imageData: imageData[camera], videoUrl: videoUrl[camera],
                   updateTime, frameRate, originalFps, camera, brightness, intercept }"
-                @ready="context.toggle('UMDAnnotation')"
+                @ready="context.toggle('UMDAnnotationWrapper')"
               >
                 <LayerManager
                   :camera="camera"
