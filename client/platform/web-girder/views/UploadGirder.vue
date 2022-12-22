@@ -150,7 +150,6 @@ export default Vue.extend({
           folder,
           results: data.results,
         });
-        console.log(`Upload files UMDIngest: ${UMDIngest}`);
         try {
           if (!UMDIngest) {
             await postProcess(folder._id, false, skipTranscoding);

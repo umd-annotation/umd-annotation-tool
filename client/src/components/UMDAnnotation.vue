@@ -48,9 +48,6 @@ export default defineComponent({
     const baseNormsList = ['Apology', 'Criticism', 'Greeting', 'Request', 'Persuasion', 'Thanks', 'Taking Leave', 'Admiration', 'Finalizing Negotiating/Deal', 'Refusing a Request'];
     const normsSelected: Ref<string[]> = ref([]);
     const normsObject: Ref<Record<string, 'adhered' |'violate' | 'noann' | 'EMPTY_NA'>> = ref({});
-    const changePointFrame = ref(-1);
-    const changePointImpact = ref(1);
-    const changePointComment = ref('');
     const userLogin = ref('');
     const loadedAttributes = ref(false);
 
@@ -61,62 +58,53 @@ export default defineComponent({
         const track = cameraStore.getAnyTrack(trackNum);
         Object.keys(track.attributes).forEach((key) => {
           if (key.includes(userLogin.value)) {
-            hasAttributes = true;
-            if (loadValues) {
-              const replaced = key.replace(`${userLogin.value}_`, '');
-              if (replaced === 'Valence') {
+            const replaced = key.replace(`${userLogin.value}_`, '');
+            if (replaced === 'Valence' && props.mode === 'VAE') {
+              if (loadValues) {
                 valence.value = track.attributes[key] as number;
               }
-              if (replaced === 'Arousal') {
+              hasAttributes = true;
+            }
+            if (replaced === 'Arousal' && props.mode === 'VAE') {
+              if (loadValues) {
                 arousal.value = track.attributes[key] as number;
               }
-              if (replaced === 'Emotions') {
+              hasAttributes = true;
+            }
+            if (replaced === 'Emotions' && props.mode === 'VAE') {
+              if (loadValues) {
                 emotionsList.value = (track.attributes[key] as string).split('_');
               }
-              if (replaced === 'MultiSpeaker') {
+              hasAttributes = true;
+            }
+            if (replaced === 'MultiSpeaker' && props.mode === 'VAE') {
+              if (loadValues) {
                 multiSpeaker.value = (track.attributes[key] as 'TRUE' | 'FALSE' | 'noann');
               }
-              if (replaced === 'Norms') {
+              hasAttributes = true;
+            }
+            if (replaced === 'Norms' && props.mode === 'norms') {
+              if (loadValues) {
                 normsObject.value = (track.attributes[key] as Record<string, 'adhered' |'violate' | 'noann' | 'EMPTY_NA'>);
                 normsSelected.value = Object.keys(normsObject.value);
               }
+              hasAttributes = true;
             }
           }
         });
         if (loadValues) {
-          track.features.forEach((feature) => {
-            const currentFrame = feature.frame;
-            if (feature.attributes) {
-              Object.keys(feature.attributes).forEach((key) => {
-                if (key.includes(userLogin.value) && feature.attributes) {
-                  const attribute = feature.attributes[key];
-                  const replaced = key.replace(`${userLogin.value}_`, '');
-                  if (replaced === 'Impact') {
-                    changePointImpact.value = attribute as number;
-                    changePointFrame.value = currentFrame;
-                  }
-                  if (replaced === 'Comment') {
-                    changePointComment.value = attribute as string;
-                    changePointFrame.value = currentFrame;
-                  }
-                }
-              });
-            }
-          });
-          if (loadValues) {
-            emit('seek', track.begin);
-          }
+          emit('seek', track.begin);
         }
       }
       return hasAttributes;
     };
 
     const initialize = async () => {
+      handler.setMaxSegment(0);
       const user = await restClient.fetchUser();
       userLogin.value = user.login;
       if (selectedTrackIdRef.value === null) {
         handler.trackSelectNext(1, true);
-        handler.setMaxSegment(0);
         loadedAttributes.value = checkAttributes(0);
       }
     };
@@ -130,15 +118,11 @@ export default defineComponent({
     });
 
 
-    const setCheckpoint = () => {
-      changePointFrame.value = frame.value;
-    };
-
     const hasPrevious = computed(() => (
       selectedTrackIdRef.value !== null && selectedTrackIdRef.value > 0));
 
     const hasNext = computed(() => {
-      if (props.mode === 'changepoint' || props.mode === 'review') {
+      if (props.mode === 'review') {
         return true;
       }
       if (selectedTrackIdRef.value !== null) {
@@ -163,17 +147,6 @@ export default defineComponent({
         if (props.mode === 'norms' || props.mode === 'review') {
           track.setAttribute(`${userLogin.value}_Norms`, normsObject.value);
         }
-        // set Change Point Information
-        if (props.mode === 'changepoint' || props.mode === 'review') {
-          if (changePointFrame.value !== -1) {
-            if (track.getFeature(changePointFrame.value)[0] === null
-          || !track.getFeature(changePointFrame.value)[0]?.keyframe) {
-              track.toggleKeyframe(changePointFrame.value);
-            }
-            track.setFeatureAttribute(changePointFrame.value, `${userLogin.value}_Impact`, changePointImpact.value);
-            track.setFeatureAttribute(changePointFrame.value, `${userLogin.value}_Comment`, changePointComment.value);
-          }
-        }
         // save the file
         handler.save();
         const oldTrackNum = selectedTrackIdRef.value;
@@ -185,15 +158,8 @@ export default defineComponent({
           normsSelected.value = [];
           normsObject.value = {};
           multiSpeaker.value = 'FALSE';
-          changePointFrame.value = -1;
-          changePointImpact.value = 1;
-          changePointComment.value = '';
         }
       }
-    };
-    const goToChangePoint = () => {
-      //Need to set this up
-      handler.seekToFrame(changePointFrame.value);
     };
     const changeTrack = (direction: -1 | 1) => {
       arousal.value = 1;
@@ -202,9 +168,6 @@ export default defineComponent({
       normsSelected.value = [];
       normsObject.value = {};
       multiSpeaker.value = 'FALSE';
-      changePointFrame.value = -1;
-      changePointImpact.value = 1;
-      changePointComment.value = '';
 
       handler.trackSelectNext(direction, true);
     };
@@ -283,14 +246,9 @@ export default defineComponent({
       normsSelected,
       normsObject,
       frame,
-      changePointFrame,
-      changePointImpact,
-      changePointComment,
       outsideSegment,
       loadedAttributes,
-      setCheckpoint,
       submit,
-      goToChangePoint,
       changeTrack,
       updateNorm,
       syncNorms,
@@ -377,11 +335,11 @@ export default defineComponent({
               cols="2"
               class="d-flex justify-end"
             >
-              <v-icon>mdi-emoticon-sad-outline</v-icon>
+              <span class="emoji">☹️</span>
             </v-col>
             <v-col class="valencegradient" />
             <v-col cols="1">
-              <v-icon>mdi-emoticon-excited-outline</v-icon>
+              <span class="emoji">🙂</span>
             </v-col>
           </v-row>
         </v-col>
@@ -402,6 +360,18 @@ export default defineComponent({
               />
             </v-col>
             <v-col cols="1" />
+          </v-row>
+          <v-row dense>
+            <v-col
+              cols="2"
+              class="d-flex justify-end"
+            >
+              <span class="emoji">😴</span>
+            </v-col>
+            <v-col class="arrousalgradient" />
+            <v-col cols="1">
+              <span class="emoji">😳</span>
+            </v-col>
           </v-row>
         </v-col>
       </v-row>
@@ -484,67 +454,6 @@ export default defineComponent({
         </v-col>
       </v-row>
     </div>
-    <div v-if="mode ==='changepoint' || mode === 'review'">
-      <v-row v-if="(changePointFrame == -1)">
-        <v-btn
-          :disable="outsideSegment"
-          @click="setCheckpoint"
-        >
-          Set ChangePoint {{ frame }}
-        </v-btn>
-      </v-row>
-      <div v-if="(changePointFrame != -1)">
-        <h4> Current ChangePoint : {{ changePointFrame }}</h4>
-        <v-row class="mt-2 ml-2">
-          <v-btn
-            v-if="(frame !== changePointFrame && !disableChangePoint)"
-            :disable="disableChangePoint"
-            outlined
-            @click="setCheckpoint"
-          >
-            Set Changepoint to current frame: {{ frame }}
-          </v-btn>
-        </v-row>
-        <v-alert
-          v-if="disableChangePoint"
-          dense
-          outlined
-          type="warning"
-        >
-          Setting ChangePoint is disabled because the current frame {{ frame }}
-          is outside of the current Segment Range
-        </v-alert>
-        <v-row class="mt-2 ml-2">
-          <v-btn
-            outlined
-            @click="goToChangePoint"
-          >
-            Go to ChangePoint
-          </v-btn>
-        </v-row>
-        <v-row>
-          <v-col>
-            <v-slider
-              v-model="changePointImpact"
-              label="Impact"
-              min="1"
-              max="5"
-              step="1"
-            />
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-            <v-textarea
-              v-model="changePointComment"
-              outlined
-              label="Comment"
-            />
-          </v-col>
-        </v-row>
-      </div>
-    </div>
-
     <v-row>
       <v-col>
         <v-btn
@@ -565,6 +474,12 @@ export default defineComponent({
         class="mx-3"
       >
         Outside Current segment.  Return to the segment to submit or update.
+        <v-btn
+          color="primary"
+          @click="seekBegin()"
+        >
+          Return to Segement
+        </v-btn>
       </v-alert>
     </v-row>
   </v-container>
@@ -584,7 +499,15 @@ export default defineComponent({
   clip-path: polygon(0 0, 0 100%, 50% 70%, 100% 100%, 100% 0, 50% 30%);
 
 }
+.arrousalgradient{
+  background: rgb(255,255,255);
+  background: linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(0,0,0,1) 100%);
+  clip-path: polygon(100% 0, 0 50%, 100% 100%);
+}
 .maincontainer {
   font-size: 1.2em !important;
+}
+.emoji {
+  font-size: 1.75em;
 }
 </style>

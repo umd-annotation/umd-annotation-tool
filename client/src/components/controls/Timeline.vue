@@ -82,7 +82,9 @@ export default {
       this.$refs.hand.style.left = `${value || '-10'}px`;
     },
     blockedLeftPosition(value) {
-      this.$refs.blocked.style.left = `${value || '-10'}px`;
+      if (this.maxFrame !== -1 && this.$refs.blocked) {
+        this.$refs.blocked.style.left = `${value || '-10'}px`;
+      }
     },
     frame(frame) {
       if (frame > this.endFrame) {

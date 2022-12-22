@@ -359,6 +359,15 @@ export default class Track extends BaseAnnotation {
     }
   }
 
+  removeFeatureAttribute(frame: number, name: string) {
+    if (this.features[frame] && this.features[frame].attributes !== undefined) {
+      if ((this.features[frame].attributes as StringKeyObject)[name] !== undefined) {
+        delete (this.features[frame].attributes as StringKeyObject)[name];
+      }
+    }
+    this.notify('feature', this.features[frame]);
+  }
+
   /**
    * Returns a 3-tuple of nullable features:
    * [exact_feature_match, previous_keyframe, next_keyframe]
