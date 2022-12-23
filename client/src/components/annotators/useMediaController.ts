@@ -7,7 +7,6 @@ import {
 import { map, over } from 'lodash';
 
 import Vue from 'vue';
-import { mapActions } from 'vuex';
 import { use } from '../../provides';
 import type { AggregateMediaController, MediaController } from './mediaControllerType';
 
