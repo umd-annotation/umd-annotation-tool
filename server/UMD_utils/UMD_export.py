@@ -46,14 +46,14 @@ def export_changepoint_tab(tracks, folderId, fps, userMap):
                             if mapped not in userDataFound.keys():
                                 userDataFound[mapped] = {}
                             userDataFound[mapped]['Impact'] = attributes[key]
-                            userDataFound[mapped]['Timestamp'] = feature['frame']
+                            userDataFound[mapped]['Timestamp'] = (1 / fps) * feature['frame']
                         if '_Comment' in key:
                             login = key.replace('_Comment', '')
                             mapped = userMap[login]
                             if mapped not in userDataFound.keys():
                                 userDataFound[mapped] = {}
                             userDataFound[mapped]['Comment'] = attributes[key]
-                            userDataFound[mapped]['Timestamp'] = feature['frame']
+                            userDataFound[mapped]['Timestamp'] = (1 / fps) * feature['frame']
 
             for key in userDataFound.keys():
                 columns = [

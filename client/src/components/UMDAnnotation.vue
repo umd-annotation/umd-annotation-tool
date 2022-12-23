@@ -495,13 +495,13 @@ export default defineComponent({
 }
 .valencegradient {
   background: rgb(255,255,255);
-  background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(0,0,0,1) 100%);
-  clip-path: polygon(0 0, 0 100%, 50% 70%, 100% 100%, 100% 0, 50% 30%);
+  background: radial-gradient(circle, rgba(166, 166, 166, 1) 0%, rgba(0,0,0,1) 100%);
+  clip-path: polygon(0 0, 0 100%, 50% 50%, 100% 100%, 100% 0, 50% 50%);
 
 }
 .arrousalgradient{
   background: rgb(255,255,255);
-  background: linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(0,0,0,1) 100%);
+  background: linear-gradient(90deg, rgb(166, 166, 166) 0%, rgba(0,0,0,1) 100%);
   clip-path: polygon(100% 0, 0 50%, 100% 100%);
 }
 .maincontainer {

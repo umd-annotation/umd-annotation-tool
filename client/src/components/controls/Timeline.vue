@@ -21,6 +21,10 @@ export default {
       type: Number,
       default: -1,
     },
+    mode: {
+      type: String,
+      default: undefined,
+    },
   },
   data() {
     return {
@@ -167,10 +171,12 @@ export default {
       this.endFrame = endFrame;
     },
     updateAxis() {
-      this.g.call(this.axis).call((g) => g
-        .selectAll('.tick text')
-        .attr('y', 0)
-        .attr('dy', 13));
+      if (!this.props) {
+        this.g.call(this.axis).call((g) => g
+          .selectAll('.tick text')
+          .attr('y', 0)
+          .attr('dy', 13));
+      }
     },
     update() {
       this.timelineScale.domain([this.startFrame, this.endFrame]);

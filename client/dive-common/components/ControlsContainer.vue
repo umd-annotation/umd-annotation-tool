@@ -44,6 +44,10 @@ export default defineComponent({
       type: Boolean,
       default: false,
     },
+    mode: {
+      type: String,
+      default: undefined,
+    },
   },
   setup(_, { emit }) {
     const currentView = ref('Events');
@@ -137,6 +141,7 @@ export default defineComponent({
             <span>Collapse/Expand Timeline</span>
           </v-tooltip>
           <v-btn
+            v-if="mode"
             class="ml-1"
             :class="{'timeline-button':currentView!=='Detections' || collapsed}"
             depressed
@@ -148,6 +153,7 @@ export default defineComponent({
             Detections
           </v-btn>
           <v-btn
+            v-if="mode"
             class="ml-1"
             :class="{'timeline-button':currentView!=='Events' || collapsed}"
             depressed
@@ -326,6 +332,7 @@ export default defineComponent({
           :data="eventChartData"
           :client-width="clientWidth"
           :margin="margin"
+          :mode="mode"
           @select-track="$emit('select-track', $event)"
         />
         <event-chart
@@ -336,6 +343,7 @@ export default defineComponent({
           :data="groupChartData"
           :client-width="clientWidth"
           :margin="margin"
+          :mode="mode"
           @select-track="$emit('select-group', $event)"
         />
         <line-chart

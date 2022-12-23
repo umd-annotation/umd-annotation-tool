@@ -100,6 +100,10 @@ export default defineComponent({
       type: Number as PropType<number | undefined>,
       default: undefined,
     },
+    mode: {
+      type: String,
+      default: undefined,
+    },
   },
   setup(props, { emit }) {
     const cameraInitializer = injectCameraInitializer();
@@ -216,7 +220,7 @@ export default defineComponent({
         console.warn('Dataset loaded without originalFps, seeking accuracy will be impacted');
         data.maxFrame = maybeMaxFrame;
       }
-      initializeViewer(width, height);
+      initializeViewer(width, height, !!props.mode);
       quadFeatureLayer = geoViewer.value.createLayer('feature', {
         features: ['quad.video'],
         autoshareRenderer: false,
