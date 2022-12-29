@@ -147,7 +147,9 @@ export default defineComponent({
       video.currentTime = data.currentTime;
       data.frame = requestedFrame;
       data.flick = Math.round(data.currentTime * Flick);
-      props.updateTime(data);
+      if (props.mode !== 'changepoint') {
+        props.updateTime(data);
+      }
     }
     function pause() {
       video.pause();
