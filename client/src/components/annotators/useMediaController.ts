@@ -118,13 +118,10 @@ export function useMediaController() {
         return;
       }
       const size = containerRef.value.getBoundingClientRect();
-      const mapSize = geoViewerRef.value.size();
-      if (size.width !== mapSize.width || size.height !== mapSize.height) {
-        window.requestAnimationFrame(() => {
-          geoViewerRef.value.size(size);
-          mc.resetZoom();
-        });
-      }
+      window.requestAnimationFrame(() => {
+        geoViewerRef.value.size(size);
+        mc.resetZoom();
+      });
     });
   }
 
