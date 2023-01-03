@@ -39,6 +39,10 @@ export default Vue.extend({
       type: Object,
       required: true,
     },
+    mode: {
+      type: String,
+      default: undefined,
+    },
   },
   data() {
     return {
@@ -234,7 +238,7 @@ export default Vue.extend({
       this.detectBarHovering(e);
     },
     mousedown() {
-      if (this.hoverTrack !== null) {
+      if (this.hoverTrack !== null && !this.mode) {
         this.$emit('select-track', this.hoverTrack);
       }
     },

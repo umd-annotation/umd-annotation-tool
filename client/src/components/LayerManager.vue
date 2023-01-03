@@ -54,7 +54,10 @@ export default defineComponent({
       type: String,
       default: 'singleCam',
     },
-
+    mode: {
+      type: String,
+      default: undefined,
+    },
   },
   setup(props) {
     const handler = useHandler();
@@ -341,6 +344,9 @@ export default defineComponent({
     );
 
     const Clicked = (trackId: number, editing: boolean) => {
+      if (props.mode) {
+        return;
+      }
       // If the camera isn't selected yet we ignore the click
       if (selectedCamera.value !== props.camera) {
         return;

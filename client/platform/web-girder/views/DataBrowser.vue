@@ -57,6 +57,11 @@ export default defineComponent({
       eventBus.$off('refresh-data-browser', handleNotification);
     });
 
+    const copyLink = (id: string, mode: string) => {
+      const text = `${window.location.origin}/#/viewer/${id}?mode=${mode}`;
+      navigator.clipboard.writeText(text);
+    };
+
     return {
       fileManager,
       locationStore,
@@ -71,6 +76,7 @@ export default defineComponent({
       handleNotification,
       setLocation,
       updateUploading,
+      copyLink,
     };
   },
 });
@@ -148,6 +154,13 @@ export default defineComponent({
         :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'VAE' } }"
       >
         V/A/E
+        <v-icon
+          x-small
+          class="ml-2"
+          @click.prevent.stop="copyLink(item._id, 'VAE')"
+        >
+          mdi-content-copy
+        </v-icon>
       </v-btn>
       <v-btn
         v-if="isAnnotationFolder(item)"
@@ -158,6 +171,13 @@ export default defineComponent({
         :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'norms' } }"
       >
         Norms
+        <v-icon
+          x-small
+          class="ml-2"
+          @click.prevent.stop="copyLink(item._id, 'norms')"
+        >
+          mdi-content-copy
+        </v-icon>
       </v-btn>
       <v-btn
         v-if="isAnnotationFolder(item)"
@@ -168,6 +188,13 @@ export default defineComponent({
         :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'changepoint' } }"
       >
         ChangePoint
+        <v-icon
+          x-small
+          class="ml-2"
+          @click.prevent.stop="copyLink(item._id, 'changepoint')"
+        >
+          mdi-content-copy
+        </v-icon>
       </v-btn>
       <v-chip
         v-if="(item.foreign_media_id)"

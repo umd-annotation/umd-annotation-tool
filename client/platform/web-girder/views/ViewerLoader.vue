@@ -173,6 +173,7 @@ export default defineComponent({
       <ViewerAlert />
       <NavigationTitle :name="brandData.name" />
       <v-tabs
+        v-if="!mode"
         icons-and-text
         hide-slider
         class="mx-2"

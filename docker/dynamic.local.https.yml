@@ -1,6 +1,6 @@
 tls:
   options:
-    defaukt:
+    default:
       minVersion: VersionTLS12
       sniStrict: true
   certificates:

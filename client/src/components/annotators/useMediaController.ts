@@ -50,7 +50,7 @@ interface CameraInitializerReturn {
     handleMouseEnter: () => void;
     handleMouseMove: (evt: MouseEvent) => void;
   };
-  initializeViewer: (width: number, height: number) => void;
+  initializeViewer: (width: number, height: number, disableControls?: boolean) => void;
   mediaController: MediaController;
 }
 
@@ -118,13 +118,10 @@ export function useMediaController() {
         return;
       }
       const size = containerRef.value.getBoundingClientRect();
-      const mapSize = geoViewerRef.value.size();
-      if (size.width !== mapSize.width || size.height !== mapSize.height) {
-        window.requestAnimationFrame(() => {
-          geoViewerRef.value.size(size);
-          mc.resetZoom();
-        });
-      }
+      window.requestAnimationFrame(() => {
+        geoViewerRef.value.size(size);
+        mc.resetZoom();
+      });
     });
   }
 
@@ -270,7 +267,7 @@ export function useMediaController() {
       resetZoom();
     }
 
-    function initializeViewer(width: number, height: number) {
+    function initializeViewer(width: number, height: number, disableControls = false) {
       const params = geo.util.pixelCoordinateParams(
         containers[camera].value, width, height, width, height,
       );
@@ -280,7 +277,6 @@ export function useMediaController() {
       interactorOpts.keyboard.focusHighlight = false;
       interactorOpts.keyboard.actions = {};
       interactorOpts.click.cancelOnMove = 5;
-
       interactorOpts.actions = [
         interactorOpts.actions[0],
         // The action below is needed to have GeoJS use the proper handler
@@ -307,6 +303,9 @@ export function useMediaController() {
         interactorOpts.actions[8],
         interactorOpts.actions[9],
       ];
+      if (disableControls) {
+        interactorOpts.click.enabled = false;
+      }
       // Set > 2pi to disable rotation
       interactorOpts.zoomrotateMinimumRotation = 7;
       interactorOpts.zoomAnimation = {
@@ -316,7 +315,6 @@ export function useMediaController() {
         enabled: false,
       };
       interactorOpts.wheelScaleY = 0.2;
-      geoViewers[camera].value.interactor().options(interactorOpts);
 
       //Add in bus control synchronization for cameras
       geoViewers[camera].value.geoOn(geo.event.pan, (e: GeoEvent) => {
@@ -331,6 +329,9 @@ export function useMediaController() {
           bus.$emit('zoom', { camera: camera.toString(), event: e });
         }
       });
+      if (disableControls) {
+        geoViewers[camera].value.interactor().destroy();
+      }
     }
 
     function prevFrame() {

@@ -889,8 +889,14 @@ export default defineComponent({
         <slot name="extension-right" />
       </template>
 
-      <slot name="title-right" />
-      <user-guide-button annotating />
+      <slot
+        v-if="!mode"
+        name="title-right"
+      />
+      <user-guide-button
+        v-if="!mode"
+        annotating
+      />
 
       <v-tooltip
         bottom
@@ -898,6 +904,7 @@ export default defineComponent({
       >
         <template v-slot:activator="{ on }">
           <v-badge
+            v-if="!mode"
             overlap
             bottom
             :color="readonlyState ? 'warning' : undefined"
@@ -980,12 +987,13 @@ export default defineComponent({
                 :class="{'selected-camera': selectedCamera === camera && camera !== 'singleCam'}"
                 v-bind="{
                   imageData: imageData[camera], videoUrl: videoUrl[camera],
-                  updateTime, frameRate, originalFps, camera, brightness, intercept }"
+                  updateTime, frameRate, originalFps, camera, brightness, intercept, mode }"
                 @ready="context.toggle('UMDAnnotationWrapper')"
               >
                 <LayerManager
                   :camera="camera"
                   :format-text-row="formatTextRow"
+                  :mode="mode"
                 />
               </component>
             </div>
