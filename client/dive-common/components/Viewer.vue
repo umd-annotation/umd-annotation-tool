@@ -904,6 +904,7 @@ export default defineComponent({
       >
         <template v-slot:activator="{ on }">
           <v-badge
+            v-if="!mode"
             overlap
             bottom
             :color="readonlyState ? 'warning' : undefined"
