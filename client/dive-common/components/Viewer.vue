@@ -893,7 +893,10 @@ export default defineComponent({
         v-if="!mode"
         name="title-right"
       />
-      <user-guide-button annotating />
+      <user-guide-button
+        v-if="!mode"
+        annotating
+      />
 
       <v-tooltip
         bottom
