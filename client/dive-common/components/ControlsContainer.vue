@@ -49,9 +49,9 @@ export default defineComponent({
       default: undefined,
     },
   },
-  setup(_, { emit }) {
+  setup(props, { emit }) {
     const currentView = ref('Events');
-    const { maxSegment } = useTime();
+    const { maxSegment, frameRate } = useTime();
     const ticks = ref([0.25, 0.5, 0.75, 1.0, 2.0, 4.0, 8.0]);
     const cameraStore = useCameraStore();
     const multiCam = ref(cameraStore.camMap.value.size > 1);
@@ -94,6 +94,13 @@ export default defineComponent({
     const {
       maxFrame, frame, seek, volume, setVolume, setSpeed, speed,
     } = injectAggregateController().value;
+
+    const displayFrameRate = computed(() => {
+      if (props.mode) {
+        return frameRate.value;
+      }
+      return 0;
+    });
     return {
       currentView,
       toggleView,
@@ -110,6 +117,7 @@ export default defineComponent({
       attributeData,
       timelineEnabled,
       maxSegment,
+      displayFrameRate,
     };
   },
 });
@@ -300,6 +308,7 @@ export default defineComponent({
       v-if="(!collapsed)"
       :max-frame="maxFrame"
       :frame="frame"
+      :frame-rate="displayFrameRate"
       :display="!collapsed"
       :max-segment="maxSegment"
       @seek="seek"

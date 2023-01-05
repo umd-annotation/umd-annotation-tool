@@ -25,6 +25,10 @@ export default {
       type: String,
       default: undefined,
     },
+    frameRate: {
+      type: Number,
+      default: 0,
+    },
   },
   data() {
     return {
@@ -124,16 +128,20 @@ export default {
       this.clientWidth = width - this.margin;
       // Timeline height needs to offset so it doesn't overlap the frame number
       this.clientHeight = height - 15;
+      const maxRange = this.frameRate ? (this.maxFrame / this.frameRate) : this.frameRate;
       const scale = d3
         .scaleLinear()
-        .domain([0, this.maxFrame])
+        .domain([0, maxRange])
         .range([this.margin, this.clientWidth]);
       this.timelineScale = scale;
-      const axis = d3
+      let axis = d3
         .axisTop()
         .scale(scale)
         .tickSize(height - 30)
         .tickSizeOuter(0);
+      if (this.frameRate) {
+        axis = axis.tickFormat((d) => d3.timeFormat('%M:%S')(new Date(0).setSeconds(d)));
+      }
       this.axis = axis;
       if (!this.svg) {
         this.svg = d3
@@ -179,7 +187,9 @@ export default {
       }
     },
     update() {
-      this.timelineScale.domain([this.startFrame, this.endFrame]);
+      const divisor = this.frameRate || 1;
+      this.timelineScale.domain([(this.startFrame / divisor),
+        (this.endFrame / divisor)]);
       this.axis.scale(this.timelineScale);
       this.updateAxis();
     },
