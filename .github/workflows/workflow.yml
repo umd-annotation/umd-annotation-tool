@@ -23,7 +23,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ./docker/girder.Dockerfile
+          file: docker/girder.Dockerfile
           tags: ghcr.io/umd-annotation/umd-annotation-tool/umd-annotation-web:latest
           push: true
       -
@@ -31,6 +31,6 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ./docker/girder_worker.Dockerfile
+          file: docker/girder_worker.Dockerfile
           tags: ghcr.io/umd-annotation/umd-annotation-tool/umd-annotation-w:latest
           push: true
