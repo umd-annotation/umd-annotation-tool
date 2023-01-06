@@ -53,6 +53,18 @@ Will contain common function and models for specialized data structures if they 
 
 Longer running tasks are implemented in a worker plugin.  Essentially anything that can't be completed in a request thread within 2 seconds will be a task.
 
+### Updating Production Deployment
+
+Run the first command below to download updated docker containers.  Follow this by the deployment method (Traefik or locally signed) to finalize the update.
+
+```
+# pull only app updated images (normal)
+docker-compose pull girder girder_worker_default
+
+# pull all updated images (full upgrade, don't do this under normal circumstances)
+# docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull
+```
+
 ### Production Deployment (using Traefik SSL)
 
 Ensure that the default passwords are all changed in the '.env' file
