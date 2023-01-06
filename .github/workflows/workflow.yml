@@ -37,5 +37,5 @@ jobs:
         with:
           context: .
           file: docker/girder_worker.Dockerfile
-          tags: ghcr.io/umd-annotation/umd-annotation-tool/umd-annotation-w:latest
+          tags: ghcr.io/umd-annotation/umd-annotation-tool/umd-annotation-worker:latest
           push: true
