@@ -82,6 +82,8 @@ export default defineComponent({
                   impact: changePointImpact.value,
                   comment: changePointComment.value,
                 });
+                const segment = Math.floor((currentFrame - 150) / 450);
+                handler.setMaxSegment(segment);
               }
             }
           });
@@ -100,11 +102,6 @@ export default defineComponent({
       }
     };
     onMounted(() => initialize());
-    watch(selectedTrackIdRef, () => {
-      if (selectedTrackIdRef.value !== null) {
-        handler.setMaxSegment(selectedTrackIdRef.value);
-      }
-    });
 
     watch(frame, () => {
       // Determine which track we are in
@@ -112,7 +109,6 @@ export default defineComponent({
         const segment = Math.floor((frame.value - 150) / 450);
         if (selectedTrackIdRef.value !== segment) {
           handler.trackSelect(segment, false);
-          handler.setMaxSegment(segment);
         }
       }
     });
@@ -202,6 +198,7 @@ export default defineComponent({
     const goToChangePoint = (frameNum: number) => {
       //Need to set this up
       handler.seekToFrame(frameNum);
+      selectedChangePoint.value = null;
     };
     const changeTrack = (direction: -1 | 1) => {
       changePointFrame.value = -1;
