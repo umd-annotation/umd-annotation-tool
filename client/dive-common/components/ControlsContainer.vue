@@ -149,7 +149,7 @@ export default defineComponent({
             <span>Collapse/Expand Timeline</span>
           </v-tooltip>
           <v-btn
-            v-if="mode"
+            v-if="!mode"
             class="ml-1"
             :class="{'timeline-button':currentView!=='Detections' || collapsed}"
             depressed
@@ -161,7 +161,7 @@ export default defineComponent({
             Detections
           </v-btn>
           <v-btn
-            v-if="mode"
+            v-if="!mode"
             class="ml-1"
             :class="{'timeline-button':currentView!=='Events' || collapsed}"
             depressed
