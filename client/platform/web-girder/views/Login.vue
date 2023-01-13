@@ -57,7 +57,7 @@ export default defineComponent({
           :src="brandData.logo"
           class="mb-2"
         >
-        <h3>Welcome to {{ brandData.name }} (Public Beta)</h3>
+        <h3>Welcome to {{ brandData.name }}</h3>
         <div>
           Log in or register to get started.
         </div>
@@ -67,13 +67,6 @@ export default defineComponent({
         >
           {{ brandData.loginMessage }}
         </v-alert>
-        <div>
-          If you need help, check the
-          <a href="https://kitware.github.io/dive/">
-            User Documentation
-          </a>
-          or email <a href="mailto:viame-web@kitware.com">viame-web@kitware.com</a>
-        </div>
       </v-alert>
       <GirderAuthentication
         register

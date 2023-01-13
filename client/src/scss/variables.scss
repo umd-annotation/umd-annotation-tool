@@ -1,0 +1,21 @@
+// src/scss/variables.scss
+
+// Globals
+$body-font-family: 'Roboto Condensed', sans-serif;
+$font-weights:
+  (
+    'thin': 100,
+    'light': 300,
+    'regular': 600,
+    'medium': 700,
+    'bold': 900,
+    'black': 900
+  );
+$material-dark:
+  (
+    'text': (
+      'theme': #ffd200,
+      'primary': #ffffff,
+
+    )
+  );

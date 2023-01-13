@@ -51,4 +51,11 @@ module.exports = {
   chainWebpack,
   pluginOptions: {
   },
+  css: {
+    loaderOptions: {
+      scss: { // 8.0.3
+        prependData: "@import '@/scss//variables.scss';",
+      },
+    },
+  },
 };
