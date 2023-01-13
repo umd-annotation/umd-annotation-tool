@@ -308,12 +308,18 @@ export default defineComponent({
         Next
       </v-btn>
     </v-row>
-    <p class="mt-8">
-      Some instruction text to indicate to the annotator what to do.
-      This could be lengthy to provide more detailed instructions or not.
-    </p>
     <div v-if="mode ==='VAE' || mode ==='review'">
       <v-row dense>
+        <p class="px-1">
+          Move the slider to rate the level of valence displayed by the speaker in the current
+          segment (from the
+          most negative to the most positive; the middle point indicates neutral valence).
+        </p>
+      </v-row>
+      <v-row
+        dense
+        class="bottomborder"
+      >
         <v-col>
           <v-row dense>
             <v-col cols="2">
@@ -344,7 +350,17 @@ export default defineComponent({
           </v-row>
         </v-col>
       </v-row>
-      <v-row class="mt-4">
+      <v-row dense>
+        <p class="px-1">
+          Move the slider to rate the level of arousal displayed by the speaker in
+          the current segment (from the
+          most calm/low energy to the most excited/high energy).
+        </p>
+      </v-row>
+      <v-row
+        dense
+        class="bottomborder"
+      >
         <v-col>
           <v-row dense>
             <v-col cols="2">
@@ -377,7 +393,17 @@ export default defineComponent({
       </v-row>
     </div>
     <div v-if="mode ==='VAE' || mode === 'review'">
-      <v-row>
+      <v-row dense>
+        <p class="px-1">
+          Indicate emotion categories expressed by the speaker in the current segment.
+          Select as many categories
+          as applicable. Select “No emotion” if the speaker does not express any particular emotion.
+        </p>
+      </v-row>
+      <v-row
+        dense
+        class="bottomborder"
+      >
         <v-col
           cols="3"
           class="align-self-center"
@@ -416,6 +442,15 @@ export default defineComponent({
       </v-row>
     </div>
     <div v-if="mode === 'norms' || mode ==='review'">
+      <v-row>
+        <p class="px-1">
+          Select all observable social norm categories employed by the speaker in the current
+          segment. For each social norm identified,
+          indicate whether it is adhered to or violated by the speaker. Select “None” to
+          indicate that no observable social norms are present in the segment.
+          Click “Submit” when done.
+        </p>
+      </v-row>
       <v-row>
         <v-col>
           <v-select
@@ -509,5 +544,8 @@ export default defineComponent({
 }
 .emoji {
   font-size: 1.75em;
+}
+.bottomborder{
+  border-bottom: 3px solid gray;
 }
 </style>
