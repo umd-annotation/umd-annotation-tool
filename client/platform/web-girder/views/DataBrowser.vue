@@ -196,6 +196,23 @@ export default defineComponent({
           mdi-content-copy
         </v-icon>
       </v-btn>
+      <v-btn
+        v-if="isAnnotationFolder(item)"
+        class="ml-2"
+        x-small
+        color="brown"
+        depressed
+        :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'remediation' } }"
+      >
+        Remediation
+        <v-icon
+          x-small
+          class="ml-2"
+          @click.prevent.stop="copyLink(item._id, 'remediation')"
+        >
+          mdi-content-copy
+        </v-icon>
+      </v-btn>
       <v-chip
         v-if="(item.foreign_media_id)"
         color="white"

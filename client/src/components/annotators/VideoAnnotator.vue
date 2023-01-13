@@ -147,7 +147,7 @@ export default defineComponent({
       video.currentTime = data.currentTime;
       data.frame = requestedFrame;
       data.flick = Math.round(data.currentTime * Flick);
-      if (props.mode !== 'changepoint') {
+      if (!['changepoint', 'remediation'].includes(props.mode)) {
         props.updateTime(data);
       }
     }

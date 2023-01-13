@@ -27,7 +27,7 @@ export default defineComponent({
       default: 500,
     },
     mode: {
-      type: String as PropType<'VAE' | 'norms' | 'changepoint' | 'emotion' | 'review'>,
+      type: String as PropType<'VAE' | 'norms' | 'changepoint' | 'emotion' | 'remediation' | 'review'>,
       default: 'review',
     },
   },
@@ -209,7 +209,7 @@ export default defineComponent({
         handler.pausePlayback();
         framePlaying = -1;
       }
-      if ((props.mode !== 'review' && props.mode !== 'changepoint') && frame.value > (150 + (maxSegment.value + 2) * 450)) {
+      if ((props.mode !== 'review' && !['changepoint', 'remediation'].includes(props.mode)) && frame.value > (150 + (maxSegment.value + 2) * 450)) {
         handler.pausePlayback();
         if (selectedTrackIdRef.value !== null) {
           const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
@@ -221,7 +221,7 @@ export default defineComponent({
     });
 
     const outsideSegment = computed(() => {
-      if ((props.mode !== 'changepoint' && props.mode !== 'review')
+      if ((!['changepoint', 'remediation'].includes(props.mode) && props.mode !== 'review')
       && selectedTrackIdRef.value !== null) {
         const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
         if (frame.value > track.end || frame.value < track.begin) {
@@ -467,7 +467,7 @@ export default defineComponent({
     </v-row>
     <v-row>
       <v-alert
-        v-if="(outsideSegment && mode && mode !== 'changepoint')"
+        v-if="(outsideSegment && mode && !['changepoint', 'remediation'].includes(mode))"
         outlined
         dense
         type="warning"

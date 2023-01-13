@@ -7,6 +7,7 @@ import TooltipBtn from 'vue-media-annotator/components/TooltipButton.vue';
 import StackedVirtualSidebarContainer from 'dive-common/components/StackedVirtualSidebarContainer.vue';
 import UMDAnnotation from './UMDAnnotation.vue';
 import UMDChangepoint from './UMDChangepoint.vue';
+import UMDRemediation from './UMDRemediation.vue';
 
 export default defineComponent({
   name: 'UMDAnnotationWrapper',
@@ -16,6 +17,7 @@ export default defineComponent({
     TooltipBtn,
     UMDAnnotation,
     UMDChangepoint,
+    UMDRemediation,
   },
 
   props: {
@@ -24,7 +26,7 @@ export default defineComponent({
       default: 500,
     },
     mode: {
-      type: String as PropType<'VAE' | 'norms' | 'changepoint' | 'emotion' | 'review'>,
+      type: String as PropType<'VAE' | 'norms' | 'changepoint' | 'emotion' | 'remediation' | 'review'>,
       default: 'review',
     },
   },
@@ -40,11 +42,15 @@ export default defineComponent({
 
 <template>
   <UMDAnnotation
-    v-if="mode !== 'changepoint'"
+    v-if="!['changepoint', 'remediation'].includes(mode)"
     :mode="mode"
   />
   <UMDChangepoint
-    v-else
+    v-else-if="mode ==='changepoint'"
+    :mode="mode"
+  />
+  <UMDRemediation
+    v-else-if="mode ==='remediation'"
     :mode="mode"
   />
 </template>
