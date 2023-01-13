@@ -70,6 +70,40 @@ def export_changepoint_tab(tracks, folderId, fps, userMap):
     yield csvFile.getvalue()
 
 
+def export_remediation_tab(tracks, folderId, fps, userMap):
+    csvFile = io.StringIO()
+    writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
+    writer.writerow(["user_id", "file_id", "timestamp", "comment"])
+    for t in tracks:
+        if 'features' in t.keys():
+            features = t['features']
+            userDataFound = {}
+            for feature in features:
+                if 'attributes' in feature.keys():
+                    attributes = feature['attributes']
+                    for key in attributes.keys():
+                        if '_RemediationComment' in key:
+                            login = key.replace('_RemediationComment', '')
+                            mapped = userMap[login]
+                            if mapped not in userDataFound.keys():
+                                userDataFound[mapped] = {}
+                            userDataFound[mapped]['Comment'] = attributes[key]
+                            userDataFound[mapped]['Timestamp'] = (1 / fps) * feature['frame']
+
+            for key in userDataFound.keys():
+                columns = [
+                    key,
+                    folderId,
+                    userDataFound[key]['Timestamp'],
+                    userDataFound[key]['Comment'],
+                ]
+                writer.writerow(columns)
+                yield csvFile.getvalue()
+                csvFile.seek(0)
+                csvFile.truncate(0)
+    yield csvFile.getvalue()
+
+
 def export_norms_tab(tracks, folderId, fps, userMap):
     csvFile = io.StringIO()
     writer = csv.writer(csvFile, delimiter='\t')
@@ -239,6 +273,9 @@ def generate_tab(tracks, folderId, fps, userMap, type):
         if type == 'changepoint':
             for data in export_changepoint_tab(tracks, folderId, fps, userMap):
                 yield data
+        if type == 'remediation':
+            for data in export_remediation_tab(tracks, folderId, fps, userMap):
+                yield data
 
     return downloadGenerator
 
@@ -282,6 +319,10 @@ def convert_to_zips(folders, userMap, user):
             tracks.rewind()
             norm_gen = generate_tab(tracks, folderId, fps, userMap, 'changepoint')
             for data in z.addFile(norm_gen, Path(f'{zip_path}changepoint_tab.tab')):
+                yield data
+            tracks.rewind()
+            norm_gen = generate_tab(tracks, folderId, fps, userMap, 'remediation')
+            for data in z.addFile(norm_gen, Path(f'{zip_path}remediation_tab.tab')):
                 yield data
         yield z.footer()
 

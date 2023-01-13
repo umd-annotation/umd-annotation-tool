@@ -53,12 +53,17 @@ export default function useTimeObserver() {
     data.originalFps = originalFps;
   }
 
-  const updateTime: SetTimeFunc = throttle(({ frame, flick, maxFrame }:
-    { frame: number; flick: number; maxFrame?: number }) => {
+  const updateTime: SetTimeFunc = throttle(({
+    frame, flick, maxFrame, maxSegment,
+  }:
+    { frame: number; flick: number; maxFrame?: number; maxSegment?: number }) => {
     data.frame = frame;
     data.flick = flick;
     if (maxFrame !== undefined) {
       data.maxFrame = Math.max(maxFrame, data.maxFrame);
+    }
+    if (maxSegment !== undefined) {
+      data.maxSegment = Math.max(data.maxSegment, maxSegment);
     }
   });
 

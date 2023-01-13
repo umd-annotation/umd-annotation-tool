@@ -14,7 +14,7 @@ import {
 } from 'vue-media-annotator/provides';
 
 export default defineComponent({
-  name: 'UMDChangepoint',
+  name: 'UMDRemediation',
 
   components: {
     StackedVirtualSidebarContainer,
@@ -27,7 +27,7 @@ export default defineComponent({
       default: 500,
     },
     mode: {
-      type: String as PropType<'VAE' | 'norms' | 'changepoint' | 'emotion' | 'review'>,
+      type: String as PropType<'VAE' | 'norms' | 'changepoint' | 'emotion' | 'remediation' | 'review'>,
       default: 'review',
     },
   },
@@ -39,17 +39,16 @@ export default defineComponent({
     const handler = useHandler();
     const restClient = useGirderRest();
     const cameraStore = useCameraStore();
-    const changePointFrame = ref(-1);
-    const changePointImpact = ref(1);
-    const changePointComment = ref('');
+    const remediationFrame = ref(-1);
+    const remediationComment = ref('');
     const userLogin = ref('');
     const loadedAttributes = ref(false);
-    const changePoints: Ref<{frame: number; comment: string; impact: number}[]> = ref([]);
-    const selectedChangePoint: Ref<number | null> = ref(null);
+    const remediations: Ref<{frame: number; comment: string}[]> = ref([]);
+    const selectedRemediation: Ref<number | null> = ref(null);
 
     const checkAttributes = () => {
       // load existing attributes
-      changePoints.value = [];
+      remediations.value = [];
       let hasAttributes = false;
       const store = cameraStore.camMap.value.get('singleCam');
       if (store) {
@@ -64,23 +63,17 @@ export default defineComponent({
                   hasAttributes = true;
                   const attribute = feature.attributes[key];
                   const replaced = key.replace(`${userLogin.value}_`, '');
-                  if (replaced === 'Impact') {
-                    changePointImpact.value = parseInt((attribute as string), 10);
-                    changePointFrame.value = currentFrame;
-                    foundFeature = true;
-                  }
-                  if (replaced === 'Comment') {
-                    changePointComment.value = attribute as string;
-                    changePointFrame.value = currentFrame;
+                  if (replaced === 'RemediationComment') {
+                    remediationComment.value = attribute as string;
+                    remediationFrame.value = currentFrame;
                     foundFeature = true;
                   }
                 }
               });
               if (foundFeature) {
-                changePoints.value.push({
-                  frame: changePointFrame.value,
-                  impact: changePointImpact.value,
-                  comment: changePointComment.value,
+                remediations.value.push({
+                  frame: remediationFrame.value,
+                  comment: remediationComment.value,
                 });
                 const segment = Math.floor((currentFrame - 150) / 450);
                 handler.setMaxSegment(segment);
@@ -114,23 +107,22 @@ export default defineComponent({
     });
 
 
-    const setChangepoint = () => {
-      changePointFrame.value = frame.value;
+    const setRemediation = () => {
+      remediationFrame.value = frame.value;
     };
 
-    const existingFrames = computed(() => changePoints.value.map((item) => item.frame));
+    const existingFrames = computed(() => remediations.value.map((item) => item.frame));
 
-    const deleteChangePoint = async (index: number, save = true) => {
-      const changeData = changePoints.value[index];
+    const deleteRemediation = async (index: number, save = true) => {
+      const changeData = remediations.value[index];
       const segment = Math.floor((changeData.frame - 150) / 450);
       const track = cameraStore.getAnyTrack(segment);
       if (track) {
         if (track.getFeature(changeData.frame)[0]) {
-          track.removeFeatureAttribute(changeData.frame, `${userLogin.value}_Impact`);
-          track.removeFeatureAttribute(changeData.frame, `${userLogin.value}_Comment`);
+          track.removeFeatureAttribute(changeData.frame, `${userLogin.value}_RemediationComment`);
         }
-        if (selectedChangePoint.value === index) {
-          selectedChangePoint.value = null;
+        if (selectedRemediation.value === index) {
+          selectedRemediation.value = null;
         }
         if (save) {
           await handler.save();
@@ -139,45 +131,40 @@ export default defineComponent({
       }
     };
 
-    const addChangepoint = () => {
-      changePoints.value.push({
+    const addRemediation = () => {
+      remediations.value.push({
         frame: frame.value,
-        impact: 0,
         comment: '',
       });
-      changePoints.value.sort((a, b) => a.frame - b.frame);
-      const foundIndex = changePoints.value.findIndex((item) => item.frame === frame.value);
-      changePointFrame.value = frame.value;
-      changePointImpact.value = 0;
-      changePointComment.value = '';
-      selectedChangePoint.value = foundIndex;
+      remediations.value.sort((a, b) => a.frame - b.frame);
+      const foundIndex = remediations.value.findIndex((item) => item.frame === frame.value);
+      remediationFrame.value = frame.value;
+      remediationComment.value = '';
+      selectedRemediation.value = foundIndex;
     };
 
     const submit = async () => {
       // Need to get information and set it for the track attributes
-      if (selectedTrackIdRef.value !== null && selectedChangePoint.value !== null) {
-        if (changePoints.value[selectedChangePoint.value].frame !== changePointFrame.value) {
-          const impact = changePointImpact.value;
-          const comment = changePointComment.value;
-          deleteChangePoint(selectedChangePoint.value, false);
-          addChangepoint();
-          changePointImpact.value = impact;
-          changePointComment.value = comment;
+      if (selectedTrackIdRef.value !== null && selectedRemediation.value !== null) {
+        if (remediations.value[selectedRemediation.value].frame !== remediationFrame.value) {
+          const comment = remediationComment.value;
+          deleteRemediation(selectedRemediation.value, false);
+          addRemediation();
+          remediationComment.value = comment;
         }
-        const segment = Math.floor((changePointFrame.value - 150) / 450);
+        const segment = Math.floor((remediationFrame.value - 150) / 450);
         const track = cameraStore.getAnyTrack(segment);
         // Set attributes;
         // set Change Point Information
-        if (changePointFrame.value !== -1) {
-          if (track.getFeature(changePointFrame.value)[0] === null
-          || !track.getFeature(changePointFrame.value)[0]?.keyframe) {
-            track.toggleKeyframe(changePointFrame.value);
+        if (remediationFrame.value !== -1) {
+          if (track.getFeature(remediationFrame.value)[0] === null
+          || !track.getFeature(remediationFrame.value)[0]?.keyframe) {
+            track.toggleKeyframe(remediationFrame.value);
           }
-          track.setFeatureAttribute(changePointFrame.value, `${userLogin.value}_Impact`, changePointImpact.value);
-          track.setFeatureAttribute(changePointFrame.value, `${userLogin.value}_Comment`, changePointComment.value);
+          track.setFeatureAttribute(remediationFrame.value, `${userLogin.value}_RemediationComment`, remediationComment.value);
         }
         // save the file
-        selectedChangePoint.value = null;
+        selectedRemediation.value = null;
         handler.save();
         checkAttributes();
       }
@@ -195,49 +182,45 @@ export default defineComponent({
       return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     };
 
-    const goToChangePoint = (frameNum: number) => {
+    const goToRemediation = (frameNum: number) => {
       //Need to set this up
       handler.seekToFrame(frameNum);
-      selectedChangePoint.value = null;
+      selectedRemediation.value = null;
     };
     const changeTrack = (direction: -1 | 1) => {
-      changePointFrame.value = -1;
-      changePointImpact.value = 1;
-      changePointComment.value = '';
+      remediationFrame.value = -1;
+      remediationComment.value = '';
 
       handler.trackSelectNext(direction, true);
     };
 
-    const editChangepoint = (index: number) => {
-      if (selectedChangePoint.value === index) {
-        selectedChangePoint.value = null;
+    const editRemediation = (index: number) => {
+      if (selectedRemediation.value === index) {
+        selectedRemediation.value = null;
         return;
       }
-
-      selectedChangePoint.value = index;
-      changePointFrame.value = changePoints.value[index].frame;
-      changePointImpact.value = changePoints.value[index].impact;
-      changePointComment.value = changePoints.value[index].comment;
+      selectedRemediation.value = index;
+      remediationFrame.value = remediations.value[index].frame;
+      remediationComment.value = remediations.value[index].comment;
     };
 
     return {
       selectedTrackIdRef,
       frame,
-      changePointFrame,
-      changePointImpact,
-      changePointComment,
+      remediationFrame,
+      remediationComment,
       loadedAttributes,
-      changePoints,
-      selectedChangePoint,
+      remediations,
+      selectedRemediation,
       existingFrames,
-      setChangepoint,
+      setRemediation,
       submit,
-      goToChangePoint,
+      goToRemediation,
       changeTrack,
-      editChangepoint,
+      editRemediation,
       frameToTime,
-      deleteChangePoint,
-      addChangepoint,
+      deleteRemediation,
+      addRemediation,
     };
   },
 });
@@ -259,22 +242,22 @@ export default defineComponent({
     <v-btn
       :disabled="existingFrames.includes(frame)"
       color="success"
-      @click="addChangepoint"
+      @click="addRemediation"
     >
-      Add Changepoint at {{ frameToTime(frame) }}
+      Add Remediation at {{ frameToTime(frame) }}
     </v-btn>
     <v-card style="max-height:30vh; overflow-y:scroll">
       <v-list>
         <v-list-item
-          v-for="(item, index) in changePoints"
+          v-for="(item, index) in remediations"
           :key="`${index}_${item.frame}`"
-          :class="{selected: selectedChangePoint === index}"
+          :class="{selected: selectedRemediation === index}"
         >
           <v-row>
             <v-col cols="2">
               <v-chip
                 class="px-2"
-                @click="goToChangePoint(item.frame)"
+                @click="goToRemediation(item.frame)"
               >
                 {{ frameToTime(item.frame) }}
               </v-chip>
@@ -300,14 +283,14 @@ export default defineComponent({
               </v-tooltip>
             </v-col>
             <v-col cols="1">
-              <v-icon @click="editChangepoint(index)">
+              <v-icon @click="editRemediation(index)">
                 mdi-pencil
               </v-icon>
             </v-col>
             <v-col cols="1">
               <v-icon
                 color="error"
-                @click="deleteChangePoint(index)"
+                @click="deleteRemediation(index)"
               >
                 mdi-delete
               </v-icon>
@@ -316,43 +299,30 @@ export default defineComponent({
         </v-list-item>
       </v-list>
     </v-card>
-    <div v-if="selectedChangePoint !== null">
-      <v-row v-if="(changePointFrame == -1)">
+    <div v-if="selectedRemediation !== null">
+      <v-row v-if="(remediationFrame == -1)">
         <v-btn
-          @click="setChangepoint"
+          @click="setRemediation"
         >
-          Set ChangePoint {{ frame }}
+          Set Remediation {{ frame }}
         </v-btn>
       </v-row>
-      <div v-if="(changePointFrame != -1)">
-        <h4> Current ChangePoint : {{ frameToTime(changePointFrame) }}</h4>
+      <div v-if="(remediationFrame != -1)">
+        <h4> Current Remediation : {{ frameToTime(remediationFrame) }}</h4>
         <v-row class="mt-2 ml-2">
           <v-btn
-            v-if="(frame !== changePointFrame)"
+            v-if="(frame !== remediationFrame)"
             outlined
             :disabled="existingFrames.includes(frame)"
-            @click="setChangepoint()"
+            @click="setRemediation()"
           >
-            Set Changepoint to current time: {{ frameToTime(frame) }}
+            Set Remediation to current time: {{ frameToTime(frame) }}
           </v-btn>
         </v-row>
         <v-row>
           <v-col>
-            <v-slider
-              v-model="changePointImpact"
-              label="Impact"
-              min="1"
-              max="5"
-              step="1"
-              ticks="always"
-              :tick-size="10"
-            />
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
             <v-textarea
-              v-model="changePointComment"
+              v-model="remediationComment"
               outlined
               label="Comment"
             />
@@ -362,7 +332,7 @@ export default defineComponent({
     </div>
     <v-row>
       <v-btn
-        v-if="selectedChangePoint !== null"
+        v-if="selectedRemediation !== null"
         color="warning"
         class="mx-2"
         @click="submit"
@@ -383,7 +353,7 @@ export default defineComponent({
 }
 
 .selected {
-    border: 2px solid cyan;
+    border: 2px solid #ffd200;
 }
 .comment {
   max-width: 250px;

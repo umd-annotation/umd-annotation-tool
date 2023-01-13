@@ -133,6 +133,16 @@ export default defineComponent({
       >
         ChangePoint
       </v-btn>
+      <v-btn
+        v-if="isAnnotationFolder(item)"
+        class="ml-2"
+        x-small
+        color="primary"
+        depressed
+        :to="{ name: 'viewer', params: { id: item._id, mode:'remediation' } }"
+      >
+        Remediation
+      </v-btn>
     </template>
     <template #no-data>
       <span class="pr-4">No datasets have been shared with you yet.</span>

@@ -147,8 +147,11 @@ export default defineComponent({
       video.currentTime = data.currentTime;
       data.frame = requestedFrame;
       data.flick = Math.round(data.currentTime * Flick);
-      if (props.mode !== 'changepoint') {
+      if (!['changepoint', 'remediation'].includes(props.mode)) {
         props.updateTime(data);
+      } else if (data.frame < data.maxFrame) {
+        const update = { frame: requestedFrame, flick: Math.round(data.currentTime * Flick) };
+        props.updateTime(update);
       }
     }
     function pause() {
@@ -168,7 +171,14 @@ export default defineComponent({
         data.frame = Math.floor(newFrame);
         data.flick = Math.round(video.currentTime * Flick);
         data.syncedFrame = data.frame;
-        props.updateTime(data);
+        const segment = Math.floor((data.frame - 150) / 450);
+        const updateData: {frame: number; flick: number; maxSegment?: number} = {
+          frame: data.frame, flick: data.flick,
+        };
+        if (['changepoint', 'remediation'].includes(props.mode)) {
+          updateData.maxSegment = segment;
+        }
+        props.updateTime(updateData);
         geoViewer.value.scheduleAnimationFrame(syncWithVideo);
       }
       data.currentTime = video.currentTime;

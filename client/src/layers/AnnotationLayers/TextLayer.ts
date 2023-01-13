@@ -130,11 +130,11 @@ export default class TextLayer extends BaseLayer<TextData> {
             return this.typeStyling.value.color(data.type);
           }
           if (data.selected) {
-            return this.stateStyling.selected.color;
+            return '#e21833'; //this.stateStyling.selected.color;
           }
           return this.typeStyling.value.color(data.type);
         }
-        return this.typeStyling.value.color(data.type);
+        return '#e21833'; //this.typeStyling.value.color(data.type);
       },
       offset: (data) => ({
         x: data.offsetY || 3,
