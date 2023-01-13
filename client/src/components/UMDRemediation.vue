@@ -235,9 +235,9 @@ export default defineComponent({
     >
       <h2 class="mr-4 mt-1" />
     </v-row>
-    <p class="mt-8">
-      Some instruction text to indicate to the annotator what to do.
-      This could be lengthy to provide more detailed instructions or not.
+    <p class="px-1">
+      Indicate where the interpreter applied remediation of any kind (timestamps).
+      Add a comment explaining the type of remediation.
     </p>
     <v-btn
       :disabled="existingFrames.includes(frame)"

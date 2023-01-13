@@ -252,9 +252,11 @@ export default defineComponent({
     >
       <h2 class="mr-4 mt-1" />
     </v-row>
-    <p class="mt-8">
-      Some instruction text to indicate to the annotator what to do.
-      This could be lengthy to provide more detailed instructions or not.
+    <p class="px-1">
+      Identify points (timestamps) in the video where there is a change in the conversation
+      that has the potential to impact the conversation outcome.
+      Indicate impact level on the scale (from most negative to most positive).
+      Add a comment explaining why you indicated the changepoint. Click “Save” when done.
     </p>
     <v-btn
       :disabled="existingFrames.includes(frame)"
