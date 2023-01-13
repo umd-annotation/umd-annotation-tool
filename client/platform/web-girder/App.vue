@@ -8,6 +8,7 @@
 import { defineComponent } from '@vue/composition-api';
 import { provideApi } from 'dive-common/apispec';
 import type { GirderMetadata } from './constants';
+import '@fontsource/roboto-condensed';
 import {
   getPipelineList,
   runPipeline,

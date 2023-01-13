@@ -80,7 +80,7 @@ export default {
         class="mx-2 grow"
         @select="setRouteFromLocation"
       />
-      <user-guide-button />
+      <user-guide-button v-if="false" />
       <v-btn
         text
         @click="logout"

@@ -10,15 +10,18 @@ import { vuetifyConfig } from '@girder/components/src';
 Vue.use(Vuetify);
 
 function getVuetify(config: unknown) {
-  const theme: ThemeOptions = {
+  const theme: ThemeOptions & { customVariables: string[]} = {
     dark: true,
+    customVariables: ['~/assets/variables.scss'],
     options: {
       customProperties: true,
     },
     themes: {
       dark: {
-        accent: colors.blue.lighten1,
+        accent: '#ffd200',
+        primary: '#e21833',
         accentBackground: '#2c7596',
+        baseText: '#ffd200',
       },
     },
   };
