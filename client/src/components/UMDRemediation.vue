@@ -353,7 +353,7 @@ export default defineComponent({
 }
 
 .selected {
-    border: 2px solid cyan;
+    border: 2px solid #ffd200;
 }
 .comment {
   max-width: 250px;
