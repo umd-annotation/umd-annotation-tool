@@ -513,7 +513,7 @@ export default defineComponent({
           color="primary"
           @click="seekBegin()"
         >
-          Return to Segement
+          Return to Segment
         </v-btn>
       </v-alert>
     </v-row>
