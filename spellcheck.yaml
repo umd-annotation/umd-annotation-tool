@@ -131,7 +131,7 @@ matrix:
       - 'trackId'
       - 'stateful'
       - 'geojs'
-      - 'Vue''s'
+      - "Vue's"
       - 'lifecycle'
       - 'mixins'
       - 'EditAnnotationLayer'
@@ -142,7 +142,7 @@ matrix:
       - 'playpause'
       - 'swimlane'
       - 'carte'
-      - 'vuetify''s'
+      - "vuetify's"
       - 'libs'
       - 'UMD'
       - 'cp'
