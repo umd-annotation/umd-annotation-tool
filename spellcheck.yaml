@@ -19,6 +19,13 @@ matrix:
       group_comments: false
       decode_escapes: true
       strings: false
+      ignores:
+      - ':matches(code, pre)'
+      - 'code'
+      - 'pre'
+      - 'rollup'
+      - 'localhost'
+      - 'vtkjs'
 - name: Vue
   sources:
   - '**/*.vue'
@@ -131,7 +138,6 @@ matrix:
       - 'trackId'
       - 'stateful'
       - 'geojs'
-      - "Vue's"
       - 'lifecycle'
       - 'mixins'
       - 'EditAnnotationLayer'
@@ -142,7 +148,6 @@ matrix:
       - 'playpause'
       - 'swimlane'
       - 'carte'
-      - "vuetify's"
       - 'libs'
       - 'UMD'
       - 'cp'
