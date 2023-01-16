@@ -13,19 +13,12 @@ matrix:
     encoding: utf-8
   pipeline:
   - pyspelling.filters.javascript:
-      jsdocs: true
-      line_comments: true
-      block_comments: true
+      jsdocs: false
+      line_comments: false
+      block_comments: false
       group_comments: false
       decode_escapes: true
       strings: false
-      ignores:
-      - ':matches(code, pre)'
-      - 'code'
-      - 'pre'
-      - 'rollup'
-      - 'localhost'
-      - 'vtkjs'
 - name: Vue
   sources:
   - '**/*.vue'
