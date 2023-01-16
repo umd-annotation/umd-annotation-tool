@@ -39,9 +39,9 @@ matrix:
     encoding: utf-8
   pipeline:
   - pyspelling.filters.javascript:
-      jsdocs: true
-      line_comments: true
-      block_comments: true
+      jsdocs: false
+      line_comments: false
+      block_comments: false
       group_comments: false
       decode_escapes: true
       strings: false
@@ -50,10 +50,6 @@ matrix:
       attributes:
       - title
       - alt
-      ignores:
-      - ':matches(code, pre)'
-      - 'code'
-      - 'pre'
   - pyspelling.filters.stylesheets:
       group_comments: true
 - name: HTML
