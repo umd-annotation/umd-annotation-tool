@@ -98,3 +98,14 @@ SSL
 https
 vuetify's
 Vue's
+boolean
+kitware
+viame
+esnext
+backend
+dataset
+trackStore
+groupStore
+useMediaController
+hz
+http

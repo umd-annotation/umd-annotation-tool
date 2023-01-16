@@ -38,7 +38,7 @@ Folder: ./server
 The backend system copies the existing DIVE Repo and install the DIVE Plugin while removing the extra Bucket_Notifications and RabbitMQ plugins.
 It then installs the UMD plugin on top of the DIVE plugin.
 
-The UMD Plugin is separted into:
+The UMD Plugin is separated into:
 
 #### UMD_server
 

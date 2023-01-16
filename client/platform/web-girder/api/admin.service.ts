@@ -1,4 +1,4 @@
-// Admin endpoints used for review and managment
+// Admin endpoints used for review and management
 import girderRest from 'platform/web-girder/plugins/girder';
 import type { GirderJob, GirderModel } from '@girder/components/src';
 

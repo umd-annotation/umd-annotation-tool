@@ -102,7 +102,7 @@ The client is broken into 4 main folders which separate different parts of the s
 
 ## Unified API Specification
 
-To resuse as much code as possible between the Desktop and Web versions there is a unified API which provides the capability to export/import/save/delete annotations and metadata as well as run training and configuration pipelines.  This API allows both versions to share the `/dive-common` and `/src` folders while handling these calls differently.
+To reuse as much code as possible between the Desktop and Web versions there is a unified API which provides the capability to export/import/save/delete annotations and metadata as well as run training and configuration pipelines.  This API allows both versions to share the `/dive-common` and `/src` folders while handling these calls differently.
 
 ## Annotation Viewer Organization
 
@@ -138,10 +138,10 @@ To resuse as much code as possible between the Desktop and Web versions there is
   * For performance reasons all reactive properties are read-only and rely on functions to modify.
 
 
-## Anotations and Media Viewer (/src/*)
+## Annotations and Media Viewer (/src/*)
 ### src/*.ts
 
-Use ES6 classes to implement stateful modules that form the core of the application.  We previously used composition functions, but these became unweildy as more state needed to be pushed through the `src/provides.ts` interface.  Classes like `TrackStore.ts` can encapsulate related states and functions, and we can make use of traditional inheritance design patterns like base classes.
+Use ES6 classes to implement stateful modules that form the core of the application.  We previously used composition functions, but these became unwieldy as more state needed to be pushed through the `src/provides.ts` interface.  Classes like `TrackStore.ts` can encapsulate related states and functions, and we can make use of traditional inheritance design patterns like base classes.
 
 ### src/components/annotators
 
@@ -157,7 +157,7 @@ These components form the base of an annotator instance.  The root display for M
 These layers are provided to an annotator as slots and can inject their parent annotator state.  Generally, a layer will set up a watcher on that state and update their own GeoJS features based on that.  These watchers may run at up to 60hz so performance considerations matter.
 
 * Layers must be vue instances to integrate with Vue's reactivity system.
-* Layers must be independent instances (not mixins or composition functions) because they need their own lifecycle hooks (and otherwise, would have to maintain state about whether or not they are enabled). Layers rely on the Vue lifecycle to destroy them when their features are not needed to prevent unnecessary updates in the cricial path.
+* Layers must be independent instances (not mixins or composition functions) because they need their own lifecycle hooks (and otherwise, would have to maintain state about whether or not they are enabled). Layers rely on the Vue lifecycle to destroy them when their features are not needed to prevent unnecessary updates in the critical path.
 
 This application has many layers that interact, requiring a manager `src/components/LayerManager.vue`.
 
@@ -173,12 +173,12 @@ Annotation Editing Flow:
 
 ### LayerManager.vue
 
-Layer manager uses the `/src/provides.ts` to view the current frame and tracks that should be visible for the frame and draw them on the screen.  The function `updateLayers` is connected to a watcher which watches for changes in frame, selectedTrack, the visiblity of tracks provided, and Annotator preferences (visibility of certain annotation types or track tail length).
+Layer manager uses the `/src/provides.ts` to view the current frame and tracks that should be visible for the frame and draw them on the screen.  The function `updateLayers` is connected to a watcher which watches for changes in frame, selectedTrack, the visibility of tracks provided, and Annotator preferences (visibility of certain annotation types or track tail length).
 
 ### src/components/controls
 
-Controllers are like layers, but without geojs functionality.  They usually provide some UI wigetry to manipulate the annotator state (such as playblack position or playpause state).
-The timeline representation of tracks for graphing is located in the constrols as well.
+Controllers are like layers, but without geojs functionality.  They usually provide some UI widgets to manipulate the annotator state (such as playback position or playpause state).
+The timeline representation of tracks for graphing is located in the controls as well.
 
 ### src/provides
 
@@ -195,7 +195,7 @@ import { useSelectedTrackId } from 'vue-media-annotator/provides';
 const selectedTrackIdRef = useSelectedTrackId();
 ```
 
-This style guarantees matching types are passed through provide and inject without having to replicate the type definition through possibly many layers of `props:{}` type definitions, and automatically wraps with `readonly` to prevent short-circut updates.
+This style guarantees matching types are passed through provide and inject without having to replicate the type definition through possibly many layers of `props:{}` type definitions, and automatically wraps with `readonly` to prevent short-circuit updates.
 
 ### /src/use
 
@@ -207,7 +207,7 @@ The use{x} files in this folder pertain directly to media or annotation informat
 
 ## DIVE Interface (/dive-common)
 
-The DIVE interfaces handles the loading of data in Viewer.vue and manages the layout of components provided in `/src` and the state managment of the system through `useModeManager`
+The DIVE interfaces handles the loading of data in Viewer.vue and manages the layout of components provided in `/src` and the state management of the system through `useModeManager`
 
 ### useModeManager (/dive-common/use/useModeManager.ts)
 
