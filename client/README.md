@@ -177,7 +177,7 @@ Layer manager uses the `/src/provides.ts` to view the current frame and tracks t
 
 ### src/components/controls
 
-Controllers are like layers, but without geojs functionality.  They usually provide some UI wigets to manipulate the annotator state (such as playblack position or playpause state).
+Controllers are like layers, but without geojs functionality.  They usually provide some UI widgets to manipulate the annotator state (such as playback position or playpause state).
 The timeline representation of tracks for graphing is located in the controls as well.
 
 ### src/provides

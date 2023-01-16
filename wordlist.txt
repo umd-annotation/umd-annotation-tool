@@ -104,7 +104,8 @@ viame
 esnext
 backend
 dataset
-trackStoregroupStore
+trackStore
+groupStore
 useMediaController
 hz
 http
