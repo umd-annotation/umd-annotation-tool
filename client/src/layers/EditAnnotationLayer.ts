@@ -328,7 +328,7 @@ export default class EditAnnotationLayer extends BaseLayer<GeoJSON.Feature> {
     return geoJSONData;
   }
 
-  /** overrides default function to disable and clear anotations before drawing again */
+  /** overrides default function to disable and clear annotations before drawing again */
   async changeData(frameData: FrameDataTrack[]) {
     if (this.skipNextExternalUpdate === false) {
       // disable resets things before we load a new/different shape or mode
