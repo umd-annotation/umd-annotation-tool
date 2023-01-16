@@ -207,7 +207,7 @@ The use{x} files in this folder pertain directly to media or annotation informat
 
 ## DIVE Interface (/dive-common)
 
-The DIVE interfaces handles the loading of data in Viewer.vue and manages the layout of components provided in `/src` and the state managment of the system through `useModeManager`
+The DIVE interfaces handles the loading of data in Viewer.vue and manages the layout of components provided in `/src` and the state management of the system through `useModeManager`
 
 ### useModeManager (/dive-common/use/useModeManager.ts)
 
