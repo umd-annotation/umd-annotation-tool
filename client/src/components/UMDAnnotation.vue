@@ -41,11 +41,11 @@ export default defineComponent({
     const cameraStore = useCameraStore();
     const arousal = ref(1);
     const valence = ref(1);
-    const baseEmotionsList = ['Anger', 'Anticipation', 'Joy', 'Trust', 'Fear', 'Surprise', 'Sadness', 'Disgust'];
+    const baseEmotionsList = ['No emotions', 'Anger', 'Anticipation', 'Joy', 'Trust', 'Fear', 'Surprise', 'Sadness', 'Disgust'];
     const multiSpeakerOptions = ref(['FALSE', 'TRUE', 'noann']);
     const multiSpeaker: Ref<'FALSE' | 'TRUE' | 'noann'> = ref('FALSE');
     const emotionsList: Ref<string[]> = ref([]);
-    const baseNormsList = ['Apology', 'Criticism', 'Greeting', 'Request', 'Persuasion', 'Thanks', 'Taking Leave', 'Admiration', 'Finalizing Negotiating/Deal', 'Refusing a Request'];
+    const baseNormsList = ['None', 'Apology', 'Criticism', 'Greeting', 'Request', 'Persuasion', 'Thanks', 'Taking Leave', 'Admiration', 'Finalizing Negotiating/Deal', 'Refusing a Request'];
     const normsSelected: Ref<string[]> = ref([]);
     const normsObject: Ref<Record<string, 'adhered' |'violate' | 'noann' | 'EMPTY_NA'>> = ref({});
     const userLogin = ref('');
