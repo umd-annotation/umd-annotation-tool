@@ -139,12 +139,15 @@ export default defineComponent({
       }
     };
 
-    const addChangepoint = () => {
+    const addChangepoint = (internal = false) => {
       changePoints.value.push({
         frame: frame.value,
         impact: 0,
         comment: '',
       });
+      if (!internal) {
+        handler.pausePlayback();
+      }
       changePoints.value.sort((a, b) => a.frame - b.frame);
       const foundIndex = changePoints.value.findIndex((item) => item.frame === frame.value);
       changePointFrame.value = frame.value;
@@ -160,7 +163,7 @@ export default defineComponent({
           const impact = changePointImpact.value;
           const comment = changePointComment.value;
           deleteChangePoint(selectedChangePoint.value, false);
-          addChangepoint();
+          addChangepoint(true);
           changePointImpact.value = impact;
           changePointComment.value = comment;
         }
@@ -197,6 +200,7 @@ export default defineComponent({
 
     const goToChangePoint = (frameNum: number) => {
       //Need to set this up
+      handler.pausePlayback();
       handler.seekToFrame(frameNum);
       selectedChangePoint.value = null;
     };

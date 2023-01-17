@@ -131,11 +131,14 @@ export default defineComponent({
       }
     };
 
-    const addRemediation = () => {
+    const addRemediation = (internal = false) => {
       remediations.value.push({
         frame: frame.value,
         comment: '',
       });
+      if (!internal) {
+        handler.pausePlayback();
+      }
       remediations.value.sort((a, b) => a.frame - b.frame);
       const foundIndex = remediations.value.findIndex((item) => item.frame === frame.value);
       remediationFrame.value = frame.value;
@@ -149,7 +152,7 @@ export default defineComponent({
         if (remediations.value[selectedRemediation.value].frame !== remediationFrame.value) {
           const comment = remediationComment.value;
           deleteRemediation(selectedRemediation.value, false);
-          addRemediation();
+          addRemediation(true);
           remediationComment.value = comment;
         }
         const segment = Math.floor((remediationFrame.value - 150) / 450);
@@ -184,6 +187,7 @@ export default defineComponent({
 
     const goToRemediation = (frameNum: number) => {
       //Need to set this up
+      handler.pausePlayback();
       handler.seekToFrame(frameNum);
       selectedRemediation.value = null;
     };
