@@ -7,7 +7,8 @@ import {
 } from '@girder/components/src';
 import { itemsPerPageOptions } from 'dive-common/constants';
 import { clientSettings } from 'dive-common/store/settings';
-import { useStore, LocationType } from '../store/types';
+import { getUri } from 'platform/web-girder/api';
+import { useStore, LocationType, RootlessLocationType } from '../store/types';
 import Upload from './Upload.vue';
 import eventBus from '../eventBus';
 
@@ -62,6 +63,13 @@ export default defineComponent({
       navigator.clipboard.writeText(text);
     };
 
+    const exportLinks = () => {
+      const id = locationStore.location && (locationStore.location as RootlessLocationType)._id;
+      const url = `UMD_dataset/links/${id}`;
+      const link = getUri({ url });
+      window.location.assign(link);
+    };
+
     return {
       fileManager,
       locationStore,
@@ -77,6 +85,7 @@ export default defineComponent({
       setLocation,
       updateUploading,
       copyLink,
+      exportLinks,
     };
   },
 });
@@ -125,6 +134,20 @@ export default defineComponent({
           @close="uploaderDialog = false"
         />
       </v-dialog>
+      <v-btn
+        class="ma-0"
+        text
+        small
+        @click="exportLinks()"
+      >
+        <v-icon
+          left
+          color="accent"
+        >
+          mdi-file-delimited
+        </v-icon>
+        Export Links
+      </v-btn>
     </template>
     <template #row="{item}">
       <span>{{ item.name }}</span>
