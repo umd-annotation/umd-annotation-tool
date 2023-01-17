@@ -1,8 +1,9 @@
+import os
 from dive_server import crud_annotation
 from dive_utils import setContentDisposition
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
-from girder.api.rest import Resource
+from girder.api.rest import Resource, getApiUrl
 from girder.constants import AccessType, TokenScope
 from girder.models.folder import Folder
 from girder.models.token import Token
@@ -20,6 +21,27 @@ class UMD_Dataset(Resource):
 
         self.route("POST", ("ingest_video", ":folderId"), self.ingest_video)
         self.route("GET", ("export",), self.export_tabular)
+        self.route("GET", ("links", ":folder"), self.export_links)
+
+    @access.public(scope=TokenScope.DATA_READ, cookie=True)
+    @autoDescribeRoute(
+        Description("Export link information for the root folder").modelParam(
+            "folder",
+            description="FolderId to get state from",
+            model=Folder,
+            level=AccessType.READ,
+            destName="folder",
+        )
+    )
+    def export_links(
+        self,
+        folder,
+    ):
+        subFolders = Folder().childFolders(folder, 'folder')
+        replacedHostname = getApiUrl().replace('/girder/api/v1', '/#')
+        gen = UMD_export.generate_links_tab(replacedHostname, subFolders)
+        setContentDisposition('FolderLinks.csv', mime='text/csv')
+        return gen
 
     @access.public(scope=TokenScope.DATA_READ, cookie=True)
     @autoDescribeRoute(

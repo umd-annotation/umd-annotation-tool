@@ -327,3 +327,36 @@ def convert_to_zips(folders, userMap, user):
         yield z.footer()
 
     return stream
+
+def generate_links_tab(url, folders):
+    def downloadGenerator():
+        for data in export_links_tab(url, folders):
+            yield data
+
+    return downloadGenerator
+
+def export_links_tab(url, folders):
+    csvFile = io.StringIO()
+    writer = csv.writer(csvFile, delimiter='\t')
+    writer.writerow(
+        [
+            "Name",
+            "V/A/E",
+            "Norms",
+            "Changepoint",
+            "Remediation",
+        ]
+    )
+    for folder in folders:
+        name = folder['name']
+        root = f'{url}/viewer/{folder["_id"]}?mode='
+        vae = f'{root}VAE'
+        norms = f'{root}norms'
+        changepoint = f'{root}changepoint'
+        remediation = f'{root}remediation'
+        columns = [ name, vae, norms, changepoint, remediation]
+        writer.writerow(columns)
+        yield csvFile.getvalue()
+        csvFile.seek(0)
+        csvFile.truncate(0)
+    yield csvFile.getvalue()
