@@ -142,7 +142,7 @@ export default defineComponent({
     const addChangepoint = (internal = false) => {
       changePoints.value.push({
         frame: frame.value,
-        impact: 0,
+        impact: 2,
         comment: '',
       });
       if (!internal) {
@@ -224,6 +224,8 @@ export default defineComponent({
       changePointComment.value = changePoints.value[index].comment;
     };
 
+    const submitValid = ref(false);
+
     return {
       selectedTrackIdRef,
       frame,
@@ -234,6 +236,7 @@ export default defineComponent({
       changePoints,
       selectedChangePoint,
       existingFrames,
+      submitValid,
       setChangepoint,
       submit,
       goToChangePoint,
@@ -250,22 +253,38 @@ export default defineComponent({
 
 <template>
   <v-container class="maincontainer">
-    <v-row
-      dense
-      class="scroll-sticky"
-    >
-      <h2 class="mr-4 mt-1" />
+    <v-row dense>
+      <v-col cols="11">
+        <h3>
+          Changepoints
+        </h3>
+      </v-col>
+      <v-col>
+        <v-tooltip
+          open-delay="200"
+          left
+          max-width="300"
+        >
+          <template #activator="{ on }">
+            <v-icon
+              v-on="on"
+            >
+              mdi-help
+            </v-icon>
+          </template>
+          <p style="font-size:1.4em">
+            Identify points (timestamps) in the video where there is a change in the conversation
+            that has the potential to impact the conversation outcome.
+            Indicate impact level on the scale (from most negative to most positive).
+            Add a comment explaining why you indicated the changepoint. Click “Save” when done.
+          </p>
+        </v-tooltip>
+      </v-col>
     </v-row>
-    <p class="px-1">
-      Identify points (timestamps) in the video where there is a change in the conversation
-      that has the potential to impact the conversation outcome.
-      Indicate impact level on the scale (from most negative to most positive).
-      Add a comment explaining why you indicated the changepoint. Click “Save” when done.
-    </p>
     <v-btn
       :disabled="existingFrames.includes(frame)"
       color="success"
-      @click="addChangepoint"
+      @click="addChangepoint()"
     >
       Add Changepoint at {{ frameToTime(frame) }}
     </v-btn>
@@ -331,7 +350,7 @@ export default defineComponent({
         </v-btn>
       </v-row>
       <div v-if="(changePointFrame != -1)">
-        <h4> Current ChangePoint : {{ frameToTime(changePointFrame) }}</h4>
+        <h4> Current ChangePoint Time : {{ frameToTime(changePointFrame) }}</h4>
         <v-row class="mt-2 ml-2">
           <v-btn
             v-if="(frame !== changePointFrame)"
@@ -342,28 +361,34 @@ export default defineComponent({
             Set Changepoint to current time: {{ frameToTime(frame) }}
           </v-btn>
         </v-row>
-        <v-row>
-          <v-col>
-            <v-slider
-              v-model="changePointImpact"
-              label="Impact"
-              min="1"
-              max="5"
-              step="1"
-              ticks="always"
-              :tick-size="10"
-            />
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-            <v-textarea
-              v-model="changePointComment"
-              outlined
-              label="Comment"
-            />
-          </v-col>
-        </v-row>
+        <v-form v-model="submitValid">
+          <v-row>
+            <v-col>
+              <v-slider
+                v-model="changePointImpact"
+                label="Impact"
+                min="1"
+                max="5"
+                step="1"
+                ticks="always"
+                :rules="[v => v >= 0 || 'Set the Impact Value']"
+                required
+                :tick-size="10"
+              />
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col>
+              <v-textarea
+                v-model="changePointComment"
+                outlined
+                :rules="[v => v.length > 0 || 'Comment is required']"
+                required
+                label="Comment"
+              />
+            </v-col>
+          </v-row>
+        </v-form>
       </div>
     </div>
     <v-row>
@@ -371,6 +396,7 @@ export default defineComponent({
         v-if="selectedChangePoint !== null"
         color="warning"
         class="mx-2"
+        :disabled="!submitValid"
         @click="submit"
       >
         Save
