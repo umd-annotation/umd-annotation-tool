@@ -7,6 +7,7 @@ import StackedVirtualSidebarContainer from 'dive-common/components/StackedVirtua
 import UMDAnnotation from './UMDAnnotation.vue';
 import UMDChangepoint from './UMDChangepoint.vue';
 import UMDRemediation from './UMDRemediation.vue';
+
 export default defineComponent({
   name: 'UMDAnnotationWrapper',
   components: {
