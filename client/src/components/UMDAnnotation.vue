@@ -41,12 +41,34 @@ export default defineComponent({
     const cameraStore = useCameraStore();
     const arousal = ref(1);
     const valence = ref(1);
-    const baseEmotionsList = ['No emotions', 'Anger', 'Anticipation', 'Joy', 'Trust', 'Fear', 'Surprise', 'Sadness', 'Disgust'];
+    const emotionsList: Ref<string[]> = ref([]);
+    const baseEmotionsList = computed(() => {
+      if (emotionsList.value.includes('No emotions')) {
+        return ['No emotions'];
+      }
+      return ['No emotions', 'Anger', 'Anticipation', 'Joy', 'Trust', 'Fear', 'Surprise', 'Sadness', 'Disgust'];
+    });
     const multiSpeakerOptions = ref(['FALSE', 'TRUE', 'noann']);
     const multiSpeaker: Ref<'FALSE' | 'TRUE' | 'noann'> = ref('FALSE');
-    const emotionsList: Ref<string[]> = ref([]);
-    const baseNormsList = ['None', 'Apology', 'Criticism', 'Greeting', 'Request', 'Persuasion', 'Thanks', 'Taking Leave', 'Admiration', 'Finalizing Negotiating/Deal', 'Refusing a Request'];
     const normsSelected: Ref<string[]> = ref([]);
+    const baseNormsList = computed(() => {
+      if (normsSelected.value.includes('None')) {
+        return ['None'];
+      }
+      return [
+        'None',
+        'Apology',
+        'Criticism',
+        'Greeting',
+        'Request',
+        'Persuasion',
+        'Thanks',
+        'Taking Leave',
+        'Admiration',
+        'Finalizing Negotiating/Deal',
+        'Refusing a Request',
+      ];
+    });
     const normsObject: Ref<Record<string, 'adhered' |'violate' | 'noann' | 'EMPTY_NA'>> = ref({});
     const userLogin = ref('');
     const loadedAttributes = ref(false);
@@ -175,11 +197,21 @@ export default defineComponent({
     const updateNorm = (item: string, value: 'adhered' | 'violate' | 'noann' | 'EMPTY_NA') => {
       normsObject.value[item] = value;
     };
-    const syncNorms = () => {
+    const syncNorms = (data: string[]) => {
       const keys = Object.keys(normsObject.value);
+
       for (let i = 0; i < keys.length; i += 1) {
         if (!normsSelected.value.includes(keys[i])) {
           delete normsObject.value[keys[i]];
+        }
+      }
+      if (data.includes('None')) {
+        normsObject.value.None = 'noann';
+      } else {
+        for (let i = 0; i < data.length; i += 1) {
+          if (!normsObject.value[data[i]]) {
+            normsObject.value[data[i]] = 'adhered';
+          }
         }
       }
     };
@@ -232,6 +264,24 @@ export default defineComponent({
       return true;
     });
 
+    const updateEmotions = (data: string[]) => {
+      if (data.includes('No emotions')) {
+        emotionsList.value = ['No emotions'];
+      }
+    };
+
+    const normsValid = ref(false);
+    const VAEValid = ref(false);
+
+    const submitValid = computed(() => {
+      if (props.mode === 'norms') {
+        return normsValid.value;
+      } if (props.mode === 'VAE') {
+        return VAEValid.value;
+      }
+      return false;
+    });
+
     return {
       hasPrevious,
       hasNext,
@@ -248,6 +298,9 @@ export default defineComponent({
       frame,
       outsideSegment,
       loadedAttributes,
+      normsValid,
+      VAEValid,
+      submitValid,
       submit,
       changeTrack,
       updateNorm,
@@ -255,6 +308,7 @@ export default defineComponent({
       seekBegin,
       seekEnd,
       playSegment,
+      updateEmotions,
     };
   },
 });
@@ -309,13 +363,6 @@ export default defineComponent({
       </v-btn>
     </v-row>
     <div v-if="mode ==='VAE' || mode ==='review'">
-      <v-row dense>
-        <p class="px-1">
-          Move the slider to rate the level of valence displayed by the speaker in the current
-          segment (from the
-          most negative to the most positive; the middle point indicates neutral valence).
-        </p>
-      </v-row>
       <v-row
         dense
         class="bottomborder"
@@ -334,7 +381,26 @@ export default defineComponent({
                 dense
               />
             </v-col>
-            <v-col cols="1" />
+            <v-col cols="1">
+              <v-tooltip
+                open-delay="200"
+                left
+                max-width="300"
+              >
+                <template #activator="{ on }">
+                  <v-icon
+                    v-on="on"
+                  >
+                    mdi-help
+                  </v-icon>
+                </template>
+                <p style="font-size:1.4em">
+                  Move the slider to rate the level of valence displayed by the speaker in
+                  the current segment (from the
+                  most negative to the most positive; the middle point indicates neutral valence).
+                </p>
+              </v-tooltip>
+            </v-col>
           </v-row>
           <v-row dense>
             <v-col
@@ -349,13 +415,6 @@ export default defineComponent({
             </v-col>
           </v-row>
         </v-col>
-      </v-row>
-      <v-row dense>
-        <p class="px-1">
-          Move the slider to rate the level of arousal displayed by the speaker in
-          the current segment (from the
-          most calm/low energy to the most excited/high energy).
-        </p>
       </v-row>
       <v-row
         dense
@@ -375,7 +434,26 @@ export default defineComponent({
                 dense
               />
             </v-col>
-            <v-col cols="1" />
+            <v-col cols="1">
+              <v-tooltip
+                open-delay="200"
+                left
+                max-width="300"
+              >
+                <template #activator="{ on }">
+                  <v-icon
+                    v-on="on"
+                  >
+                    mdi-help
+                  </v-icon>
+                </template>
+                <p style="font-size:1.4em">
+                  Move the slider to rate the level of arousal displayed by the speaker in
+                  the current segment (from the
+                  most calm/low energy to the most excited/high energy).
+                </p>
+              </v-tooltip>
+            </v-col>
           </v-row>
           <v-row dense>
             <v-col
@@ -394,32 +472,54 @@ export default defineComponent({
     </div>
     <div v-if="mode ==='VAE' || mode === 'review'">
       <v-row dense>
-        <p class="px-1">
-          Indicate emotion categories expressed by the speaker in the current segment.
-          Select as many categories
-          as applicable. Select “No emotion” if the speaker does not express any particular emotion.
-        </p>
+        <v-col cols="11">
+          <h3>
+            Emotions
+          </h3>
+        </v-col>
+        <v-col>
+          <v-tooltip
+            open-delay="200"
+            left
+            max-width="300"
+          >
+            <template #activator="{ on }">
+              <v-icon
+                v-on="on"
+              >
+                mdi-help
+              </v-icon>
+            </template>
+            <p style="font-size:1.4em">
+              Indicate emotion categories expressed by the speaker in the current segment.
+              Select as many categories
+              as applicable. Select “No emotion” if the speaker does not express
+              any particular emotion.
+            </p>
+          </v-tooltip>
+        </v-col>
       </v-row>
       <v-row
         dense
         class="bottomborder"
       >
-        <v-col
-          cols="3"
-          class="align-self-center"
-        >
-          Emotions
-        </v-col>
         <v-col>
-          <v-select
-            v-model="emotionsList"
-            :items="baseEmotionsList"
-            chips
-            multiple
-            clearable
-            persistent-hint
-            deletable-chips
-          />
+          <v-form v-model="VAEValid">
+            <v-select
+              v-model="emotionsList"
+              :items="baseEmotionsList"
+              chips
+              multiple
+              outlined
+              clearable
+              persistent-hint
+              hint="Select one or more Emotions"
+              required
+              :rules="[v => !!v.length || 'Must select an Emotion']"
+              deletable-chips
+              @change="updateEmotions($event)"
+            />
+          </v-form>
         </v-col>
       </v-row>
       <v-row>
@@ -442,28 +542,53 @@ export default defineComponent({
       </v-row>
     </div>
     <div v-if="mode === 'norms' || mode ==='review'">
-      <v-row>
-        <p class="px-1">
-          Select all observable social norm categories employed by the speaker in the current
-          segment. For each social norm identified,
-          indicate whether it is adhered to or violated by the speaker. Select “None” to
-          indicate that no observable social norms are present in the segment.
-          Click “Submit” when done.
-        </p>
+      <v-row dense>
+        <v-col cols="11">
+          <h3>
+            Norms
+          </h3>
+        </v-col>
+        <v-col>
+          <v-tooltip
+            open-delay="200"
+            left
+            max-width="300"
+          >
+            <template #activator="{ on }">
+              <v-icon
+                v-on="on"
+              >
+                mdi-help
+              </v-icon>
+            </template>
+            <p style="font-size:1.4em">
+              Select all observable social norm categories employed by the speaker in the current
+              segment. For each social norm identified,
+              indicate whether it is adhered to or violated by the speaker. Select “None” to
+              indicate that no observable social norms are present in the segment.
+              Click “Submit” when done.
+            </p>
+          </v-tooltip>
+        </v-col>
       </v-row>
       <v-row>
         <v-col>
-          <v-select
-            v-model="normsSelected"
-            :items="baseNormsList"
-            chips
-            label="Norms"
-            multiple
-            clearable
-            persistent-hint
-            deletable-chips
-            @change="syncNorms"
-          />
+          <v-form v-model="normsValid">
+            <v-select
+              v-model="normsSelected"
+              :items="baseNormsList"
+              chips
+              multiple
+              outlined
+              clearable
+              persistent-hint
+              hint="Select one or more Norms"
+              deletable-chips
+              required
+              :rules="[v => !!v.length || 'Must select a Norm']"
+              @change="syncNorms($event)"
+            />
+          </v-form>
         </v-col>
       </v-row>
       <v-row
@@ -477,10 +602,11 @@ export default defineComponent({
             row
           >
             <v-radio
-              v-for="n in ['adhere', 'violate', 'noann', 'EMPTY_NA']"
+              v-for="n in ['adhered', 'violate', 'noann', 'EMPTY_NA']"
               :key="n"
               :label="n"
               :value="n"
+              :disabled="item === 'None'"
               class="mx-3"
               style="min-height:32px; max-height:32px"
             />
@@ -493,7 +619,7 @@ export default defineComponent({
       <v-col>
         <v-btn
           :color="loadedAttributes ? 'warning' : 'success'"
-          :disabled="outsideSegment"
+          :disabled="outsideSegment || !submitValid"
           @click="submit"
         >
           {{ loadedAttributes ? 'Update' : 'Submit' }}

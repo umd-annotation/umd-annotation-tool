@@ -208,6 +208,8 @@ export default defineComponent({
       remediationComment.value = remediations.value[index].comment;
     };
 
+    const submitValid = ref(false);
+
     return {
       selectedTrackIdRef,
       frame,
@@ -217,6 +219,7 @@ export default defineComponent({
       remediations,
       selectedRemediation,
       existingFrames,
+      submitValid,
       setRemediation,
       submit,
       goToRemediation,
@@ -233,20 +236,36 @@ export default defineComponent({
 
 <template>
   <v-container class="maincontainer">
-    <v-row
-      dense
-      class="scroll-sticky"
-    >
-      <h2 class="mr-4 mt-1" />
+    <v-row dense>
+      <v-col cols="11">
+        <h3>
+          Remediations
+        </h3>
+      </v-col>
+      <v-col>
+        <v-tooltip
+          open-delay="200"
+          left
+          max-width="300"
+        >
+          <template #activator="{ on }">
+            <v-icon
+              v-on="on"
+            >
+              mdi-help
+            </v-icon>
+          </template>
+          <p style="font-size:1.4em">
+            Indicate where the interpreter applied remediation of any kind (timestamps).
+            Add a comment explaining the type of remediation.
+          </p>
+        </v-tooltip>
+      </v-col>
     </v-row>
-    <p class="px-1">
-      Indicate where the interpreter applied remediation of any kind (timestamps).
-      Add a comment explaining the type of remediation.
-    </p>
     <v-btn
       :disabled="existingFrames.includes(frame)"
       color="success"
-      @click="addRemediation"
+      @click="addRemediation()"
     >
       Add Remediation at {{ frameToTime(frame) }}
     </v-btn>
@@ -325,11 +344,15 @@ export default defineComponent({
         </v-row>
         <v-row>
           <v-col>
-            <v-textarea
-              v-model="remediationComment"
-              outlined
-              label="Comment"
-            />
+            <v-form v-model="submitValid">
+              <v-textarea
+                v-model="remediationComment"
+                outlined
+                :rules="[v => v.length > 0 || 'Comment is required']"
+                required
+                label="Comment"
+              />
+            </v-form>
           </v-col>
         </v-row>
       </div>
@@ -339,6 +362,7 @@ export default defineComponent({
         v-if="selectedRemediation !== null"
         color="warning"
         class="mx-2"
+        :disabled="!submitValid"
         @click="submit"
       >
         Save
