@@ -2,16 +2,13 @@
 import {
   defineComponent, PropType,
 } from '@vue/composition-api';
-
 import TooltipBtn from 'vue-media-annotator/components/TooltipButton.vue';
 import StackedVirtualSidebarContainer from 'dive-common/components/StackedVirtualSidebarContainer.vue';
 import UMDAnnotation from './UMDAnnotation.vue';
 import UMDChangepoint from './UMDChangepoint.vue';
 import UMDRemediation from './UMDRemediation.vue';
-
 export default defineComponent({
   name: 'UMDAnnotationWrapper',
-
   components: {
     StackedVirtualSidebarContainer,
     TooltipBtn,
@@ -19,7 +16,6 @@ export default defineComponent({
     UMDChangepoint,
     UMDRemediation,
   },
-
   props: {
     width: {
       type: Number,
@@ -30,10 +26,8 @@ export default defineComponent({
       default: 'review',
     },
   },
-
   setup() {
     return {
-
     };
   },
 });
@@ -56,5 +50,4 @@ export default defineComponent({
 </template>
 
 <style scoped lang="scss">
-
 </style>
