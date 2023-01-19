@@ -38,6 +38,7 @@ class UMD_Dataset(Resource):
         folder,
     ):
         subFolders = Folder().childFolders(folder, 'folder')
+        subFolders = sorted(subFolders, key=lambda d: d['created'])
         replacedHostname = getApiUrl().replace('/girder/api/v1', '/#')
         gen = UMD_export.generate_links_tab(replacedHostname, subFolders)
         setContentDisposition('FolderLinks.csv', mime='text/csv')
