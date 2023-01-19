@@ -311,6 +311,7 @@ export default defineComponent({
       :frame-rate="displayFrameRate"
       :display="!collapsed"
       :max-segment="maxSegment"
+      :mode="mode"
       @seek="seek"
     >
       <template

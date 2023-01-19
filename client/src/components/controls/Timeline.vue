@@ -267,6 +267,7 @@ export default {
 <template>
   <div
     class="timeline"
+    :class="{mode: mode !== undefined}"
     @wheel="onwheel"
     @mouseup="containerMouseup"
     @mousemove="containerMousemove"
@@ -344,7 +345,7 @@ export default {
       position: absolute;
       top: 0;
       width: 100%;
-      height: 100%;
+      height: calc(100% - 13px);
       background-color: rgba($color: #c9c9c9, $alpha: 0.75);
       z-index:1;
     }
@@ -368,6 +369,11 @@ export default {
     }
   }
 }
+.mode {
+  min-height: 75px !important;
+  max-height: 75px !important;
+}
+
 </style>
 
 <style lang="scss">

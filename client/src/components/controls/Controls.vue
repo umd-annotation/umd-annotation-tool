@@ -1,6 +1,6 @@
 <script lang="ts">
 import {
-  defineComponent, reactive, watch,
+  defineComponent, reactive, ref, watch,
 } from '@vue/composition-api';
 import { usePrompt } from 'dive-common/vue-utilities/prompt-service';
 import context from 'dive-common/store/context';
@@ -26,15 +26,25 @@ export default defineComponent({
         data.frame = frame;
       }
     });
+    const sliderKey = ref(false);
+    const sliderDisabled = ref(false);
     const dragHandler = {
       start() { data.dragging = true; },
-      end() { data.dragging = false; },
+      end() {
+        if (props.maxSegment !== -1 && sliderDisabled.value) {
+          data.dragging = false;
+          sliderDisabled.value = false;
+          data.frame = (150 + (props.maxSegment + 2) * 450);
+          sliderKey.value = !sliderKey.value;
+        }
+      },
     };
     function input(value: number) {
       if (mediaController.frame.value !== value) {
         if (props.maxSegment !== -1 && value > (150 + (props.maxSegment + 2) * 450)) {
           // eslint-disable-next-line no-param-reassign
           value = (150 + (props.maxSegment + 2) * 450);
+          sliderDisabled.value = true;
         }
         mediaController.seek(value);
       }
@@ -60,6 +70,8 @@ export default defineComponent({
       togglePlay,
       toggleEnhancements,
       visible,
+      sliderKey,
+      sliderDisabled,
     };
   },
 });
@@ -85,13 +97,16 @@ export default defineComponent({
       tile
     >
       <v-slider
+        :key="sliderKey"
         hide-details
         :min="0"
         :max="mediaController.maxFrame.value"
         :value="data.frame"
+        :disabled="sliderDisabled"
         @start="dragHandler.start"
         @end="dragHandler.end"
-        @input="input"
+        @change="dragHandler.end"
+        @input="input($event)"
       />
       <v-row no-gutters>
         <v-col class="pl-1 py-1 shrink">
