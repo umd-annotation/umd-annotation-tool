@@ -16,6 +16,7 @@ import Summary from './views/Summary.vue';
 Vue.use(Router);
 
 async function beforeEnter(to: Route, from: Route, next: Function) {
+  console.log('router guard');
   if (!girderRest.user) {
     next('/login');
   } else {

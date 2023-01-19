@@ -23,8 +23,10 @@ export default defineComponent({
     async function onLogin() {
       if (girderRest.user.groups.length) {
         const groupMap = await getGroupIds();
-        const groupId = groupMap.Annotator;
-        if (girderRest.user.groups.includes(groupId)) {
+        const annotatorId = groupMap.Annotator;
+        const managerId = groupMap.Manager;
+        if (!girderRest.user.admin && girderRest.user.groups.includes(annotatorId)
+        && !girderRest.user.groups.includes(managerId)) {
           root.$router.push('/annotatorPage');
           return;
         }

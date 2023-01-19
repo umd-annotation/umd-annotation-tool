@@ -24,9 +24,12 @@ const store = new Vuex.Store<RootState>({
 
 /* Keep location state up to date with current route */
 router.beforeEach((to, from, next) => {
-  if (girderRest.user?.groups?.length && to.name !== 'viewer' && to.name !== 'annotatorPage') {
+  console.log('store guard');
+  if (girderRest.user && !girderRest.user.admin && girderRest.user?.groups?.length && to.name !== 'viewer' && to.name !== 'annotatorPage') {
     const annotatorId = store.state.Groups.groupMap?.Annotator;
-    if (girderRest.user.groups.includes(annotatorId)) {
+    const managerId = store.state.Groups.groupMap?.Manager;
+    if (girderRest.user.groups.includes(annotatorId)
+      && !girderRest.user.groups.includes(managerId)) {
       next('/annotatorPage');
       return;
     }
