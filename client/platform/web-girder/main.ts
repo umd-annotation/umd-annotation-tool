@@ -38,6 +38,7 @@ if (
 
 Promise.all([
   store.dispatch('Brand/loadBrand'),
+  store.dispatch('Groups/loadGroups'),
   girderRest.fetchUser(),
 ]).then(() => {
   const vuetify = getVuetify(store.state.Brand.brandData?.vuetify);
