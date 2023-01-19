@@ -28,7 +28,7 @@ def bin_value(value):
     return math.floor(value / 200) + 1
 
 
-def export_changepoint_tab(tracks, folderId, fps, userMap):
+def export_changepoint_tab(tracks, videoname, fps, userMap):
     csvFile = io.StringIO()
     writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
     writer.writerow(["user_id", "file_id", "timestamp", "impact_scalar", "comment"])
@@ -42,14 +42,14 @@ def export_changepoint_tab(tracks, folderId, fps, userMap):
                     for key in attributes.keys():
                         if '_Impact' in key:
                             login = key.replace('_Impact', '')
-                            mapped = userMap[login]
+                            mapped = login
                             if mapped not in userDataFound.keys():
                                 userDataFound[mapped] = {}
                             userDataFound[mapped]['Impact'] = attributes[key]
                             userDataFound[mapped]['Timestamp'] = (1 / fps) * feature['frame']
                         if '_Comment' in key:
                             login = key.replace('_Comment', '')
-                            mapped = userMap[login]
+                            mapped = login
                             if mapped not in userDataFound.keys():
                                 userDataFound[mapped] = {}
                             userDataFound[mapped]['Comment'] = attributes[key]
@@ -58,7 +58,7 @@ def export_changepoint_tab(tracks, folderId, fps, userMap):
             for key in userDataFound.keys():
                 columns = [
                     key,
-                    folderId,
+                    videoname,
                     userDataFound[key]['Timestamp'],
                     userDataFound[key]['Impact'],
                     userDataFound[key]['Comment'],
@@ -70,7 +70,7 @@ def export_changepoint_tab(tracks, folderId, fps, userMap):
     yield csvFile.getvalue()
 
 
-def export_remediation_tab(tracks, folderId, fps, userMap):
+def export_remediation_tab(tracks, videoname, fps, userMap):
     csvFile = io.StringIO()
     writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
     writer.writerow(["user_id", "file_id", "timestamp", "comment"])
@@ -84,7 +84,7 @@ def export_remediation_tab(tracks, folderId, fps, userMap):
                     for key in attributes.keys():
                         if '_RemediationComment' in key:
                             login = key.replace('_RemediationComment', '')
-                            mapped = userMap[login]
+                            mapped = login
                             if mapped not in userDataFound.keys():
                                 userDataFound[mapped] = {}
                             userDataFound[mapped]['Comment'] = attributes[key]
@@ -93,7 +93,7 @@ def export_remediation_tab(tracks, folderId, fps, userMap):
             for key in userDataFound.keys():
                 columns = [
                     key,
-                    folderId,
+                    videoname,
                     userDataFound[key]['Timestamp'],
                     userDataFound[key]['Comment'],
                 ]
@@ -104,7 +104,7 @@ def export_remediation_tab(tracks, folderId, fps, userMap):
     yield csvFile.getvalue()
 
 
-def export_norms_tab(tracks, folderId, fps, userMap):
+def export_norms_tab(tracks, videoname, fps, userMap):
     csvFile = io.StringIO()
     writer = csv.writer(csvFile, delimiter='\t')
     writer.writerow(
@@ -123,7 +123,7 @@ def export_norms_tab(tracks, folderId, fps, userMap):
             for key in attributes.keys():
                 if '_Norms' in key:
                     login = key.replace('_Norms', '')
-                    mapped = userMap[login]
+                    mapped = login
                     if mapped not in userDataFound.keys():
                         userDataFound[mapped] = {}
                     norms = attributes[key]
@@ -135,8 +135,8 @@ def export_norms_tab(tracks, folderId, fps, userMap):
                 for normKey in userDataFound[key].keys():
                     columns = [
                         key,
-                        folderId,
-                        f'{folderId}_{t["id"]:04}',
+                        videoname,
+                        f'{videoname}_{t["id"]:04}',
                         normKey,
                         userDataFound[key][normKey],
                     ]
@@ -147,7 +147,7 @@ def export_norms_tab(tracks, folderId, fps, userMap):
     yield csvFile.getvalue()
 
 
-def export_valence_tab(tracks, folderId, fps, userMap):
+def export_valence_tab(tracks, videoname, fps, userMap):
     csvFile = io.StringIO()
     writer = csv.writer(csvFile, delimiter='\t')
     writer.writerow(
@@ -168,14 +168,14 @@ def export_valence_tab(tracks, folderId, fps, userMap):
             for key in attributes.keys():
                 if '_Valence' in key:
                     login = key.replace('_Valence', '')
-                    mapped = userMap[login]
+                    mapped = login
                     if mapped not in userDataFound.keys():
                         userDataFound[mapped] = {}
                     userDataFound[mapped]['valence_continuous'] = attributes[key]
                     userDataFound[mapped]['valence_binned'] = bin_value(attributes[key])
                 if '_Arousal' in key:
                     login = key.replace('_Arousal', '')
-                    mapped = userMap[login]
+                    mapped = login
                     if mapped not in userDataFound.keys():
                         userDataFound[mapped] = {}
                     userDataFound[mapped]['arousal_continuous'] = attributes[key]
@@ -183,8 +183,8 @@ def export_valence_tab(tracks, folderId, fps, userMap):
             for key in userDataFound.keys():
                 columns = [
                     key,
-                    folderId,
-                    f'{folderId}_{t["id"]:04}',
+                    videoname,
+                    f'{videoname}_{t["id"]:04}',
                     userDataFound[key]['valence_continuous'],
                     userDataFound[key]['valence_binned'],
                     userDataFound[key]['arousal_continuous'],
@@ -197,7 +197,7 @@ def export_valence_tab(tracks, folderId, fps, userMap):
     yield csvFile.getvalue()
 
 
-def export_segment_tab(tracks, folderId, fps, userMap):
+def export_segment_tab(tracks, videoname, fps, userMap):
     csvFile = io.StringIO()
     writer = csv.writer(csvFile, delimiter='\t')
     writer.writerow(
@@ -211,7 +211,7 @@ def export_segment_tab(tracks, folderId, fps, userMap):
     for t in tracks:
         start = t['begin'] * (1 / fps)
         end = t['end'] * (1 / fps)
-        columns = [folderId, f'{folderId}_{t["id"]:04}', start, end]
+        columns = [videoname, f'{videoname}_{t["id"]:04}', start, end]
         writer.writerow(columns)
         yield csvFile.getvalue()
         csvFile.seek(0)
@@ -219,7 +219,7 @@ def export_segment_tab(tracks, folderId, fps, userMap):
     yield csvFile.getvalue()
 
 
-def export_emotions_tab(tracks, folderId, fps, userMap):
+def export_emotions_tab(tracks, videoname, fps, userMap):
     csvFile = io.StringIO()
     writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
     writer.writerow(["user_id", "file_id", "segment_id", "emotion", "multi_speaker"])
@@ -230,22 +230,22 @@ def export_emotions_tab(tracks, folderId, fps, userMap):
             for key in attributes.keys():
                 if '_Emotions' in key:
                     login = key.replace('_Emotions', '')
-                    mapped = userMap[login]
+                    mapped = login
                     if mapped not in userDataFound.keys():
                         userDataFound[mapped] = {}
                     base = ','.join(attributes[key].split('_'))
                     userDataFound[mapped]['Emotions'] = base
                 if '_MultiSpeaker' in key:
                     login = key.replace('_MultiSpeaker', '')
-                    mapped = userMap[login]
+                    mapped = login
                     if mapped not in userDataFound.keys():
                         userDataFound[mapped] = {}
                     userDataFound[mapped]['MultiSpeaker'] = attributes[key]
             for key in userDataFound.keys():
                 columns = [
                     key,
-                    folderId,
-                    f'{folderId}_{t["id"]:04}',
+                    videoname,
+                    f'{videoname}_{t["id"]:04}',
                     f'"{userDataFound[key]["Emotions"]}"',
                     userDataFound[key]['MultiSpeaker'],
                 ]
@@ -256,25 +256,25 @@ def export_emotions_tab(tracks, folderId, fps, userMap):
     yield csvFile.getvalue()
 
 
-def generate_tab(tracks, folderId, fps, userMap, type):
+def generate_tab(tracks, videoname, fps, userMap, type):
     def downloadGenerator():
         if type == 'segment':
-            for data in export_segment_tab(tracks, folderId, fps, userMap):
+            for data in export_segment_tab(tracks, videoname, fps, userMap):
                 yield data
         if type == 'valence':
-            for data in export_valence_tab(tracks, folderId, fps, userMap):
+            for data in export_valence_tab(tracks, videoname, fps, userMap):
                 yield data
         if type == 'emotions':
-            for data in export_emotions_tab(tracks, folderId, fps, userMap):
+            for data in export_emotions_tab(tracks, videoname, fps, userMap):
                 yield data
         if type == 'norms':
-            for data in export_norms_tab(tracks, folderId, fps, userMap):
+            for data in export_norms_tab(tracks, videoname, fps, userMap):
                 yield data
         if type == 'changepoint':
-            for data in export_changepoint_tab(tracks, folderId, fps, userMap):
+            for data in export_changepoint_tab(tracks, videoname, fps, userMap):
                 yield data
         if type == 'remediation':
-            for data in export_remediation_tab(tracks, folderId, fps, userMap):
+            for data in export_remediation_tab(tracks, videoname, fps, userMap):
                 yield data
 
     return downloadGenerator
@@ -285,7 +285,7 @@ def convert_to_zips(folders, userMap, user):
         z = ziputil.ZipGenerator()
         for folderId in folders:
             folder = Folder().load(folderId, level=AccessType.READ, user=user)
-            print(folder)
+            videoname = folder['name']
             fps = folder['meta']['fps']
             tracks = crud_annotation.TrackItem().list(folder)
             if len(folders) == 1:
@@ -301,27 +301,27 @@ def convert_to_zips(folders, userMap, user):
 
             for data in z.addFile(makeDiveJson, Path(f'{zip_path}annotations.json')):
                 yield data
-            seg_gen = generate_tab(tracks, folderId, fps, userMap, 'segment')
+            seg_gen = generate_tab(tracks, videoname, fps, userMap, 'segment')
             for data in z.addFile(seg_gen, Path(f'{zip_path}segment_tab.tab')):
                 yield data
             tracks.rewind()
-            valence_gen = generate_tab(tracks, folderId, fps, userMap, 'valence')
+            valence_gen = generate_tab(tracks, videoname, fps, userMap, 'valence')
             for data in z.addFile(valence_gen, Path(f'{zip_path}valence_tab.tab')):
                 yield data
             tracks.rewind()
-            emotion_gen = generate_tab(tracks, folderId, fps, userMap, 'emotions')
+            emotion_gen = generate_tab(tracks, videoname, fps, userMap, 'emotions')
             for data in z.addFile(emotion_gen, Path(f'{zip_path}emotions_tab.tab')):
                 yield data
             tracks.rewind()
-            norm_gen = generate_tab(tracks, folderId, fps, userMap, 'norms')
+            norm_gen = generate_tab(tracks, videoname, fps, userMap, 'norms')
             for data in z.addFile(norm_gen, Path(f'{zip_path}norms_tab.tab')):
                 yield data
             tracks.rewind()
-            norm_gen = generate_tab(tracks, folderId, fps, userMap, 'changepoint')
+            norm_gen = generate_tab(tracks, videoname, fps, userMap, 'changepoint')
             for data in z.addFile(norm_gen, Path(f'{zip_path}changepoint_tab.tab')):
                 yield data
             tracks.rewind()
-            norm_gen = generate_tab(tracks, folderId, fps, userMap, 'remediation')
+            norm_gen = generate_tab(tracks, videoname, fps, userMap, 'remediation')
             for data in z.addFile(norm_gen, Path(f'{zip_path}remediation_tab.tab')):
                 yield data
         yield z.footer()
