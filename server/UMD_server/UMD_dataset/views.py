@@ -1,4 +1,5 @@
 import os
+import requests
 from dive_server import crud_annotation
 from dive_utils import setContentDisposition
 from girder.api import access
@@ -22,6 +23,7 @@ class UMD_Dataset(Resource):
         self.route("POST", ("ingest_video", ":folderId"), self.ingest_video)
         self.route("GET", ("export",), self.export_tabular)
         self.route("GET", ("links", ":folder"), self.export_links)
+        self.route("POST", ("update_containers",), self.update_containers)
 
     @access.public(scope=TokenScope.DATA_READ, cookie=True)
     @autoDescribeRoute(
@@ -106,3 +108,25 @@ class UMD_Dataset(Resource):
                 girder_client_token=str(token["_id"]),
             )
             Job().save(newjob.job)
+
+    @access.admin
+    @autoDescribeRoute(
+        Description("Force an update to the docker containers through watchtower using http interface")
+    )
+    def update_containers(self):
+        try:
+            print('Sending Post Request')
+            url = "http://watchtower:8080/v1/update"
+            token = os.environ.get("WATCHTOWER_API_TOKEN", "mytoken")
+            headers = {"Authorization": f"Bearer {token}"}
+            req = requests.get(url, headers=headers)
+            req.raise_for_status()
+            return "Update Successful"
+        except requests.exceptions.HTTPError as err:
+            return (f"HTTP error occurred: {err}")
+        except requests.exceptions.ConnectionError as err:
+            return (f"Error Connecting: {err}")
+        except requests.exceptions.Timeout as err:
+            return (f"Timeout Error: {err}")
+        except requests.exceptions.RequestException as err:
+            return (f"Something went wrong: {err}")
