@@ -71,6 +71,11 @@ export default {
         </v-tab>
         <JobsTab />
         <v-tab
+          :to="`/annotatorHome`"
+        >
+          Annotator Home <v-icon>mdi-home</v-icon>
+        </v-tab>
+        <v-tab
           v-if="isAdmin"
           :to="`/admin`"
         >

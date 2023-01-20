@@ -27,7 +27,7 @@ export default defineComponent({
         const managerId = groupMap.Manager;
         if (!girderRest.user.admin && girderRest.user.groups.includes(annotatorId)
         && !girderRest.user.groups.includes(managerId)) {
-          root.$router.push('/annotatorPage');
+          root.$router.push('/annotatorHome');
           return;
         }
       }

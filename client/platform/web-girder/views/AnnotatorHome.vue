@@ -4,7 +4,7 @@ import NavigationTitle from 'dive-common/components/NavigationTitle.vue';
 
 
 export default {
-  name: 'AnnotatorPage',
+  name: 'annotatorHome',
   components: {
     NavigationTitle,
   },
@@ -50,6 +50,7 @@ export default {
 
 <template>
   <div>
+  <div>
     <v-app-bar app>
       <NavigationTitle :name="brandData.name" />
       <v-divider
@@ -58,7 +59,7 @@ export default {
         color="white"
       />
       <h2 class="pl-5">
-        Annotator Landing Page
+        Annotator Home
       </h2>
       <v-spacer />
       <div>
@@ -88,4 +89,15 @@ export default {
       {{ brandData.alertMessage }}
     </v-banner>
   </div>
+  <v-container style="margin-top:64px">
+      <v-card class="mt-5">
+        <v-card-title style="font-size:1.75em">
+          Welcome to the UMD Annotator Home Page
+        </v-card-title>
+        <v-card-text style="font-size:1.5em">
+          Some generic instructions for the annotator to perform actions.
+        </v-card-text>
+      </v-card>
+    </v-container>
+</div>
 </template>
