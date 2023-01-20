@@ -118,7 +118,7 @@ class UMD_Dataset(Resource):
             print('Sending Post Request')
             url = "http://watchtower:8080/v1/update"
             headers = {"Authorization": "Bearer mytoken"}
-            req = requests.post(url, headers=headers)
+            req = requests.get(url, headers=headers)
             req.raise_for_status()
             return "Update Successful"
         except requests.exceptions.HTTPError as err:
