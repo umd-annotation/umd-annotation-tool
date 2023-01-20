@@ -117,7 +117,8 @@ class UMD_Dataset(Resource):
         try:
             print('Sending Post Request')
             url = "http://watchtower:8080/v1/update"
-            headers = {"Authorization": "Bearer mytoken"}
+            token = os.environ.get("WATCHTOWER_API_TOKEN", "mytoken")
+            headers = {"Authorization": f"Bearer {token}"}
             req = requests.get(url, headers=headers)
             req.raise_for_status()
             return "Update Successful"

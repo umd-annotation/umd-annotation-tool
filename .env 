@@ -5,6 +5,7 @@
 # Docker Compose Stack configuration
 #
 COMPOSE_PROJECT_NAME=UMD
+WATCHTOWER_API_TOKEN=customhiddentoken
 
 # Web server configuration
 #
