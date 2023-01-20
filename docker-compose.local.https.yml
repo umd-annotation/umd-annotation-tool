@@ -1,28 +1,28 @@
 version: "3.8"
 services:
 
-  traefik:
-    restart: always
-    command: >
-      --log.level=${LOG_LEVEL:-DEBUG}
-      --providers.docker=true
-      --providers.docker.exposedByDefault=false
-      --providers.file.filename=/var/traefik/dynamic.yml
-      --entrypoints.web.address=:80
-      --entrypoints.websecure.address=:443
-    labels:
-      # Traefik HTTPS Redirect
-      - "traefik.enable=true"
-      - "traefik.http.routers.http-catchall.entrypoints=web"
-      - "traefik.http.routers.http-catchall.rule=HostRegexp(`{host:.+}`)"
-      - "traefik.http.routers.http-catchall.middlewares=redirect-to-https-mddl@docker"
-      - "traefik.http.middlewares.redirect-to-https-mddl.redirectscheme.scheme=https"
-    volumes:
-      - "./docker/dynamic.local.https.yml:/var/traefik/dynamic.yml:ro"
-      - "./docker/certs:/etc/certs:ro"
-    ports:
-      - "80:80"
-      - "443:443"
+  # traefik:
+  #   restart: always
+  #   command: >
+  #     --log.level=${LOG_LEVEL:-DEBUG}
+  #     --providers.docker=true
+  #     --providers.docker.exposedByDefault=false
+  #     --providers.file.filename=/var/traefik/dynamic.yml
+  #     --entrypoints.web.address=:80
+  #     --entrypoints.websecure.address=:443
+  #   labels:
+  #     # Traefik HTTPS Redirect
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.http-catchall.entrypoints=web"
+  #     - "traefik.http.routers.http-catchall.rule=HostRegexp(`{host:.+}`)"
+  #     - "traefik.http.routers.http-catchall.middlewares=redirect-to-https-mddl@docker"
+  #     - "traefik.http.middlewares.redirect-to-https-mddl.redirectscheme.scheme=https"
+  #   volumes:
+  #     - "./docker/dynamic.local.https.yml:/var/traefik/dynamic.yml:ro"
+  #     - "./docker/certs:/etc/certs:ro"
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
 
   rabbit:
     restart: always
@@ -32,10 +32,10 @@ services:
 
   girder:
     restart: always
-    labels:
-      - "traefik.http.routers.girder-rtr.entrypoints=websecure"
-      - "traefik.http.routers.girder-rtr.rule=Host(`${HOSTNAME}`)"
-      - "traefik.http.routers.girder-rtr.tls=true"
+    # labels:
+    #   - "traefik.http.routers.girder-rtr.entrypoints=websecure"
+    #   - "traefik.http.routers.girder-rtr.rule=Host(`${HOSTNAME}`)"
+    #   - "traefik.http.routers.girder-rtr.tls=true"
 
   girder_worker_default:
     restart: always
@@ -46,9 +46,14 @@ services:
     restart: always
     command: >
       --rolling-restart
-      --schedule "0 0 2 * * 4"
+      --schedule "0 0 2 ? * SUN"
       --label-enable
     environment:
       - "TZ=${TIMEZONE:-America/New_York}"
+      - WATCHTOWER_HTTP_API_PERIODIC_POLLS=true
+      - WATCHTOWER_HTTP_API_UPDATE=true
+      - WATCHTOWER_HTTP_API_TOKEN=mytoken
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
