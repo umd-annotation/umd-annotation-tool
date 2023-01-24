@@ -46,9 +46,15 @@ services:
     restart: always
     command: >
       --rolling-restart
-      --schedule "0 0 2 * * 4"
+      --schedule "0 0 2 ? * SUN"
       --label-enable
     environment:
       - "TZ=${TIMEZONE:-America/New_York}"
+      - WATCHTOWER_HTTP_API_PERIODIC_POLLS=true
+      - WATCHTOWER_HTTP_API_UPDATE=true
+      # Watchtower port is exposed only internally to other containers and admins only have access to upate endpoint
+      - "WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_API_TOKEN:-mytoken}"
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
