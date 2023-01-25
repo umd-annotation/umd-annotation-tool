@@ -36,6 +36,11 @@ export interface RootState {
   Location: LocationState;
   Dataset: DatasetState;
   Brand: BrandState;
+  Groups: GroupState;
+}
+
+export interface GroupState {
+  groupMap: Record<string, string>;
 }
 
 export function useStore(): Store<RootState> {

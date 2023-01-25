@@ -38,7 +38,17 @@ function postAddons(urls: string[], forceDownload: boolean) {
   return girderRest.post(`dive_configuration/upgrade_pipelines?force=${forceDownload}`, urls);
 }
 
+async function getGroupIds() {
+  const resp = await girderRest.get('/group');
+  const groupMap: Record<string, string> = {};
+  resp.data.forEach((group: {name: string; _id: string}) => {
+    groupMap[group.name] = group._id;
+  });
+  return groupMap;
+}
+
 export {
+  getGroupIds,
   getBrandData,
   putBrandData,
   getPipelineList,

@@ -7,6 +7,7 @@ import Jobs from './views/Jobs.vue';
 import Login from './views/Login.vue';
 import RouterPage from './views/RouterPage.vue';
 import AdminPage from './views/AdminPage.vue';
+import AnnotatorHome from './views/AnnotatorHome.vue';
 import ViewerLoader from './views/ViewerLoader.vue';
 import DataShared from './views/DataShared.vue';
 import DataBrowser from './views/DataBrowser.vue';
@@ -14,7 +15,7 @@ import Summary from './views/Summary.vue';
 
 Vue.use(Router);
 
-function beforeEnter(to: Route, from: Route, next: Function) {
+async function beforeEnter(to: Route, from: Route, next: Function) {
   if (!girderRest.user) {
     next('/login');
   } else {
@@ -36,6 +37,11 @@ const router = new Router({
       path: '/login',
       name: 'login',
       component: Login,
+    },
+    {
+      path: '/annotatorHome',
+      name: 'annotatorHome',
+      component: AnnotatorHome,
     },
     {
       path: '/viewer/:id',

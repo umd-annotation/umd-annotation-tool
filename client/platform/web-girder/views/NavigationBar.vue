@@ -28,6 +28,12 @@ export default {
       }
       return false;
     },
+    username() {
+      if (this.girderRest) {
+        return this.girderRest?.user?.login;
+      }
+      return '';
+    },
   },
   async created() {
     this.girderRest.$on('logout', this.onLogout);
@@ -65,6 +71,11 @@ export default {
         </v-tab>
         <JobsTab />
         <v-tab
+          :to="`/annotatorHome`"
+        >
+          Annotator Home <v-icon>mdi-home</v-icon>
+        </v-tab>
+        <v-tab
           v-if="isAdmin"
           :to="`/admin`"
         >
@@ -81,12 +92,18 @@ export default {
         @select="setRouteFromLocation"
       />
       <user-guide-button v-if="false" />
-      <v-btn
-        text
-        @click="logout"
-      >
-        Logout
-      </v-btn>
+      <div>
+        <h3 style="width:100%; text-align:center">
+          {{ username }}
+        </h3>
+        <v-btn
+          text
+          style="width:100%; text-align:center"
+          @click="logout"
+        >
+          Logout
+        </v-btn>
+      </div>
     </v-app-bar>
     <v-banner
       v-if="brandData.alertMessage"

@@ -5,6 +5,8 @@ import {
 import { GirderAuthentication } from '@girder/components/src';
 
 import { useGirderRest } from 'platform/web-girder/plugins/girder';
+import { getGroupIds } from 'platform/web-girder/api';
+
 
 export default defineComponent({
   name: 'Login',
@@ -18,7 +20,16 @@ export default defineComponent({
     });
     const brandData = toRef(root.$store.state.Brand, 'brandData');
     const girderRest = useGirderRest();
-    function onLogin() {
+    async function onLogin() {
+      if (girderRest.user.groups.length) {
+        const groupMap = await getGroupIds();
+        const annotatorId = groupMap.Annotator;
+        const managerId = groupMap.Manager;
+        if (!girderRest.user.admin && !girderRest.user.groups.includes(managerId)) {
+          root.$router.push('/annotatorHome');
+          return;
+        }
+      }
       root.$router.push('/');
     }
     girderRest.$on('login', onLogin);
