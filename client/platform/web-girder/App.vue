@@ -58,4 +58,10 @@ html {
 .text-xs-center {
   text-align: center !important;
 }
+@font-face {
+  font-family: "Noto Color Emoji";
+  src: local("NotoColor"),
+   url(../../public/fonts/NotoColor/NotoColorEmoji-Regular.ttf) format("truetype");
+}
+
 </style>
