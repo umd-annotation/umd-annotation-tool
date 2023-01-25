@@ -55,7 +55,7 @@ class UMD_Dataset(Resource):
         totalFolders = self.recursive_export_links(folder, totalFolders)
         totalFolders = sorted(totalFolders, key=lambda d: d['created'])
         print(list(totalFolders))
-        replacedHostname = getApiUrl().replace('/api/v1', '/#')
+        replacedHostname = getApiUrl().replace('/api/v1', '/#').replace('http', 'https')
         gen = UMD_export.generate_links_tab(replacedHostname, totalFolders)
         setContentDisposition('FolderLinks.csv', mime='text/csv')
         return gen
