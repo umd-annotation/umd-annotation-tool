@@ -1,5 +1,5 @@
 import os
-import requests
+
 from dive_server import crud_annotation
 from dive_utils import setContentDisposition
 from girder.api import access
@@ -10,6 +10,7 @@ from girder.models.folder import Folder
 from girder.models.token import Token
 from girder.models.user import User
 from girder_jobs.models.job import Job
+import requests
 
 from UMD_tasks import constants, tasks
 from UMD_utils import UMD_export
@@ -25,7 +26,6 @@ class UMD_Dataset(Resource):
         self.route("GET", ("export",), self.export_tabular)
         self.route("GET", ("links", ":folder"), self.export_links)
         self.route("POST", ("update_containers",), self.update_containers)
-
 
     def recursive_export_links(self, folder, totalFolders):
         subFolders = Folder().childFolders(folder, 'folder', user=self.getCurrentUser())
@@ -98,7 +98,7 @@ class UMD_Dataset(Resource):
         folder['meta']['type'] = 'video'
         Folder().save(folder)
         tracks = crud_annotation.TrackItem().list(folder)
-        
+
         if len(list(tracks)) == 0:
             for item in videoItems:
                 newjob = tasks.generate_splits.delay(
@@ -129,13 +129,16 @@ class UMD_Dataset(Resource):
         self.generate_segment_task(folder, user)
 
     def generate_segments_of_children(self, folder, user):
-        subFolders  = list(Folder().childFolders(folder, 'folder', user))
+        subFolders = list(Folder().childFolders(folder, 'folder', user))
         for child in subFolders:
             self.generate_segment_task(child, user)
             self.generate_segments_of_children(child, user)
+
     @access.user
     @autoDescribeRoute(
-        Description("Upload and generate a dataset from the folder and all it's children").modelParam(
+        Description(
+            "Upload and generate a dataset from the folder and all it's children"
+        ).modelParam(
             "folder",
             description="FolderId to get state from",
             model=Folder,
@@ -149,10 +152,12 @@ class UMD_Dataset(Resource):
     ):
         user = self.getCurrentUser()
         self.generate_segments_of_children(folder, user)
-    
+
     @access.admin
     @autoDescribeRoute(
-        Description("Force an update to the docker containers through watchtower using http interface")
+        Description(
+            "Force an update to the docker containers through watchtower using http interface"
+        )
     )
     def update_containers(self):
         try:
@@ -164,10 +169,10 @@ class UMD_Dataset(Resource):
             req.raise_for_status()
             return "Update Successful"
         except requests.exceptions.HTTPError as err:
-            return (f"HTTP error occurred: {err}")
+            return f"HTTP error occurred: {err}"
         except requests.exceptions.ConnectionError as err:
-            return (f"Error Connecting: {err}")
+            return f"Error Connecting: {err}"
         except requests.exceptions.Timeout as err:
-            return (f"Timeout Error: {err}")
+            return f"Timeout Error: {err}"
         except requests.exceptions.RequestException as err:
-            return (f"Something went wrong: {err}")
+            return f"Something went wrong: {err}"
