@@ -670,6 +670,8 @@ export default defineComponent({
 }
 .emoji {
   font-size: 1.75em;
+  font-family: 'Noto Color Emoji';
+
 }
 .bottomborder{
   border-bottom: 3px solid gray;
