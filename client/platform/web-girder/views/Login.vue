@@ -25,8 +25,7 @@ export default defineComponent({
         const groupMap = await getGroupIds();
         const annotatorId = groupMap.Annotator;
         const managerId = groupMap.Manager;
-        if (!girderRest.user.admin && girderRest.user.groups.includes(annotatorId)
-        && !girderRest.user.groups.includes(managerId)) {
+        if (!girderRest.user.admin && !girderRest.user.groups.includes(managerId)) {
           root.$router.push('/annotatorHome');
           return;
         }
