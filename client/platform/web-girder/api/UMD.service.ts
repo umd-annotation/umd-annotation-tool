@@ -5,7 +5,12 @@ function ingestVideo(folderId: string) {
   return girderRest.post(`${rootAPI}/ingest_video/${folderId}`);
 }
 
+function updateContainers() {
+  return girderRest.post(`${rootAPI}/update_containers`);
+}
+
+
 export {
-  // eslint-disable-next-line import/prefer-default-export
   ingestVideo,
+  updateContainers,
 };
