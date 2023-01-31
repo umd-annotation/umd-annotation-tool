@@ -24,7 +24,7 @@ WORKDIR /opt/UMD/src
 RUN apt-get update
 RUN apt-get install -y build-essential libssl-dev libffi-dev python3-dev cargo npm python3-distutils
 # Recommended poetry install https://python-poetry.org/docs/master/#installation
-RUN curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.2.0 POETRY_HOME=/opt/UMD/poetry python -
+RUN curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.3.2 POETRY_HOME=/opt/UMD/poetry python -
 ENV PATH="/opt/UMD/poetry/bin:$PATH"
 # Create a virtual environment for the installation
 RUN python -m venv /opt/UMD/local/venv
