@@ -343,7 +343,7 @@ def export_links_tab(url, folders):
             "Name",
             "LC",
             "CONDITION",
-            "SCENARIO"
+            "SCENARIO",
             "FLE",
             "SME",
             "DATE",
