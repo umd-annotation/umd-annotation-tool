@@ -73,6 +73,27 @@ export default defineComponent({
     const userLogin = ref('');
     const loadedAttributes = ref(false);
 
+    let framePlaying = -1;
+    const seekBegin = () => {
+      if (selectedTrackIdRef.value !== null) {
+        const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
+        handler.seekToFrame(track.begin);
+      }
+    };
+    const seekEnd = () => {
+      if (selectedTrackIdRef.value !== null) {
+        const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
+        handler.seekToFrame(track.end);
+      }
+    };
+    const playSegment = () => {
+      if (selectedTrackIdRef.value !== null) {
+        const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
+        handler.replayFromFrame(track.begin);
+        framePlaying = track.end;
+      }
+    };
+
     const checkAttributes = (trackNum: number | null, loadValues = false) => {
       // load existing attributes
       let hasAttributes = false;
@@ -121,13 +142,27 @@ export default defineComponent({
       return hasAttributes;
     };
 
+    const getMaxSegmentAnnotated = () => {
+      const Ids = cameraStore.camMap.value.get('singleCam')?.trackStore.annotationIds.value;
+      let maxId = 0;
+      if (Ids) {
+        for (let i = 0; i < Ids?.length; i += 1) {
+          const val = checkAttributes(i);
+          if (val) {
+            maxId = i;
+          }
+        }
+      }
+      handler.trackSelect(maxId + 1, false);
+      loadedAttributes.value = checkAttributes(maxId + 1, true);
+      seekBegin();
+    };
     const initialize = async () => {
       handler.setMaxSegment(0);
       const user = await restClient.fetchUser();
       userLogin.value = user.login;
       if (selectedTrackIdRef.value === null) {
-        handler.trackSelectNext(1, true);
-        loadedAttributes.value = checkAttributes(0);
+        getMaxSegmentAnnotated();
       }
     };
     onMounted(() => initialize());
@@ -216,26 +251,6 @@ export default defineComponent({
       }
     };
 
-    let framePlaying = -1;
-    const seekBegin = () => {
-      if (selectedTrackIdRef.value !== null) {
-        const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
-        handler.seekToFrame(track.begin);
-      }
-    };
-    const seekEnd = () => {
-      if (selectedTrackIdRef.value !== null) {
-        const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
-        handler.seekToFrame(track.end);
-      }
-    };
-    const playSegment = () => {
-      if (selectedTrackIdRef.value !== null) {
-        const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
-        handler.replayFromFrame(track.begin);
-        framePlaying = track.end;
-      }
-    };
     watch(() => frame.value, () => {
       if (framePlaying !== -1 && frame.value >= framePlaying) {
         handler.pausePlayback();
