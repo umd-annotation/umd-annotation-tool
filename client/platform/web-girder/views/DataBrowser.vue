@@ -143,7 +143,8 @@ export default defineComponent({
         />
       </v-dialog>
       <v-btn
-        v-if="locationStore.location._modelType === 'folder'"
+        v-if="locationStore &&
+          locationStore.location && locationStore.location._modelType === 'folder'"
         class="ma-0"
         text
         small
@@ -158,7 +159,8 @@ export default defineComponent({
         Export Links
       </v-btn>
       <v-btn
-        v-if="locationStore.location._modelType === 'folder'"
+        v-if="locationStore &&
+          locationStore.location && locationStore.location._modelType === 'folder'"
         class="ma-0"
         text
         small
