@@ -24,17 +24,18 @@ class UMD_Dataset(Resource):
         self.route("POST", ("ingest_video", ":folder"), self.ingest_video)
         self.route("POST", ("recursive_ingest_video", ":folder"), self.recursive_ingest_video)
         self.route("GET", ("export",), self.export_tabular)
+        self.route("GET", ("recursive_export", ":folder"), self.export_resursive_tabular)
         self.route("GET", ("links", ":folder"), self.export_links)
         self.route("POST", ("update_containers",), self.update_containers)
 
-    def recursive_export_links(self, folder, totalFolders):
+    def recursive_folder_list(self, folder, totalFolders):
         subFolders = Folder().childFolders(folder, 'folder', user=self.getCurrentUser())
         subFolders = sorted(subFolders, key=lambda d: d['created'])
         for data in subFolders:
             if data['meta'].get('annotate', False) == True:
                 totalFolders.append(data)
             else:
-                self.recursive_export_links(data, totalFolders)
+                self.recursive_folder_list(data, totalFolders)
         return totalFolders
 
     @access.public(scope=TokenScope.DATA_READ, cookie=True)
@@ -52,9 +53,8 @@ class UMD_Dataset(Resource):
         folder,
     ):
         totalFolders = []
-        totalFolders = self.recursive_export_links(folder, totalFolders)
+        totalFolders = self.recursive_folder_list(folder, totalFolders)
         totalFolders = sorted(totalFolders, key=lambda d: d['created'])
-        print(list(totalFolders))
         replacedHostname = getApiUrl().replace('/api/v1', '/#').replace('http', 'https')
         gen = UMD_export.generate_links_tab(replacedHostname, totalFolders)
         setContentDisposition('FolderLinks.csv', mime='text/csv')
@@ -87,6 +87,39 @@ class UMD_Dataset(Resource):
         else:
             folder = Folder().load(folderIds[0], level=AccessType.READ, user=user)
             zip_name = f'{folder["name"].replace(".mp4","")}.zip'
+        setContentDisposition(zip_name, mime='application/zip')
+        return gen
+
+    @access.public(scope=TokenScope.DATA_READ, cookie=True)
+    @autoDescribeRoute(
+        Description("Export annotations for all the folders").modelParam(
+            "folder",
+            description="FolderId to get state from",
+            model=Folder,
+            level=AccessType.READ,
+            destName="folder",
+        )
+    )
+    def export_resursive_tabular(
+        self,
+        folder,
+    ):
+        totalFolders = []
+        totalFolders = self.recursive_folder_list(folder, totalFolders)
+        totalFolders = sorted(totalFolders, key=lambda d: d['created'])
+        totalFolderIds = []
+        for item in totalFolders:
+            totalFolderIds.append(str(item['_id']))
+        print(totalFolders)
+        print(totalFolderIds)
+        user = self.getCurrentUser()
+        users = list(User().find())
+        userMap = {}
+        for item in users:
+            userMap[item["login"]] = item["_id"]
+
+        gen = UMD_export.convert_to_zips(totalFolderIds, userMap, user)
+        zip_name = "batch_export.zip"
         setContentDisposition(zip_name, mime='application/zip')
         return gen
 
