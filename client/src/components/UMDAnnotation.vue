@@ -47,9 +47,7 @@ export default defineComponent({
         return ['No emotions'];
       }
       const root = ['Anger', 'Anticipation', 'Joy', 'Trust', 'Fear', 'Surprise', 'Sadness', 'Disgust'];
-      const rootAhered = root.map((item) => `${item} adhered`);
-      const rootViolate = root.map((item) => `${item} violate`);
-      return ['No emotions', ...rootAhered, ...rootViolate];
+      return ['No emotions', ...root];
     });
     const multiSpeakerOptions = ref(['FALSE', 'TRUE', 'noann']);
     const multiSpeaker: Ref<'FALSE' | 'TRUE' | 'noann'> = ref('FALSE');
