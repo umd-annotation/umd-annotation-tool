@@ -70,12 +70,13 @@ export default defineComponent({
         'Finalizing Negotiating/Deal',
         'Refusing a Request',
       ];
-      const rootAhered = root.map((item) => `${item} adhered`);
-      const rootViolate = root.map((item) => `${item} violate`);
+      const normVariants = root
+        .map((item) => [`${item} (adhered)`, `${item} (violated)`])
+        .reduce((acc, x) => acc.concat(x));
+
       return [
         'None',
-        ...rootAhered,
-        ...rootViolate,
+        ...normVariants,
       ];
     });
     const normsObject: Ref<Record<string, 'adhered' |'violate' | 'noann' | 'EMPTY_NA'>> = ref({});
