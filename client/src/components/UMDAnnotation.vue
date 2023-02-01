@@ -74,7 +74,8 @@ export default defineComponent({
       const rootViolate = root.map((item) => `${item} violate`);
       return [
         'None',
-        ...root,
+        ...rootAhered,
+        ...rootViolate,
       ];
     });
     const normsObject: Ref<Record<string, 'adhered' |'violate' | 'noann' | 'EMPTY_NA'>> = ref({});
