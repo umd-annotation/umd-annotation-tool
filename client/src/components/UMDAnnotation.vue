@@ -1,6 +1,6 @@
 <script lang="ts">
 import {
-  computed, defineComponent, ref, Ref, watch, PropType, onMounted,
+  computed, defineComponent, ref, Ref, watch, PropType, onMounted, nextTick,
 } from '@vue/composition-api';
 
 import TooltipBtn from 'vue-media-annotator/components/TooltipButton.vue';
@@ -42,6 +42,24 @@ export default defineComponent({
     const arousal = ref(1);
     const valence = ref(1);
     const emotionsList: Ref<string[]> = ref([]);
+
+    const emotionsForm = ref(null);
+    const arousalNudged = ref(false);
+    const valenceNudged = ref(false);
+    const nudgedVAE = computed(() => arousalNudged.value && valenceNudged.value);
+    const arousalAdjusted = () => {
+      arousalNudged.value = true;
+    };
+    const valenceAdjusted = () => {
+      valenceNudged.value = true;
+    };
+
+    watch(emotionsForm, () => {
+      if (emotionsForm.value !== null) {
+        (emotionsForm.value as Vue & { validate: () => boolean }).validate();
+      }
+    });
+
     const baseEmotionsList = computed(() => {
       if (emotionsList.value.includes('No emotions')) {
         return ['No emotions'];
@@ -84,12 +102,14 @@ export default defineComponent({
             if (replaced === 'Valence' && props.mode === 'VAE') {
               if (loadValues) {
                 valence.value = track.attributes[key] as number;
+                valenceNudged.value = true;
               }
               hasAttributes = true;
             }
             if (replaced === 'Arousal' && props.mode === 'VAE') {
               if (loadValues) {
                 arousal.value = track.attributes[key] as number;
+                arousalNudged.value = true;
               }
               hasAttributes = true;
             }
@@ -180,6 +200,9 @@ export default defineComponent({
           normsSelected.value = [];
           normsObject.value = {};
           multiSpeaker.value = 'FALSE';
+          await nextTick();
+          arousalNudged.value = false;
+          valenceNudged.value = false;
         }
       }
     };
@@ -189,6 +212,8 @@ export default defineComponent({
       emotionsList.value = [];
       normsSelected.value = [];
       normsObject.value = {};
+      arousalNudged.value = false;
+      valenceNudged.value = false;
       multiSpeaker.value = 'FALSE';
 
       handler.trackSelectNext(direction, true);
@@ -277,7 +302,9 @@ export default defineComponent({
       if (props.mode === 'norms') {
         return normsValid.value;
       } if (props.mode === 'VAE') {
-        return VAEValid.value;
+        if (nudgedVAE.value) {
+          return VAEValid.value;
+        }
       }
       return false;
     });
@@ -309,6 +336,12 @@ export default defineComponent({
       seekEnd,
       playSegment,
       updateEmotions,
+      //refs
+      arousalNudged,
+      valenceNudged,
+      arousalAdjusted,
+      valenceAdjusted,
+      emotionsForm,
     };
   },
 });
@@ -379,6 +412,9 @@ export default defineComponent({
                 max="1000"
                 step="1"
                 dense
+                persistent-hint
+                :hint="!valenceNudged ? 'Valence must be adjusted' : ''"
+                @change="valenceAdjusted"
               />
             </v-col>
             <v-col cols="1">
@@ -432,6 +468,9 @@ export default defineComponent({
                 max="1000"
                 step="1"
                 dense
+                persistent-hint
+                :hint="!arousalNudged ? 'Arousal must be adjusted' : ''"
+                @change="arousalAdjusted"
               />
             </v-col>
             <v-col cols="1">
@@ -504,7 +543,10 @@ export default defineComponent({
         class="bottomborder"
       >
         <v-col>
-          <v-form v-model="VAEValid">
+          <v-form
+            ref="emotionsForm"
+            v-model="VAEValid"
+          >
             <v-select
               v-model="emotionsList"
               :items="baseEmotionsList"
