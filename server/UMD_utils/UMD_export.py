@@ -525,7 +525,7 @@ def export_links_tab(url, folders):
     )
     for folder in folders:
         name = folder['name'].replace('.mp4', '').replace('Video', '')
-        LC = ''
+        LC = 'missing'
         CONDITION = ''
         SCENARIO = ''
         FLE = ''
@@ -534,7 +534,7 @@ def export_links_tab(url, folders):
         PERSON = ''
         PERSPECTIVE = ''
         splits = name.split('_')
-        if len(splits) >= 6:
+        if len(splits) > 6:
             LC = splits[0]
             CONDITION = splits[1]
             SCENARIO = splits[2]
@@ -542,11 +542,10 @@ def export_links_tab(url, folders):
             SME = splits[4]
             DATE = splits[5]
             PERSON = splits[6]
-            if len(splits) and '-' in PERSON:
+            if '-' in PERSON:
                 person_split = PERSON.split('-')
                 PERSON = person_split[0]
                 PERSPECTIVE = person_split[1]
-
         root = f'{url}/viewer/{folder["_id"]}?mode='
         vae = f'{root}VAE'
         norms = f'{root}norms'
