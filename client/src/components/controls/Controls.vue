@@ -62,6 +62,18 @@ export default defineComponent({
     function toggleEnhancements() {
       context.toggle('ImageEnhancements');
     }
+
+    const seekSegment = (direction: -1 | 1) => {
+      const segment = Math.floor((mediaController.frame.value - 150) / 450);
+      const frameMax = ((segment + 1) * 450) + 150;
+      const frameMin = (segment * 450) + 150;
+      if (direction > 0) {
+        mediaController.seek(frameMax - 1);
+      } else {
+        mediaController.seek(frameMin);
+      }
+    };
+
     return {
       data,
       mediaController,
@@ -72,6 +84,7 @@ export default defineComponent({
       visible,
       sliderKey,
       sliderDisabled,
+      seekSegment,
     };
   },
 });
@@ -122,8 +135,8 @@ export default defineComponent({
           <v-btn
             icon
             small
-            title="(d, left-arrow) previous frame"
-            @click="mediaController.prevFrame"
+            title="seek to beginning of the current segment"
+            @click="seekSegment(-1)"
           >
             <v-icon>mdi-skip-previous</v-icon>
           </v-btn>
@@ -148,8 +161,8 @@ export default defineComponent({
           <v-btn
             icon
             small
-            title="(f, right-arrow) next frame"
-            @click="mediaController.nextFrame"
+            title="seek to the end of the next segment"
+            @click="seekSegment(1)"
           >
             <v-icon>mdi-skip-next</v-icon>
           </v-btn>
