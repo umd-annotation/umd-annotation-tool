@@ -309,7 +309,7 @@ def export_session_info_tab(folders, userMap, user):
         fme_id = ''
         recording_date = ''
         recording_time = ''
-        if len(splits) >= 6:
+        if len(splits) > 5:
             language = splits[0]
             condition = splits[1]
             scenario = splits[2]
@@ -343,7 +343,7 @@ def export_file_info_tab(folders, userMap, user):
         fme_id = ''
         recording_date = ''
         type = ''
-        if len(splits) >= 6:
+        if len(splits) > 5:
             language = splits[0]
             condition = splits[1]
             scenario = splits[2]
