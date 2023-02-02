@@ -29,7 +29,7 @@ def bin_value(value):
 
 
 def export_changepoint_tab(folders, userMap, user):
-
+    
     csvFile = io.StringIO()
     writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
     writer.writerow(["user_id", "file_id", "timestamp", "impact_scalar", "comment"])
@@ -385,6 +385,7 @@ def export_versions_per_file(folders, userMap, user):
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
         videoname = folder['name']
+        fps = folder['meta']['fps']
         name = videoname.replace('Video', '').replace('.mp4', '')
         tracks = crud_annotation.TrackItem().list(folder)
         change_point_count = 0
@@ -448,6 +449,9 @@ def generate_tab(folders, userMap, user, type):
                 yield data
         if type == 'session_info':
             for data in export_session_info_tab(folders, userMap, user):
+                yield data
+        if type == 'file_info':
+            for data in export_file_info_tab(folders, userMap, user):
                 yield data
         if type == 'system_input':
             for data in export_system_input(folders, userMap, user):
