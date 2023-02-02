@@ -2,6 +2,7 @@
 import {
   defineComponent, onBeforeUnmount, PropType, toRef, watch,
 } from '@vue/composition-api';
+import { useTime } from 'vue-media-annotator/provides';
 import { Flick, SetTimeFunc } from '../../use/useTimeObserver';
 import { injectCameraInitializer } from './useMediaController';
 /**
@@ -107,6 +108,8 @@ export default defineComponent({
   },
   setup(props, { emit }) {
     const cameraInitializer = injectCameraInitializer();
+    const { maxSegment } = useTime();
+    let pauseEndSegment = -1;
     const {
       state: data,
       geoViewer,
@@ -144,6 +147,9 @@ export default defineComponent({
         /** Else fall back to a reasonable default */
         data.currentTime = (frame / props.frameRate) + OnePTSTick;
       }
+      if (pauseEndSegment > -1) {
+        pauseEndSegment = -1;
+      }
       video.currentTime = data.currentTime;
       data.frame = requestedFrame;
       data.flick = Math.round(data.currentTime * Flick);
@@ -162,6 +168,7 @@ export default defineComponent({
     function syncWithVideo() {
       if (data.playing) {
         const newFrame = video.currentTime * props.frameRate;
+
         if (newFrame > data.maxFrame) {
           /** Video has played past its allowed truncated end, seek to end */
           data.frame = data.maxFrame;
@@ -172,6 +179,11 @@ export default defineComponent({
         data.flick = Math.round(video.currentTime * Flick);
         data.syncedFrame = data.frame;
         const segment = Math.floor((data.frame - 150) / 450);
+        if (pauseEndSegment > -1 && segment > pauseEndSegment) {
+          pause();
+          pauseEndSegment = -1;
+        }
+
         const updateData: {frame: number; flick: number; maxSegment?: number} = {
           frame: data.frame, flick: data.flick,
         };
@@ -187,6 +199,11 @@ export default defineComponent({
       try {
         await video.play();
         data.playing = true;
+        const segment = Math.floor((data.frame - 150) / 450);
+        if (props.mode && segment === maxSegment.value) {
+          pauseEndSegment = segment;
+        }
+
         syncWithVideo();
       } catch (ex) {
         console.error(ex);
