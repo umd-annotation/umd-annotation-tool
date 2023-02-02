@@ -56,6 +56,8 @@ export default defineComponent({
 
     watch(emotionsForm, () => {
       if (emotionsForm.value !== null) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        // @ts-ignore
         (emotionsForm.value as Vue & { validate: () => boolean }).validate();
       }
     });
