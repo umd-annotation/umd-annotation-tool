@@ -92,6 +92,14 @@ export default defineComponent({
     const normsObject: Ref<Record<string, 'adhered' |'violate' | 'noann' | 'EMPTY_NA'>> = ref({});
     const userLogin = ref('');
     const loadedAttributes = ref(false);
+    let dataStore: {
+      arousal?: number;
+      valence?: number;
+      emotionsList?: string[];
+      multiSpeaker?: 'FALSE' | 'TRUE' | 'noann';
+      normsSelected?: string[];
+      normsObject?: Record<string, 'adhered' |'violate' | 'noann' | 'EMPTY_NA'>;
+    } = {};
 
     let framePlaying = -1;
     const seekBegin = () => {
@@ -191,6 +199,32 @@ export default defineComponent({
     loadedAttributes.value = checkAttributes(selectedTrackIdRef.value, true);
     watch(selectedTrackIdRef, () => {
       loadedAttributes.value = checkAttributes(selectedTrackIdRef.value, true);
+      if (selectedTrackIdRef.value === maxSegment.value && !loadedAttributes.value) {
+        // Load stored values
+        if (props.mode === 'VAE') {
+          if (dataStore.arousal) {
+            arousal.value = dataStore.arousal;
+          }
+          if (dataStore.valence) {
+            valence.value = dataStore.valence;
+          }
+          if (dataStore.multiSpeaker) {
+            multiSpeaker.value = dataStore.multiSpeaker;
+          }
+          if (dataStore.emotionsList) {
+            emotionsList.value = dataStore.emotionsList;
+          }
+        }
+        if (props.mode === 'norms') {
+          if (dataStore.normsSelected) {
+            normsSelected.value = dataStore.normsSelected;
+          }
+          if (dataStore.normsObject) {
+            normsObject.value = dataStore.normsObject;
+          }
+        }
+        dataStore = {};
+      }
       if (selectedTrackIdRef.value !== null) {
         handler.setMaxSegment(selectedTrackIdRef.value);
       }
@@ -244,6 +278,18 @@ export default defineComponent({
       }
     };
     const changeTrack = (direction: -1 | 1) => {
+      if (selectedTrackIdRef.value === maxSegment.value) {
+        if (props.mode === 'VAE') {
+          dataStore.arousal = arousal.value;
+          dataStore.valence = valence.value;
+          dataStore.multiSpeaker = multiSpeaker.value;
+          dataStore.emotionsList = emotionsList.value;
+        }
+        if (props.mode === 'norms') {
+          dataStore.normsSelected = normsSelected.value;
+          dataStore.normsObject = normsObject.value;
+        }
+      }
       arousal.value = 1;
       valence.value = 1;
       emotionsList.value = [];
