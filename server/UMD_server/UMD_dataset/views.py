@@ -7,6 +7,7 @@ from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import Resource, getApiUrl
 from girder.constants import AccessType, TokenScope
 from girder.models.folder import Folder
+from girder.models.item import Item
 from girder.models.token import Token
 from girder.models.user import User
 from girder_jobs.models.job import Job
@@ -139,10 +140,22 @@ class UMD_Dataset(Resource):
                     itemId=str(item["_id"]),
                     user_id=str(user["_id"]),
                     user_login=str(user["login"]),
-                    girder_job_title=f"Generating Tracks for UMD video",
+                    girder_job_title="Generating Tracks for UMD video",
                     girder_client_token=str(token["_id"]),
                 )
                 Job().save(newjob.job)
+        else: 
+            originalFPS = folder['meta'][constants.OriginalFPSMarker]
+            originalFPSString = folder['meta'][constants.OriginalFPSStringMarker]
+            for item in videoItems:
+                if item['meta'].get('source_video', None) is None:
+                    item['meta']['source_video'] = str(False)
+                    item['meta']["transcoder"] = "ffmpeg"
+                    item['meta'][constants.OriginalFPSMarker] = originalFPS
+                    item['meta'][constants.OriginalFPSStringMarker] = originalFPSString
+                    item['meta']["codec"] = "h264"
+                    Item().save(item)
+
 
     @access.user
     @autoDescribeRoute(
