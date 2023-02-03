@@ -70,6 +70,13 @@ export default defineComponent({
       window.location.assign(link);
     };
 
+    const exportAnnotations = () => {
+      const id = locationStore.location && (locationStore.location as RootlessLocationType)._id;
+      const url = `UMD_dataset/recursive_export/${id}`;
+      const link = getUri({ url });
+      window.location.assign(link);
+    };
+
     return {
       fileManager,
       locationStore,
@@ -86,6 +93,7 @@ export default defineComponent({
       updateUploading,
       copyLink,
       exportLinks,
+      exportAnnotations,
     };
   },
 });
@@ -135,7 +143,8 @@ export default defineComponent({
         />
       </v-dialog>
       <v-btn
-        v-if="locationStore.location._modelType === 'folder'"
+        v-if="locationStore &&
+          locationStore.location && locationStore.location._modelType === 'folder'"
         class="ma-0"
         text
         small
@@ -149,6 +158,23 @@ export default defineComponent({
         </v-icon>
         Export Links
       </v-btn>
+      <v-btn
+        v-if="locationStore &&
+          locationStore.location && locationStore.location._modelType === 'folder'"
+        class="ma-0"
+        text
+        small
+        @click="exportAnnotations()"
+      >
+        <v-icon
+          left
+          color="accent"
+        >
+          mdi-file-delimited
+        </v-icon>
+        Export Annotations
+      </v-btn>
+
     </template>
     <template #row="{item}">
       <span>{{ item.name }}</span>
