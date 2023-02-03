@@ -184,7 +184,7 @@ def export_norms_tab(folders, userMap, user):
                             ]
                             writer.writerow(columns)
                         else:
-                            if normKey in normValuesNone:
+                            if value in normValuesNone:
                                 value = normNone
                             columns = [
                                 key,
