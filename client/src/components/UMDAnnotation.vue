@@ -13,6 +13,9 @@ import {
   useTime,
 } from 'vue-media-annotator/provides';
 
+
+type NormsObjectValues = Record<string, 'adhered' |'violated' | 'EMPTY_NA' | 'adhered_violated'>;
+
 export default defineComponent({
   name: 'UMDAnnotation',
 
@@ -97,7 +100,7 @@ export default defineComponent({
         ...normVariants,
       ];
     });
-    const normsObject: Ref<Record<string, 'adhered' |'violated' | 'noann' | 'adhered_violated'>> = ref({});
+    const normsObject: Ref<NormsObjectValues> = ref({});
     const userLogin = ref('');
     const loadedAttributes = ref(false);
     let dataStore: {
@@ -106,7 +109,7 @@ export default defineComponent({
       emotionsList?: string[];
       multiSpeaker?: 'FALSE' | 'TRUE' | 'noann';
       normsSelected?: string[];
-      normsObject?: Record<string, 'adhered' |'violated' | 'noann' | 'adhered_violated'>;
+      normsObject?: NormsObjectValues;
     } = {};
 
     let framePlaying = -1;
@@ -166,7 +169,7 @@ export default defineComponent({
             }
             if (replaced === 'Norms' && props.mode === 'norms') {
               if (loadValues) {
-                normsObject.value = (track.attributes[key] as Record<string, 'adhered' |'violated' | 'noann' | 'adhered_violated'>);
+                normsObject.value = (track.attributes[key] as NormsObjectValues);
                 normsSelected.value = [];
                 Object.entries(normsObject.value).forEach(([normKey, val]) => {
                   const adhered = `${normKey} (adhered)`;
@@ -177,7 +180,7 @@ export default defineComponent({
                   if (val.includes('violated')) {
                     normsSelected.value.push(violated);
                   }
-                  if (val.includes('noann')) {
+                  if (val.includes('noann') || val.includes('EMPTY_NA')) {
                     normsSelected.value.push('None');
                   }
                 });
@@ -332,7 +335,7 @@ export default defineComponent({
         }
       }
       if (data.includes('None')) {
-        normsObject.value.None = 'noann';
+        normsObject.value.None = 'EMPTY_NA';
       } else {
         for (let i = 0; i < data.length; i += 1) {
           let adhered = data[i].includes('(adhered)');
