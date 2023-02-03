@@ -21,7 +21,17 @@ normMap = {
     "Admiration": 108,
     "Finalizing Negotiation/Deal": 109,
     "Refusing a Request": 110,
+    "None": 'none',
 }
+
+normValuesViolate = ['violate', 'violated']
+normValuesAdhere = ['adhere', 'adhered']
+normValuesAdhereViolate = ['adhere_violate', 'adhered_violated']
+normValuesNone = ['noann', 'EMPTY_NA']
+normViolate = 'violate'
+normAdhere = 'adhere'
+NormAdhereViolate = 'adhere_violate'
+normNone = 'EMPTY_NA'
 
 
 def bin_value(value):
@@ -151,14 +161,41 @@ def export_norms_tab(folders, userMap, user):
                                 userDataFound[mapped][normMap[normKey]] = norms[normKey]
                 for key in userDataFound.keys():
                     for normKey in userDataFound[key].keys():
-                        columns = [
-                            key,
-                            videoname,
-                            f'{videoname}_{t["id"]:04}',
-                            normKey,
-                            userDataFound[key][normKey],
-                        ]
-                        writer.writerow(columns)
+                        value = userDataFound[key][normKey]
+                        if value in normValuesAdhere:
+                            value = normAdhere
+                        if value in normValuesViolate:
+                            value = normViolate
+                        if value in normValuesAdhereViolate:
+                            columns = [
+                                key,
+                                videoname,
+                                f'{videoname}_{t["id"]:04}',
+                                normKey,
+                                normAdhere,
+                            ]
+                            writer.writerow(columns)
+                            columns = [
+                                key,
+                                videoname,
+                                f'{videoname}_{t["id"]:04}',
+                                normKey,
+                                normViolate,
+                            ]
+                            writer.writerow(columns)
+                        else:
+                            if value in normValuesNone:
+                                value = normNone
+                            columns = [
+                                key,
+                                videoname,
+                                f'{videoname}_{t["id"]:04}',
+                                normKey,
+                                value,
+                            ]
+                            writer.writerow(columns)
+
+                        
     yield csvFile.getvalue()
     csvFile.seek(0)
     csvFile.truncate(0)
