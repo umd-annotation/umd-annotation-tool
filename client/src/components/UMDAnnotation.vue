@@ -97,7 +97,7 @@ export default defineComponent({
         ...normVariants,
       ];
     });
-    const normsObject: Ref<Record<string, 'adhered' |'violate' | 'noann' | 'EMPTY_NA'>> = ref({});
+    const normsObject: Ref<Record<string, 'adhered' |'violated' | 'noann' | 'adhered_violated'>> = ref({});
     const userLogin = ref('');
     const loadedAttributes = ref(false);
     let dataStore: {
@@ -106,7 +106,7 @@ export default defineComponent({
       emotionsList?: string[];
       multiSpeaker?: 'FALSE' | 'TRUE' | 'noann';
       normsSelected?: string[];
-      normsObject?: Record<string, 'adhered' |'violate' | 'noann' | 'EMPTY_NA'>;
+      normsObject?: Record<string, 'adhered' |'violated' | 'noann' | 'adhered_violated'>;
     } = {};
 
     let framePlaying = -1;
@@ -166,8 +166,21 @@ export default defineComponent({
             }
             if (replaced === 'Norms' && props.mode === 'norms') {
               if (loadValues) {
-                normsObject.value = (track.attributes[key] as Record<string, 'adhered' |'violate' | 'noann' | 'EMPTY_NA'>);
-                normsSelected.value = Object.keys(normsObject.value);
+                normsObject.value = (track.attributes[key] as Record<string, 'adhered' |'violated' | 'noann' | 'adhered_violated'>);
+                normsSelected.value = [];
+                Object.entries(normsObject.value).forEach(([normKey, val]) => {
+                  const adhered = `${normKey} (adhered)`;
+                  const violated = `${normKey} (violated)`;
+                  if (val.includes('adhered')) {
+                    normsSelected.value.push(adhered);
+                  }
+                  if (val.includes('violated')) {
+                    normsSelected.value.push(violated);
+                  }
+                  if (val.includes('noann')) {
+                    normsSelected.value.push('None');
+                  }
+                });
               }
               hasAttributes = true;
             }
@@ -182,7 +195,7 @@ export default defineComponent({
 
     const getMaxSegmentAnnotated = () => {
       const Ids = cameraStore.camMap.value.get('singleCam')?.trackStore.annotationIds.value;
-      let maxId = 0;
+      let maxId = -1;
       if (Ids) {
         for (let i = 0; i < Ids?.length; i += 1) {
           const val = checkAttributes(i);
@@ -310,9 +323,6 @@ export default defineComponent({
       handler.trackSelectNext(direction, true);
     };
 
-    const updateNorm = (item: string, value: 'adhered' | 'violate' | 'noann' | 'EMPTY_NA') => {
-      normsObject.value[item] = value;
-    };
     const syncNorms = (data: string[]) => {
       const keys = Object.keys(normsObject.value);
 
@@ -325,8 +335,24 @@ export default defineComponent({
         normsObject.value.None = 'noann';
       } else {
         for (let i = 0; i < data.length; i += 1) {
-          if (!normsObject.value[data[i]]) {
-            normsObject.value[data[i]] = 'adhered';
+          let adhered = data[i].includes('(adhered)');
+          let violated = data[i].includes('(violated)');
+          const baseKey = data[i].replace('(adhered)', '').replace('(violated)', '').trim();
+          if (normsObject.value[baseKey]) {
+            const existing = normsObject.value[baseKey];
+            if (existing === 'adhered') {
+              adhered = true;
+            }
+            if (existing === 'violated') {
+              violated = true;
+            }
+          }
+          if (adhered && violated) {
+            normsObject.value[baseKey] = 'adhered_violated';
+          } else if (adhered) {
+            normsObject.value[baseKey] = 'adhered';
+          } else if (violated) {
+            normsObject.value[baseKey] = 'violated';
           }
         }
       }
@@ -401,7 +427,6 @@ export default defineComponent({
       submitValid,
       submit,
       changeTrack,
-      updateNorm,
       syncNorms,
       seekBegin,
       seekEnd,
@@ -628,6 +653,7 @@ export default defineComponent({
               persistent-hint
               hint="Select one or more Emotions"
               required
+              :menu-props="{maxHeight: 600}"
               :rules="[v => !!v.length || 'Must select an Emotion']"
               deletable-chips
               @change="updateEmotions($event)"
@@ -692,39 +718,18 @@ export default defineComponent({
               :items="baseNormsList"
               chips
               multiple
+              solo
               outlined
               clearable
               persistent-hint
               hint="Select one or more Norms"
               deletable-chips
+              :menu-props="{maxHeight: 600}"
               required
               :rules="[v => !!v.length || 'Must select a Norm']"
               @change="syncNorms($event)"
             />
           </v-form>
-        </v-col>
-      </v-row>
-      <v-row
-        v-for="item in normsSelected"
-        :key="`${item}`"
-      >
-        <v-col>
-          <h4>{{ item }}</h4>
-          <v-radio-group
-            v-model="normsObject[item]"
-            row
-          >
-            <v-radio
-              v-for="n in ['adhered', 'violate', 'noann', 'EMPTY_NA']"
-              :key="n"
-              :label="n"
-              :value="n"
-              :disabled="item === 'None'"
-              class="mx-3"
-              style="min-height:32px; max-height:32px"
-            />
-          </v-radio-group>
-          <v-divider />
         </v-col>
       </v-row>
     </div>
@@ -788,5 +793,9 @@ export default defineComponent({
 }
 .bottomborder{
   border-bottom: 3px solid gray;
+}
+.v-sheet.v-list {
+  background-color: rgb(76, 76, 76);
+  font-weight: bolder;
 }
 </style>

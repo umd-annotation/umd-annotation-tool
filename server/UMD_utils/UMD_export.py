@@ -151,14 +151,39 @@ def export_norms_tab(folders, userMap, user):
                                 userDataFound[mapped][normMap[normKey]] = norms[normKey]
                 for key in userDataFound.keys():
                     for normKey in userDataFound[key].keys():
-                        columns = [
-                            key,
-                            videoname,
-                            f'{videoname}_{t["id"]:04}',
-                            normKey,
-                            userDataFound[key][normKey],
-                        ]
-                        writer.writerow(columns)
+                        value = userDataFound[key][normKey]
+                        if value == 'ahered':
+                            value = 'adhere'
+                        if value == 'violated':
+                            value = 'violate'
+                        if value == 'adhered_violated':
+                            columns = [
+                                key,
+                                videoname,
+                                f'{videoname}_{t["id"]:04}',
+                                normKey,
+                                'adhere',
+                            ]
+                            writer.writerow(columns)
+                            columns = [
+                                key,
+                                videoname,
+                                f'{videoname}_{t["id"]:04}',
+                                normKey,
+                                'violate',
+                            ]
+                            writer.writerow(columns)
+                        else:
+                            columns = [
+                                key,
+                                videoname,
+                                f'{videoname}_{t["id"]:04}',
+                                normKey,
+                                value,
+                            ]
+                            writer.writerow(columns)
+
+                        
     yield csvFile.getvalue()
     csvFile.seek(0)
     csvFile.truncate(0)
