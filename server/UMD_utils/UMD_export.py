@@ -33,9 +33,28 @@ normAdhere = 'adhere'
 NormAdhereViolate = 'adhere_violate'
 normNone = 'EMPTY_NA'
 
+TrackAttributeExists = ['_Arousal', '_Valence', '_Norms', '_Emotions']
+FrameAttributeExists = ['_Impact', '_RemediationComment']
+
 
 def bin_value(value):
     return math.floor(value / 200) + 1
+
+def annotations_exists(tracks):
+    for t in tracks:
+        if 'features' in t.keys():
+            features = t['features']
+            attributes = t['attributes']
+            for key in attributes.keys():
+                if any(check in key for check in TrackAttributeExists):
+                    return True
+            for feature in features:
+                if 'attributes' in feature.keys():
+                    frameAttributes = feature['attributes']
+                    for frameAttribute in frameAttributes.keys():
+                        if any(check in frameAttribute for check in FrameAttributeExists):
+                            return True
+    return False
 
 
 def export_changepoint_tab(folders, userMap, user):
@@ -272,14 +291,31 @@ def export_segment_tab(folders, userMap, user):
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
         videoname = folder['name']
+        name = videoname.replace('Video', '').replace('.mp4', '')
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
-
-        for t in tracks:
-            start = t['begin'] * (1 / fps)
-            end = t['end'] * (1 / fps)
-            columns = [videoname, f'{videoname}_{t["id"]:04}', start, end]
-            writer.writerow(columns)
+        splits = name.split('_')
+        session_id = name
+        language = ''
+        condition = ''
+        scenario = ''
+        fle_id = ''
+        fme_id = ''
+        recording_date = ''
+        recording_time = ''
+        if len(splits) > 5:
+            language = splits[0]
+            condition = splits[1]
+            scenario = splits[2]
+            fle_id = splits[3]
+            sme_id = splits[4]
+            updatedName = f'{language}_{condition}_{scenario}_{fle_id}_{sme_id}'
+        if annotations_exists(tracks):
+            for t in tracks:
+                start = t['begin'] * (1 / fps)
+                end = t['end'] * (1 / fps)
+                columns = [updatedName, f'{updatedName}_{t["id"]:04}', start, end]
+                writer.writerow(columns)
     yield csvFile.getvalue()
     csvFile.seek(0)
     csvFile.truncate(0)
@@ -295,6 +331,7 @@ def export_emotions_tab(folders, userMap, user):
         videoname = folder['name']
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
+        name = videoname.replace('Video', '').replace('.mp4', '')
 
         for t in tracks:
             if 'attributes' in t.keys():
@@ -317,8 +354,8 @@ def export_emotions_tab(folders, userMap, user):
                 for key in userDataFound.keys():
                     columns = [
                         key,
-                        videoname,
-                        f'{videoname}_{t["id"]:04}',
+                        name,
+                        f'{name}_{t["id"]:04}',
                         f'"{userDataFound[key]["Emotions"]}"',
                         userDataFound[key]['MultiSpeaker'],
                     ]
@@ -380,20 +417,22 @@ def export_file_info_tab(folders, userMap, user):
         fme_id = ''
         recording_date = ''
         type = ''
-        if len(splits) > 5:
-            language = splits[0]
-            condition = splits[1]
-            scenario = splits[2]
-            fle_id = splits[3]
-            sme_id = splits[4]
-            recording_date = splits[5]
-            if len(splits) > 6:
-                typebase = splits[6]
-                type = typebase.split('-')[0]
-            session_id = f'{language}_{condition}_{scenario}_{fle_id}_{sme_id}_{recording_date}'
+        tracks = crud_annotation.TrackItem().list(folder)
+        if (annotations_exists(tracks)):
+            if len(splits) > 5:
+                language = splits[0]
+                condition = splits[1]
+                scenario = splits[2]
+                fle_id = splits[3]
+                sme_id = splits[4]
+                recording_date = splits[5]
+                if len(splits) > 6:
+                    typebase = splits[6]
+                    type = typebase.split('-')[0]
+                session_id = f'{language}_{condition}_{scenario}_{fle_id}_{sme_id}_{recording_date}'
 
-        columns = [session_id, name, 'video', length, type]
-        writer.writerow(columns)
+            columns = [session_id, name, 'video', length, type]
+            writer.writerow(columns)
     yield csvFile.getvalue()
     csvFile.seek(0)
     csvFile.truncate(0)
@@ -426,23 +465,32 @@ def export_versions_per_file(folders, userMap, user):
         name = videoname.replace('Video', '').replace('.mp4', '')
         tracks = crud_annotation.TrackItem().list(folder)
         change_point_count = 0
+        changepointUserDataFound = []
         emotions_count = 0
+        emotionsUserDataFound = []
         norms_count = 0
+        normsUserDataFound = []
         valence_arousal_count = 0
+        valenceUserDataFound = []
         for t in tracks:
             if 'features' in t.keys():
                 features = t['features']
-                userDataFound = {}
                 if 'attributes' in t.keys():
                     track_attributes = t['attributes']
 
                     for key in track_attributes.keys():
                         if '_Emotions' in key:
-                            emotions_count += 1
+                            login = key.replace('_Emotions', '')
+                            if login not in emotionsUserDataFound:
+                                emotionsUserDataFound.append(login)                            
                         if '_Valence' in key:
-                            valence_arousal_count += 1
+                            login = key.replace('_Valence', '')
+                            if login not in valenceUserDataFound:
+                                valenceUserDataFound.append(login)                            
                         if '_Norms' in key:
-                            norms_count += 1
+                            login = key.replace('_Norms', '')
+                            if login not in normsUserDataFound:
+                                normsUserDataFound.append(login)
                 for feature in features:
                     if 'attributes' in feature.keys():
                         attributes = feature['attributes']
@@ -451,14 +499,15 @@ def export_versions_per_file(folders, userMap, user):
                                 change_point_count += 1
                             if '_Comment' in key:
                                 login = key.replace('_Comment', '')
-                                mapped = login
-                                if mapped not in userDataFound.keys():
-                                    userDataFound[mapped] = {}
-                                userDataFound[mapped]['Comment'] = attributes[key]
-                                userDataFound[mapped]['Timestamp'] = (1 / fps) * feature['frame']
-
-        columns = [name, emotions_count, valence_arousal_count, norms_count, change_point_count ]
-        writer.writerow(columns)
+                                if login not in changepointUserDataFound:
+                                    changepointUserDataFound.append(login)
+        emotions_count = len(emotionsUserDataFound)
+        valence_arousal_count = len(valenceUserDataFound)
+        norms_count = len(normsUserDataFound)
+        change_point_count = len(changepointUserDataFound)
+        if emotions_count + valence_arousal_count + norms_count + change_point_count > 0:
+            columns = [name, emotions_count, valence_arousal_count, norms_count, change_point_count]
+            writer.writerow(columns)
     yield csvFile.getvalue()
     csvFile.seek(0)
     csvFile.truncate(0)
