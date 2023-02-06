@@ -149,13 +149,15 @@ class UMD_Dataset(Resource):
             originalFPSString = folder['meta'][constants.OriginalFPSStringMarker]
             for item in videoItems:
                 if item['meta'].get('source_video', None) is None:
-                    item['meta']['source_video'] = str(False)
-                    item['meta']["transcoder"] = "ffmpeg"
-                    item['meta'][constants.OriginalFPSMarker] = originalFPS
-                    item['meta'][constants.OriginalFPSStringMarker] = originalFPSString
-                    item['meta']["codec"] = "h264"
+                    data = {
+                        'source_video': False,
+                        'transcoder': 'ffmpeg',
+                        'originalFps': originalFPS,
+                        'originalFpsString': originalFPSString,
+                        'codec': 'h264'
+                    }
+                    item['meta'].update(data)
                     Item().save(item)
-
 
     @access.user
     @autoDescribeRoute(
