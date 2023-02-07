@@ -369,7 +369,7 @@ def export_emotions_tab(folders, userMap, user):
 def export_session_info_tab(folders, userMap, user):
     csvFile = io.StringIO()
     writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
-    writer.writerow(["session_id", "language", "condition", "fle_id", "sme_id", 'recording_date', 'recording_time'])
+    writer.writerow(["session_id", "language", "condition", "scenario", "fle_id", "sme_id", 'recording_date', 'recording_time'])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
         videoname = folder['name']
