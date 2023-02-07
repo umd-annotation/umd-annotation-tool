@@ -211,6 +211,7 @@ export default defineComponent({
     }
     function logError(event: ErrorEvent) {
       console.error('Media failed to initialize', event);
+      emit('error', video.src);
     }
     function setVolume(level: number) {
       video.volume = level;
