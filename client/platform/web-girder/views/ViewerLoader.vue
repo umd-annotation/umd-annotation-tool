@@ -8,6 +8,7 @@ import NavigationTitle from 'dive-common/components/NavigationTitle.vue';
 import RunPipelineMenu from 'dive-common/components/RunPipelineMenu.vue';
 import ImportAnnotations from 'dive-common/components/ImportAnnotations.vue';
 import SidebarContext from 'dive-common/components/SidebarContext.vue';
+import BrandIcon from 'dive-common/components/BrandIcon.vue';
 import context from 'dive-common/store/context';
 import { useStore } from 'platform/web-girder/store/types';
 import { usePrompt } from 'dive-common/vue-utilities/prompt-service';
@@ -51,6 +52,7 @@ export default defineComponent({
     RevisionHistory,
     SidebarContext,
     ViewerAlert,
+    BrandIcon,
     ...context.getComponents(),
   },
 
@@ -172,6 +174,7 @@ export default defineComponent({
     <template #title>
       <ViewerAlert />
       <NavigationTitle :name="brandData.name" />
+      <BrandIcon />
       <v-tabs
         v-if="!mode"
         icons-and-text
