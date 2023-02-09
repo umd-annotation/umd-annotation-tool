@@ -75,6 +75,7 @@ export default defineComponent({
           Log in or register to get started.
         </div>
         <v-alert
+          v-if="brandData.loginMessage"
           outlined
           class="my-4"
         >

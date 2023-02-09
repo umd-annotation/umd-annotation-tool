@@ -57,8 +57,8 @@ export default {
 <template>
   <div>
     <v-app-bar app>
-      <NavigationTitle :name="brandData.name" />
       <BrandIcon />
+      <NavigationTitle :name="brandData.name" />
       <v-tabs
         icons-and-text
         color="accent"

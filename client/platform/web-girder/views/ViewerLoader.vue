@@ -173,8 +173,8 @@ export default defineComponent({
   >
     <template #title>
       <ViewerAlert />
-      <NavigationTitle :name="brandData.name" />
       <BrandIcon />
+      <NavigationTitle :name="brandData.name" />
       <v-tabs
         v-if="!mode"
         icons-and-text
