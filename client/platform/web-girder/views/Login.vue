@@ -68,7 +68,9 @@ export default defineComponent({
           :src="brandData.logo"
           class="mb-2"
         >
-        <h3>Welcome to {{ brandData.name }}</h3>
+        <h3>
+          Welcome to Terpsichore, a University of Maryland video annotation tool
+        </h3>
         <div>
           Log in or register to get started.
         </div>

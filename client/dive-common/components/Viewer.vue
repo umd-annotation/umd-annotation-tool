@@ -541,6 +541,9 @@ export default defineComponent({
           imageData.value[camera] = cloneDeep(subCameraMeta.imageData) as FrameImage[];
           if (subCameraMeta.videoUrl) {
             videoUrl.value[camera] = subCameraMeta.videoUrl;
+            if (videoUrl.value[camera] === '') {
+              loadError.value = 'Video Element not found';
+            }
           }
           cameraStore.addCamera(camera);
           addSaveCamera(camera);
@@ -738,6 +741,10 @@ export default defineComponent({
       },
     ];
 
+    const handleMediaError = (error: string) => {
+      loadError.value = `Media did not load properly, please check with administrator to ensure this is a valid URL:\n${error}`;
+    };
+
 
     return {
       /* props */
@@ -795,6 +802,8 @@ export default defineComponent({
       warnBrowserExit,
       reloadAnnotations,
       formatTextRow,
+      // Media Errors
+      handleMediaError,
     };
   },
 });
@@ -962,7 +971,7 @@ export default defineComponent({
         dense
       >
         <div
-          v-if="progress.loaded"
+          v-if="progress.loaded && !loadError"
           v-mousetrap="[
             { bind: 'n', handler: () => !readonlyState && handler.trackAdd() },
             { bind: 'r', handler: () => aggregateController.resetZoom() },
@@ -989,6 +998,7 @@ export default defineComponent({
                   imageData: imageData[camera], videoUrl: videoUrl[camera],
                   updateTime, frameRate, originalFps, camera, brightness, intercept, mode }"
                 @ready="context.toggle('UMDAnnotationWrapper')"
+                @error="handleMediaError($event)"
               >
                 <LayerManager
                   :camera="camera"

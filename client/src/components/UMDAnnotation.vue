@@ -228,9 +228,11 @@ export default defineComponent({
         if (props.mode === 'VAE') {
           if (dataStore.arousal) {
             arousal.value = dataStore.arousal;
+            arousalNudged.value = true;
           }
           if (dataStore.valence) {
             valence.value = dataStore.valence;
+            valenceNudged.value = true;
           }
           if (dataStore.multiSpeaker) {
             multiSpeaker.value = dataStore.multiSpeaker;
@@ -308,6 +310,8 @@ export default defineComponent({
           dataStore.valence = valence.value;
           dataStore.multiSpeaker = multiSpeaker.value;
           dataStore.emotionsList = emotionsList.value;
+          arousalNudged.value = true;
+          valenceNudged.value = true;
         }
         if (props.mode === 'norms') {
           dataStore.normsSelected = normsSelected.value;

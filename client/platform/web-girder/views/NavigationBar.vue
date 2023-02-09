@@ -4,7 +4,7 @@ import { mapActions, mapGetters, mapState } from 'vuex';
 import { GirderSearch } from '@girder/components/src';
 import NavigationTitle from 'dive-common/components/NavigationTitle.vue';
 import UserGuideButton from 'dive-common/components/UserGuideButton.vue';
-
+import BrandIcon from 'dive-common/components/BrandIcon.vue';
 import JobsTab from './JobsTab.vue';
 
 export default {
@@ -14,6 +14,7 @@ export default {
     UserGuideButton,
     JobsTab,
     GirderSearch,
+    BrandIcon,
   },
   inject: ['girderRest'],
   data: () => ({
@@ -57,6 +58,7 @@ export default {
   <div>
     <v-app-bar app>
       <NavigationTitle :name="brandData.name" />
+      <BrandIcon />
       <v-tabs
         icons-and-text
         color="accent"
