@@ -19,33 +19,43 @@ export default defineComponent({
 
 <template>
   <div class="brandLogo">
-    <img :src="miniLogo" width="40" height="40" />
+    <img
+      :src="miniLogo"
+      width="25"
+      height="25"
+    >
     <v-tooltip
-          open-delay="200"
-          close-delay="1500"
-          bottom
-          max-width="200"
+      open-delay="200"
+      close-delay="1500"
+      bottom
+      max-width="200"
+    >
+      <template #activator="{ on, attrs }">
+        <v-icon
+          v-bind="attrs"
+          class="icon"
+          x-small
+          v-on="on"
         >
-          <template #activator="{ on, attrs }">
-            <v-icon
-                v-on="on"
-                v-bind="attrs"
-                class="icon"
-                x-small
-            >
-                mdi-information
+          mdi-information
         </v-icon>
-          </template>
-          <span>Terpsichore symbol by
-            <a href="#" @click="goTo('https://commons.wikimedia.org/wiki/User:Kwamikagami')">
-                Kwamikagami
-            </a>
-            is licensed under
-            <a href="#" @click="goTo('https://creativecommons.org/licenses/by-sa/4.0/deed.en')">
-                Creative Commons Attribution-Share Alike 4.0 International
-            </a>
-        </span>
-        </v-tooltip>
+      </template>
+      <span>Terpsichore symbol by
+        <a
+          href="#"
+          @click="goTo('https://commons.wikimedia.org/wiki/User:Kwamikagami')"
+        >
+          Kwamikagami
+        </a>
+        is licensed under
+        <a
+          href="#"
+          @click="goTo('https://creativecommons.org/licenses/by-sa/4.0/deed.en')"
+        >
+          Creative Commons Attribution-Share Alike 4.0 International
+        </a>
+      </span>
+    </v-tooltip>
   </div>
 </template>
 
