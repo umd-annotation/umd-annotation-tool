@@ -106,36 +106,38 @@ export default {
           </div>
         </v-card-title>
         <v-card-text style="font-size:1.5em; text-align: center;">
-          <div class="brandImage">
+          <div >
             <v-row>
-              <img style="margin:auto" width="200" :src="TerpsicoreImage" />
+              <div class="brandImage">
+                <img style="margin:auto" width="200" :src="TerpsicoreImage" />
+                  <v-tooltip
+                    open-delay="200"
+                    close-delay="1500"
+                    bottom
+                    max-width="200"
+                  >
+                    <template #activator="{ on, attrs }">
+                      <v-icon
+                          v-on="on"
+                          v-bind="attrs"
+                          class="icon"
+                          x-small
+                      >
+                          mdi-information
+                      </v-icon>
+                    </template>
+                    <span>The Muse Terpsichore by
+                        <a href="#" @click="goTo('https://www.flickr.com/photos/45238035@N02/5065121595')">
+                          Becante
+                        </a>
+                        is licensed under
+                        <a href="#" @click="goTo('https://creativecommons.org/licenses/by-sa/4.0/deed.en')">
+                            Creative Commons Attribution 2.0 Generic
+                        </a>
+                    </span>
+                </v-tooltip>
+              </div>
             </v-row>
-            <v-tooltip
-              open-delay="200"
-              close-delay="1500"
-              bottom
-              max-width="200"
-            >
-              <template #activator="{ on, attrs }">
-                <v-icon
-                    v-on="on"
-                    v-bind="attrs"
-                    class="icon"
-                    x-small
-                >
-                    mdi-information
-            </v-icon>
-              </template>
-              <span>The Muse Terpsichore by
-                <a href="#" @click="goTo('https://www.flickr.com/photos/45238035@N02/5065121595')">
-                  Becante
-                </a>
-                is licensed under
-                <a href="#" @click="goTo('https://creativecommons.org/licenses/by-sa/4.0/deed.en')">
-                    Creative Commons Attribution 2.0 Generic
-                </a>
-            </span>
-            </v-tooltip>
         </div>
           <p>
             Please contact the project coordinator for information about project assignments.
@@ -152,6 +154,7 @@ export default {
 <style lang="scss" scoped>
 .brandImage {
   position: relative;
+  margin: auto;
 }
 .icon {
   position: absolute;
