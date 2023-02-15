@@ -200,7 +200,7 @@ export default defineComponent({
         await video.play();
         data.playing = true;
         const segment = Math.floor((data.frame - 150) / 450);
-        if (props.mode && segment === maxSegment.value) {
+        if (['VAE', 'norms', 'emotion'].includes(props.mode) && segment === maxSegment.value) {
           pauseEndSegment = segment;
         }
 

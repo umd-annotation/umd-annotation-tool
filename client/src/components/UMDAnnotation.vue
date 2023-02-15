@@ -80,20 +80,20 @@ export default defineComponent({
         return ['None'];
       }
       const root = [
+        'Admiration',
         'Apology',
         'Criticism',
-        'Greeting',
-        'Request',
-        'Persuasion',
-        'Thanks',
-        'Taking Leave',
-        'Admiration',
         'Finalizing Negotiating/Deal',
+        'Greeting',
+        'Persuasion',
         'Refusing a Request',
+        'Request',
+        'Taking Leave',
+        'Thanks',
       ];
       const normVariants = root
         .map((item) => [`${item} (adhered)`, `${item} (violated)`])
-        .reduce((acc, x) => acc.concat(x));
+        .reduce((acc, x) => acc.concat(x)).sort();
 
       return [
         'None',
@@ -691,7 +691,7 @@ export default defineComponent({
       <v-row dense>
         <v-col cols="11">
           <h3>
-            Norms
+            Social Norms
           </h3>
         </v-col>
         <v-col>
