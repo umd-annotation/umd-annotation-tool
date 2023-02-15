@@ -38,7 +38,10 @@ FrameAttributeExists = ['_Impact', '_RemediationComment']
 
 
 def bin_value(value):
-    return math.floor(value / 200) + 1
+    return math.floor((value - 1) / 200) + 1
+
+def bin_changepoint(value):
+    return math.floor((value - 1) / 1000) + 1
 
 def annotations_exists(tracks):
     for t in tracks:
@@ -64,7 +67,7 @@ def export_changepoint_tab(folders, userMap, user):
     writer.writerow(["user_id", "file_id", "timestamp", "impact_scalar", "comment"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
-        videoname = folder['name']
+        videoname = folder['name'].replace('Video', '').replace('.mp4', '')
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
         for t in tracks:
@@ -75,19 +78,26 @@ def export_changepoint_tab(folders, userMap, user):
                     if 'attributes' in feature.keys():
                         attributes = feature['attributes']
                         for key in attributes.keys():
-                            if '_Impact' in key:
+                            if '_ImpactV2.0' in key:
+                                login = key.replace('_ImpactV2.0', '')
+                                mapped = login
+                                if mapped not in userDataFound.keys():
+                                    userDataFound[mapped] = {}
+                                userDataFound[mapped]['Impact'] = bin_changepoint(attributes[key])
+                                userDataFound[mapped]['Timestamp'] = (1 / fps) * feature['frame']
+                            elif '_Impact' in key:
                                 login = key.replace('_Impact', '')
                                 mapped = login
                                 if mapped not in userDataFound.keys():
                                     userDataFound[mapped] = {}
-                                userDataFound[mapped]['Impact'] = attributes[key]
+                                userDataFound[mapped]['Impact'] = bin_changepoint(attributes[key] * 1000)
                                 userDataFound[mapped]['Timestamp'] = (1 / fps) * feature['frame']
                             if '_Comment' in key:
                                 login = key.replace('_Comment', '')
                                 mapped = login
                                 if mapped not in userDataFound.keys():
                                     userDataFound[mapped] = {}
-                                userDataFound[mapped]['Comment'] = attributes[key]
+                                userDataFound[mapped]['Comment'] = str(attributes[key])
                                 userDataFound[mapped]['Timestamp'] = (1 / fps) * feature['frame']
 
                 for key in userDataFound.keys():
@@ -111,7 +121,7 @@ def export_remediation_tab(folders, userMap, user):
     writer.writerow(["user_id", "file_id", "timestamp", "comment"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
-        videoname = folder['name']
+        videoname = folder['name'].replace('Video', '').replace('.mp4', '')
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
 
@@ -159,7 +169,7 @@ def export_norms_tab(folders, userMap, user):
     )
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
-        videoname = folder['name']
+        videoname = folder['name'].replace('Video', '').replace('.mp4', '')
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
 
@@ -237,7 +247,7 @@ def export_valence_tab(folders, userMap, user):
     )
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
-        videoname = folder['name']
+        videoname = folder['name'].replace('Video', '').replace('.mp4', '')
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
 
@@ -328,7 +338,7 @@ def export_emotions_tab(folders, userMap, user):
     writer.writerow(["user_id", "file_id", "segment_id", "emotion", "multi_speaker"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
-        videoname = folder['name']
+        videoname = folder['name'].replace('Video', '').replace('.mp4', '')
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
         name = videoname.replace('Video', '').replace('.mp4', '')
@@ -370,6 +380,7 @@ def export_session_info_tab(folders, userMap, user):
     csvFile = io.StringIO()
     writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
     writer.writerow(["session_id", "language", "condition", "scenario", "fle_id", "sme_id", 'recording_date', 'recording_time'])
+    existing_session = []
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
         videoname = folder['name']
@@ -392,8 +403,11 @@ def export_session_info_tab(folders, userMap, user):
             recording_date = splits[5]
             session_id = f'{language}_{condition}_{scenario}_{fle_id}_{sme_id}_{recording_date}'
 
+        if session_id in existing_session:
+            continue
         columns = [session_id, language, condition, scenario, fle_id, sme_id, recording_date, recording_time]
         writer.writerow(columns)
+        existing_session.append(session_id)
     yield csvFile.getvalue()
     csvFile.seek(0)
     csvFile.truncate(0)
@@ -497,6 +511,8 @@ def export_versions_per_file(folders, userMap, user):
                         for key in attributes.keys():
                             if '_Impact' in key:
                                 change_point_count += 1
+                            if '_ImpactV2.0' in key:
+                                change_point_count += 1
                             if '_Comment' in key:
                                 login = key.replace('_Comment', '')
                                 if login not in changepointUserDataFound:
@@ -556,7 +572,7 @@ def convert_to_zips(folders, userMap, user,):
         for data in z.addFile(seg_gen, Path(f'{zip_path}/docs/segments.tab')):
             yield data
         valence_gen = generate_tab(folders, userMap, user, 'valence')
-        for data in z.addFile(valence_gen, Path(f'{zip_path}/data/valence.tab')):
+        for data in z.addFile(valence_gen, Path(f'{zip_path}/data/valence_arousal.tab')):
             yield data
         emotion_gen = generate_tab(folders, userMap, user, 'emotions')
         for data in z.addFile(emotion_gen, Path(f'{zip_path}/data/emotions.tab')):

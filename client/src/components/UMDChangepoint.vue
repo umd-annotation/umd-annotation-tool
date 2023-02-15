@@ -65,6 +65,11 @@ export default defineComponent({
                   const attribute = feature.attributes[key];
                   const replaced = key.replace(`${userLogin.value}_`, '');
                   if (replaced === 'Impact') {
+                    changePointImpact.value = parseInt((attribute as string), 10) * 1000;
+                    changePointFrame.value = currentFrame;
+                    foundFeature = true;
+                  }
+                  if (replaced === 'ImpactV2.0') {
                     changePointImpact.value = parseInt((attribute as string), 10);
                     changePointFrame.value = currentFrame;
                     foundFeature = true;
@@ -127,6 +132,7 @@ export default defineComponent({
       if (track) {
         if (track.getFeature(changeData.frame)[0]) {
           track.removeFeatureAttribute(changeData.frame, `${userLogin.value}_Impact`);
+          track.removeFeatureAttribute(changeData.frame, `${userLogin.value}_ImpactV2.0`);
           track.removeFeatureAttribute(changeData.frame, `${userLogin.value}_Comment`);
         }
         if (selectedChangePoint.value === index) {
@@ -176,7 +182,8 @@ export default defineComponent({
           || !track.getFeature(changePointFrame.value)[0]?.keyframe) {
             track.toggleKeyframe(changePointFrame.value);
           }
-          track.setFeatureAttribute(changePointFrame.value, `${userLogin.value}_Impact`, changePointImpact.value);
+          track.removeFeatureAttribute(changePointFrame.value, `${userLogin.value}_Impact`);
+          track.setFeatureAttribute(changePointFrame.value, `${userLogin.value}_ImpactV2.0`, changePointImpact.value);
           track.setFeatureAttribute(changePointFrame.value, `${userLogin.value}_Comment`, changePointComment.value);
         }
         // save the file
@@ -363,18 +370,21 @@ export default defineComponent({
         </v-row>
         <v-form v-model="submitValid">
           <v-row>
+            <v-col cols="2">
+              Worse Outcome
+            </v-col>
             <v-col>
               <v-slider
                 v-model="changePointImpact"
-                label="Impact"
                 min="1"
-                max="5"
+                max="5000"
                 step="1"
-                ticks="always"
                 :rules="[v => v >= 0 || 'Set the Impact Value']"
                 required
-                :tick-size="10"
               />
+            </v-col>
+            <v-col cols="2">
+              Beter Outcome
             </v-col>
           </v-row>
           <v-row>
