@@ -12,6 +12,7 @@ import {
   useSelectedTrackId,
   useTime,
 } from 'vue-media-annotator/provides';
+import { usePrompt } from 'dive-common/vue-utilities/prompt-service';
 
 
 type NormsObjectValues = Record<string, 'adhered' |'violated' | 'EMPTY_NA' | 'adhered_violated'>;
@@ -38,6 +39,7 @@ export default defineComponent({
   setup(props, { emit }) {
     const selectedTrackIdRef = useSelectedTrackId();
 
+    const { prompt } = usePrompt();
     const { frame, maxSegment } = useTime();
     const handler = useHandler();
     const restClient = useGirderRest();
@@ -49,6 +51,7 @@ export default defineComponent({
     const emotionsForm = ref(null);
     const arousalNudged = ref(false);
     const valenceNudged = ref(false);
+    const alreadyAnnotated = ref(false);
     const nudgedVAE = computed(() => arousalNudged.value && valenceNudged.value);
     const arousalAdjusted = () => {
       arousalNudged.value = true;
@@ -137,7 +140,10 @@ export default defineComponent({
       // load existing attributes
       let hasAttributes = false;
       if (trackNum !== null) {
-        const track = cameraStore.getAnyTrack(trackNum);
+        const track = cameraStore.getAnyPossibleTrack(trackNum);
+        if (track === undefined) {
+          return false;
+        }
         Object.keys(track.attributes).forEach((key) => {
           if (key.includes(userLogin.value)) {
             const replaced = key.replace(`${userLogin.value}_`, '');
@@ -196,7 +202,7 @@ export default defineComponent({
       return hasAttributes;
     };
 
-    const getMaxSegmentAnnotated = () => {
+    const getMaxSegmentAnnotated = async () => {
       const Ids = cameraStore.camMap.value.get('singleCam')?.trackStore.annotationIds.value;
       let maxId = -1;
       if (Ids) {
@@ -207,7 +213,24 @@ export default defineComponent({
           }
         }
       }
-      handler.trackSelect(maxId + 1, false);
+      const track = cameraStore.getAnyPossibleTrack(maxId + 1);
+      if (track === undefined) {
+        // We are at max segment
+        const text = 'This Video has already been annotated.  Click OK to review annotations.';
+        const res = await prompt({
+          title: 'Data already annotated',
+          text,
+          positiveButton: 'OK',
+          confirm: true,
+        });
+        if (res) {
+          handler.trackSelect(0, false);
+        } else {
+          alreadyAnnotated.value = true;
+        }
+      } else {
+        handler.trackSelect(maxId + 1, false);
+      }
       loadedAttributes.value = checkAttributes(maxId + 1, true);
       seekBegin();
     };
@@ -265,7 +288,11 @@ export default defineComponent({
         return true;
       }
       if (selectedTrackIdRef.value !== null) {
-        return checkAttributes(selectedTrackIdRef.value);
+        const newTrack = cameraStore.getAnyPossibleTrack(selectedTrackIdRef.value + 1);
+        if (newTrack) {
+          return checkAttributes(selectedTrackIdRef.value);
+        }
+        return false;
       }
       return false;
     });
@@ -273,8 +300,11 @@ export default defineComponent({
     const submit = async () => {
       // Need to get information and set it for the track attributes
       if (selectedTrackIdRef.value !== null) {
-        const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
+        const track = cameraStore.getPossibleTrack(selectedTrackIdRef.value);
         // Set attributes;
+        if (track === undefined) {
+          return;
+        }
         if (props.mode === 'VAE' || props.mode === 'review') {
           track.setAttribute(`${userLogin.value}_Valence`, valence.value);
           track.setAttribute(`${userLogin.value}_Arousal`, arousal.value);
@@ -289,7 +319,12 @@ export default defineComponent({
         // save the file
         handler.save();
         const oldTrackNum = selectedTrackIdRef.value;
-        handler.trackSelectNext(1, true);
+        const newTrack = cameraStore.getAnyPossibleTrack(oldTrackNum + 1);
+        if (newTrack) {
+          handler.trackSelectNext(1, true);
+        } else {
+          alreadyAnnotated.value = true;
+        }
         if (selectedTrackIdRef.value !== null && selectedTrackIdRef.value !== oldTrackNum) {
           arousal.value = 1;
           valence.value = 1;
@@ -414,6 +449,7 @@ export default defineComponent({
     });
 
     return {
+      alreadyAnnotated,
       hasPrevious,
       hasNext,
       selectedTrackIdRef,
@@ -453,321 +489,326 @@ export default defineComponent({
 
 <template>
   <v-container class="maincontainer">
-    <v-row
-      dense
-      class="scroll-sticky"
-    >
-      <h2 class="mr-4 mt-1">
-        Segment {{ selectedTrackIdRef }}
-      </h2>
-      <div class="ml-2 mt-2">
-        <tooltip-btn
-          small
-          icon="mdi-skip-previous"
-          tooltip-text="Seek to first frame of segment"
-          @click="seekBegin"
-        />
-        <tooltip-btn
-          small
-          icon="mdi-replay"
-          tooltip-text="Playback current Segment"
-          @click="playSegment"
-        />
-        <tooltip-btn
-          small
-          icon="mdi-skip-next"
-          tooltip-text="Seek to end of the frame"
-          @click="seekEnd"
-        />
-      </div>
-      <v-spacer />
-      <v-btn
-        color="primary"
-        :disabled="!hasPrevious"
-        class="mx-2"
-        @click="changeTrack(-1)"
-      >
-        Prev
-      </v-btn>
-      <v-btn
-        color="primary"
-        :disabled="!hasNext"
-        class="mx-2"
-        @click="changeTrack(1)"
-      >
-        Next
-      </v-btn>
-    </v-row>
-    <div v-if="mode ==='VAE' || mode ==='review'">
+    <div v-if="!alreadyAnnotated">
       <v-row
         dense
-        class="bottomborder"
+        class="scroll-sticky"
       >
-        <v-col>
-          <v-row dense>
-            <v-col cols="2">
-              Valence
-            </v-col>
-            <v-col>
-              <v-slider
-                v-model="valence"
-                min="1"
-                max="1000"
-                step="1"
-                dense
-                persistent-hint
-                :hint="!valenceNudged ? 'Valence must be adjusted' : ''"
-                @change="valenceAdjusted"
-              />
-            </v-col>
-            <v-col cols="1">
-              <v-tooltip
-                open-delay="200"
-                left
-                max-width="300"
-              >
-                <template #activator="{ on }">
-                  <v-icon
-                    v-on="on"
-                  >
-                    mdi-help
-                  </v-icon>
-                </template>
-                <p style="font-size:1.4em">
-                  Move the slider to rate the level of valence displayed by the speaker in
-                  the current segment (from the
-                  most negative to the most positive; the middle point indicates neutral valence).
-                </p>
-              </v-tooltip>
-            </v-col>
-          </v-row>
-          <v-row dense>
-            <v-col
-              cols="2"
-              class="d-flex justify-end"
-            >
-              <span class="emoji">☹️</span>
-            </v-col>
-            <v-col class="valencegradient" />
-            <v-col cols="1">
-              <span class="emoji">🙂</span>
-            </v-col>
-          </v-row>
-        </v-col>
-      </v-row>
-      <v-row
-        dense
-        class="bottomborder"
-      >
-        <v-col>
-          <v-row dense>
-            <v-col cols="2">
-              Arousal
-            </v-col>
-            <v-col>
-              <v-slider
-                v-model="arousal"
-                min="1"
-                max="1000"
-                step="1"
-                dense
-                persistent-hint
-                :hint="!arousalNudged ? 'Arousal must be adjusted' : ''"
-                @change="arousalAdjusted"
-              />
-            </v-col>
-            <v-col cols="1">
-              <v-tooltip
-                open-delay="200"
-                left
-                max-width="300"
-              >
-                <template #activator="{ on }">
-                  <v-icon
-                    v-on="on"
-                  >
-                    mdi-help
-                  </v-icon>
-                </template>
-                <p style="font-size:1.4em">
-                  Move the slider to rate the level of arousal displayed by the speaker in
-                  the current segment (from the
-                  most calm/low energy to the most excited/high energy).
-                </p>
-              </v-tooltip>
-            </v-col>
-          </v-row>
-          <v-row dense>
-            <v-col
-              cols="2"
-              class="d-flex justify-end"
-            >
-              <span class="emoji">😴</span>
-            </v-col>
-            <v-col class="arrousalgradient" />
-            <v-col cols="1">
-              <span class="emoji">😳</span>
-            </v-col>
-          </v-row>
-        </v-col>
-      </v-row>
-    </div>
-    <div v-if="mode ==='VAE' || mode === 'review'">
-      <v-row dense>
-        <v-col cols="11">
-          <h3>
-            Emotions
-          </h3>
-        </v-col>
-        <v-col>
-          <v-tooltip
-            open-delay="200"
-            left
-            max-width="300"
-          >
-            <template #activator="{ on }">
-              <v-icon
-                v-on="on"
-              >
-                mdi-help
-              </v-icon>
-            </template>
-            <p style="font-size:1.4em">
-              Indicate emotion categories expressed by the speaker in the current segment.
-              Select as many categories
-              as applicable. Select “No emotion” if the speaker does not express
-              any particular emotion.
-            </p>
-          </v-tooltip>
-        </v-col>
-      </v-row>
-      <v-row
-        dense
-        class="bottomborder"
-      >
-        <v-col>
-          <v-form
-            ref="emotionsForm"
-            v-model="VAEValid"
-          >
-            <v-select
-              v-model="emotionsList"
-              :items="baseEmotionsList"
-              chips
-              multiple
-              outlined
-              clearable
-              persistent-hint
-              hint="Select one or more Emotions"
-              required
-              :menu-props="{maxHeight: 600}"
-              :rules="[v => !!v.length || 'Must select an Emotion']"
-              deletable-chips
-              @change="updateEmotions($event)"
-            />
-          </v-form>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col>
-          <h4>Multispeaker</h4>
-          <v-radio-group
-            v-model="multiSpeaker"
-            row
-          >
-            <v-radio
-              v-for="n in multiSpeakerOptions"
-              :key="n"
-              :label="n"
-              :value="n"
-              class="mx-3"
-              style="min-height:32px; max-height:32px"
-            />
-          </v-radio-group>
-        </v-col>
-      </v-row>
-    </div>
-    <div v-if="mode === 'norms' || mode ==='review'">
-      <v-row dense>
-        <v-col cols="11">
-          <h3>
-            Social Norms
-          </h3>
-        </v-col>
-        <v-col>
-          <v-tooltip
-            open-delay="200"
-            left
-            max-width="300"
-          >
-            <template #activator="{ on }">
-              <v-icon
-                v-on="on"
-              >
-                mdi-help
-              </v-icon>
-            </template>
-            <p style="font-size:1.4em">
-              Select all observable social norm categories employed by the speaker in the current
-              segment. For each social norm identified,
-              indicate whether it is adhered to or violated by the speaker. Select “None” to
-              indicate that no observable social norms are present in the segment.
-              Click “Submit” when done.
-            </p>
-          </v-tooltip>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col>
-          <v-form v-model="normsValid">
-            <v-select
-              v-model="normsSelected"
-              :items="baseNormsList"
-              chips
-              multiple
-              solo
-              outlined
-              clearable
-              persistent-hint
-              hint="Select one or more Norms"
-              deletable-chips
-              :menu-props="{maxHeight: 600}"
-              required
-              :rules="[v => !!v.length || 'Must select a Norm']"
-              @change="syncNorms($event)"
-            />
-          </v-form>
-        </v-col>
-      </v-row>
-    </div>
-    <v-row>
-      <v-col>
-        <v-btn
-          :color="loadedAttributes ? 'warning' : 'success'"
-          :disabled="outsideSegment || !submitValid"
-          @click="submit"
-        >
-          {{ loadedAttributes ? 'Update' : 'Submit' }}
-        </v-btn>
-      </v-col>
-    </v-row>
-    <v-row>
-      <v-alert
-        v-if="(outsideSegment && mode && !['changepoint', 'remediation'].includes(mode))"
-        outlined
-        dense
-        type="warning"
-        class="mx-3"
-      >
-        Outside Current segment.  Return to the segment to submit or update.
+        <h2 class="mr-4 mt-1">
+          Segment {{ selectedTrackIdRef }}
+        </h2>
+        <div class="ml-2 mt-2">
+          <tooltip-btn
+            small
+            icon="mdi-skip-previous"
+            tooltip-text="Seek to first frame of segment"
+            @click="seekBegin"
+          />
+          <tooltip-btn
+            small
+            icon="mdi-replay"
+            tooltip-text="Playback current Segment"
+            @click="playSegment"
+          />
+          <tooltip-btn
+            small
+            icon="mdi-skip-next"
+            tooltip-text="Seek to end of the frame"
+            @click="seekEnd"
+          />
+        </div>
+        <v-spacer />
         <v-btn
           color="primary"
-          @click="seekBegin()"
+          :disabled="!hasPrevious"
+          class="mx-2"
+          @click="changeTrack(-1)"
         >
-          Return to Segment
+          Prev
         </v-btn>
-      </v-alert>
-    </v-row>
+        <v-btn
+          color="primary"
+          :disabled="!hasNext"
+          class="mx-2"
+          @click="changeTrack(1)"
+        >
+          Next
+        </v-btn>
+      </v-row>
+      <div v-if="mode ==='VAE' || mode ==='review'">
+        <v-row
+          dense
+          class="bottomborder"
+        >
+          <v-col>
+            <v-row dense>
+              <v-col cols="2">
+                Valence
+              </v-col>
+              <v-col>
+                <v-slider
+                  v-model="valence"
+                  min="1"
+                  max="1000"
+                  step="1"
+                  dense
+                  persistent-hint
+                  :hint="!valenceNudged ? 'Valence must be adjusted' : ''"
+                  @change="valenceAdjusted"
+                />
+              </v-col>
+              <v-col cols="1">
+                <v-tooltip
+                  open-delay="200"
+                  left
+                  max-width="300"
+                >
+                  <template #activator="{ on }">
+                    <v-icon
+                      v-on="on"
+                    >
+                      mdi-help
+                    </v-icon>
+                  </template>
+                  <p style="font-size:1.4em">
+                    Move the slider to rate the level of valence displayed by the speaker in
+                    the current segment (from the
+                    most negative to the most positive; the middle point indicates neutral valence).
+                  </p>
+                </v-tooltip>
+              </v-col>
+            </v-row>
+            <v-row dense>
+              <v-col
+                cols="2"
+                class="d-flex justify-end"
+              >
+                <span class="emoji">☹️</span>
+              </v-col>
+              <v-col class="valencegradient" />
+              <v-col cols="1">
+                <span class="emoji">🙂</span>
+              </v-col>
+            </v-row>
+          </v-col>
+        </v-row>
+        <v-row
+          dense
+          class="bottomborder"
+        >
+          <v-col>
+            <v-row dense>
+              <v-col cols="2">
+                Arousal
+              </v-col>
+              <v-col>
+                <v-slider
+                  v-model="arousal"
+                  min="1"
+                  max="1000"
+                  step="1"
+                  dense
+                  persistent-hint
+                  :hint="!arousalNudged ? 'Arousal must be adjusted' : ''"
+                  @change="arousalAdjusted"
+                />
+              </v-col>
+              <v-col cols="1">
+                <v-tooltip
+                  open-delay="200"
+                  left
+                  max-width="300"
+                >
+                  <template #activator="{ on }">
+                    <v-icon
+                      v-on="on"
+                    >
+                      mdi-help
+                    </v-icon>
+                  </template>
+                  <p style="font-size:1.4em">
+                    Move the slider to rate the level of arousal displayed by the speaker in
+                    the current segment (from the
+                    most calm/low energy to the most excited/high energy).
+                  </p>
+                </v-tooltip>
+              </v-col>
+            </v-row>
+            <v-row dense>
+              <v-col
+                cols="2"
+                class="d-flex justify-end"
+              >
+                <span class="emoji">😴</span>
+              </v-col>
+              <v-col class="arrousalgradient" />
+              <v-col cols="1">
+                <span class="emoji">😳</span>
+              </v-col>
+            </v-row>
+          </v-col>
+        </v-row>
+      </div>
+      <div v-if="mode ==='VAE' || mode === 'review'">
+        <v-row dense>
+          <v-col cols="11">
+            <h3>
+              Emotions
+            </h3>
+          </v-col>
+          <v-col>
+            <v-tooltip
+              open-delay="200"
+              left
+              max-width="300"
+            >
+              <template #activator="{ on }">
+                <v-icon
+                  v-on="on"
+                >
+                  mdi-help
+                </v-icon>
+              </template>
+              <p style="font-size:1.4em">
+                Indicate emotion categories expressed by the speaker in the current segment.
+                Select as many categories
+                as applicable. Select “No emotion” if the speaker does not express
+                any particular emotion.
+              </p>
+            </v-tooltip>
+          </v-col>
+        </v-row>
+        <v-row
+          dense
+          class="bottomborder"
+        >
+          <v-col>
+            <v-form
+              ref="emotionsForm"
+              v-model="VAEValid"
+            >
+              <v-select
+                v-model="emotionsList"
+                :items="baseEmotionsList"
+                chips
+                multiple
+                outlined
+                clearable
+                persistent-hint
+                hint="Select one or more Emotions"
+                required
+                :menu-props="{maxHeight: 600}"
+                :rules="[v => !!v.length || 'Must select an Emotion']"
+                deletable-chips
+                @change="updateEmotions($event)"
+              />
+            </v-form>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col>
+            <h4>Multispeaker</h4>
+            <v-radio-group
+              v-model="multiSpeaker"
+              row
+            >
+              <v-radio
+                v-for="n in multiSpeakerOptions"
+                :key="n"
+                :label="n"
+                :value="n"
+                class="mx-3"
+                style="min-height:32px; max-height:32px"
+              />
+            </v-radio-group>
+          </v-col>
+        </v-row>
+      </div>
+      <div v-if="mode === 'norms' || mode ==='review'">
+        <v-row dense>
+          <v-col cols="11">
+            <h3>
+              Social Norms
+            </h3>
+          </v-col>
+          <v-col>
+            <v-tooltip
+              open-delay="200"
+              left
+              max-width="300"
+            >
+              <template #activator="{ on }">
+                <v-icon
+                  v-on="on"
+                >
+                  mdi-help
+                </v-icon>
+              </template>
+              <p style="font-size:1.4em">
+                Select all observable social norm categories employed by the speaker in the current
+                segment. For each social norm identified,
+                indicate whether it is adhered to or violated by the speaker. Select “None” to
+                indicate that no observable social norms are present in the segment.
+                Click “Submit” when done.
+              </p>
+            </v-tooltip>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col>
+            <v-form v-model="normsValid">
+              <v-select
+                v-model="normsSelected"
+                :items="baseNormsList"
+                chips
+                multiple
+                solo
+                outlined
+                clearable
+                persistent-hint
+                hint="Select one or more Norms"
+                deletable-chips
+                :menu-props="{maxHeight: 600}"
+                required
+                :rules="[v => !!v.length || 'Must select a Norm']"
+                @change="syncNorms($event)"
+              />
+            </v-form>
+          </v-col>
+        </v-row>
+      </div>
+      <v-row>
+        <v-col>
+          <v-btn
+            :color="loadedAttributes ? 'warning' : 'success'"
+            :disabled="outsideSegment || !submitValid"
+            @click="submit"
+          >
+            {{ loadedAttributes ? 'Update' : 'Submit' }}
+          </v-btn>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-alert
+          v-if="(outsideSegment && mode && !['changepoint', 'remediation'].includes(mode))"
+          outlined
+          dense
+          type="warning"
+          class="mx-3"
+        >
+          Outside Current segment.  Return to the segment to submit or update.
+          <v-btn
+            color="primary"
+            @click="seekBegin()"
+          >
+            Return to Segment
+          </v-btn>
+        </v-alert>
+      </v-row>
+    </div>
+    <div v-else>
+      <h3> Video Completed</h3>
+    </div>
   </v-container>
 </template>
 

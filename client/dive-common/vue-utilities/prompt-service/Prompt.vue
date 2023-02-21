@@ -109,11 +109,13 @@ export default defineComponent({
           { bind: 'right', handler: () => focusPositive(), disable: !show },
           { bind: 'enter', handler: () => select(), disable: !show },
         ]"
-        class="title"
+        class="titletext"
       >
         {{ title }}
       </v-card-title>
-      <v-card-text v-if="Array.isArray(text)">
+      <v-card-text
+        v-if="Array.isArray(text)"
+      >
         <div
           v-for="(item,key) in text"
           :key="key"
@@ -121,7 +123,10 @@ export default defineComponent({
           {{ item }}
         </div>
       </v-card-text>
-      <v-card-text v-else>
+      <v-card-text
+        v-else
+        class="text"
+      >
         {{ text }}
       </v-card-text>
       <v-card-actions>
@@ -146,3 +151,11 @@ export default defineComponent({
     </v-card>
   </v-dialog>
 </template>
+<style scoped>
+.titletext{
+  font-size:2em !important;
+}
+.text{
+  font-size:1.5em;
+}
+</style>
