@@ -270,7 +270,8 @@ export default defineComponent({
         <v-tooltip
           open-delay="200"
           left
-          max-width="300"
+          max-width="600"
+          content-class="custom-tooltip"
         >
           <template #activator="{ on }">
             <v-icon
@@ -282,8 +283,11 @@ export default defineComponent({
           <p style="font-size:1.4em">
             Identify points (timestamps) in the video where there is a change in the conversation
             that has the potential to impact the conversation outcome.
-            Indicate impact level on the scale (from most negative to most positive).
-            Add a comment explaining why you indicated the changepoint. Click “Save” when done.
+            Indicate impact level on the scale (from worse impact to better impact).
+            Add a comment explaining the following:<br>
+            (a) <b>pre-change</b> (what was happening just beore the changepoint)<br>
+            (b) <b>shift</b> (what has changed)<br>
+            (c) <b>evidence</b> (what you observed that led to you marking the changepoint)
           </p>
         </v-tooltip>
       </v-col>
@@ -441,5 +445,10 @@ export default defineComponent({
 .v-slider__tick--filled{
     background-color: #0277bd;
 }
-
+.custom-tooltip {
+    opacity: 1!important;
+    background: var(--v-tooltip-bg, rgba(97, 97, 97, 1.0)) !important;
+    font-size: 1.1em;
+    line-height: 1.5em;
+}
 </style>
