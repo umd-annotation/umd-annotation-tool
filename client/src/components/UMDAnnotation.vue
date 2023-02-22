@@ -220,6 +220,7 @@ export default defineComponent({
         const res = await prompt({
           title: 'Video already annotated!',
           text,
+          alert: 'warning',
           positiveButton: 'Edit anyway',
           confirm: true,
         });
