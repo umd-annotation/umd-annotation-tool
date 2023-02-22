@@ -218,7 +218,7 @@ export default defineComponent({
         // We are at max segment
         const text = 'This Video has already been annotated.  Click OK to review annotations.';
         const res = await prompt({
-          title: 'Data already annotated',
+          title: 'Video already annotated!',
           text,
           positiveButton: 'OK',
           confirm: true,
