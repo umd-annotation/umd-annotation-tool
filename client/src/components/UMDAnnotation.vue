@@ -216,7 +216,7 @@ export default defineComponent({
       const track = cameraStore.getAnyPossibleTrack(maxId + 1);
       if (track === undefined) {
         // We are at max segment
-        const text = 'This Video has already been annotated.  Click OK to review annotations.';
+        const text = 'This video has already been fully annotated. You can choose to edit or re-do these annotations, but you should do so with caution, and generally only if you have been instructed to.';
         const res = await prompt({
           title: 'Video already annotated!',
           text,
