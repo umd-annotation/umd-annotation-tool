@@ -11,7 +11,7 @@ interface PromptParams {
   text: string | string[];
   positiveButton?: string;
   negativeButton?: string;
-  alert?: string;
+  alert?: undefined | 'warning' | 'error' | 'info';
   confirm?: boolean;
 }
 
@@ -50,7 +50,7 @@ class PromptService {
     positiveButton = 'Confirm',
     negativeButton = 'Cancel',
     confirm = false,
-    alert = undefined,
+    alert = undefined as undefined | 'warning' | 'error' | 'info',
   }: PromptParams): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
       if (!this.component.show) {
