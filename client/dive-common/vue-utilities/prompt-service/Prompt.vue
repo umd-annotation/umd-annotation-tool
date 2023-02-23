@@ -13,6 +13,7 @@ export default defineComponent({
     const positiveButton = ref('Confirm');
     const negativeButton = ref('Cancel');
     const selected = ref('positive');
+    const alert: Ref<undefined | 'warning' | 'error' | 'info'> = ref(undefined);
     const confirm = ref(false);
 
     /**
@@ -76,6 +77,7 @@ export default defineComponent({
     });
 
     return {
+      alert,
       show,
       title,
       text,
@@ -109,11 +111,29 @@ export default defineComponent({
           { bind: 'right', handler: () => focusPositive(), disable: !show },
           { bind: 'enter', handler: () => select(), disable: !show },
         ]"
-        class="title"
+        style="width:100%"
+        class="ma-0"
       >
-        {{ title }}
+        <v-alert
+          v-if="alert"
+          :type="alert"
+          prominent
+          width="400"
+        >
+          <div class="alertText">
+            {{ title }}
+          </div>
+        </v-alert>
+        <div
+          v-else
+          class="titletext"
+        >
+          {{ title }}
+        </div>
       </v-card-title>
-      <v-card-text v-if="Array.isArray(text)">
+      <v-card-text
+        v-if="Array.isArray(text)"
+      >
         <div
           v-for="(item,key) in text"
           :key="key"
@@ -121,7 +141,10 @@ export default defineComponent({
           {{ item }}
         </div>
       </v-card-text>
-      <v-card-text v-else>
+      <v-card-text
+        v-else
+        class="text"
+      >
         {{ text }}
       </v-card-text>
       <v-card-actions>
@@ -146,3 +169,15 @@ export default defineComponent({
     </v-card>
   </v-dialog>
 </template>
+<style scoped>
+.titletext{
+  font-size:2em !important;
+}
+.alertText {
+  font-size: 1.5em !important;
+  width:100%;
+}
+.text{
+  font-size:1.5em;
+}
+</style>

@@ -11,6 +11,7 @@ interface PromptParams {
   text: string | string[];
   positiveButton?: string;
   negativeButton?: string;
+  alert?: string;
   confirm?: boolean;
 }
 
@@ -30,6 +31,7 @@ class PromptService {
     positiveButton: string,
     negativeButton: string,
     confirm: boolean,
+    alert: undefined | 'warning' | 'error' | 'info',
     resolve: (value: boolean) => unknown,
   ): void {
     this.component.title = title;
@@ -37,6 +39,7 @@ class PromptService {
     this.component.positiveButton = positiveButton;
     this.component.negativeButton = negativeButton;
     this.component.confirm = confirm;
+    this.component.alert = alert;
     this.component.functions.resolve = resolve;
     this.component.show = true;
   }
@@ -47,14 +50,15 @@ class PromptService {
     positiveButton = 'Confirm',
     negativeButton = 'Cancel',
     confirm = false,
+    alert = undefined,
   }: PromptParams): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
       if (!this.component.show) {
-        this.set(title, text, positiveButton, negativeButton, confirm, resolve);
+        this.set(title, text, positiveButton, negativeButton, confirm, alert, resolve);
       } else {
         const unwatch = watch(this.component.show, () => {
           unwatch();
-          this.set(title, text, positiveButton, negativeButton, confirm, resolve);
+          this.set(title, text, positiveButton, negativeButton, confirm, alert, resolve);
         });
       }
     });
