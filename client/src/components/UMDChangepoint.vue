@@ -388,7 +388,7 @@ export default defineComponent({
               />
             </v-col>
             <v-col cols="2">
-              Beter Outcome
+              Better Outcome
             </v-col>
           </v-row>
           <v-row>
