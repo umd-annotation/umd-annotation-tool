@@ -505,6 +505,11 @@ def export_versions_per_file(folders, userMap, user):
                             login = key.replace('_Norms', '')
                             if login not in normsUserDataFound:
                                 normsUserDataFound.append(login)
+                        if '_ChangePointComplete' in key:
+                            login = key.replace('_Norms', '')
+                            if login not in changepointUserDataFound:
+                                changepointUserDataFound.append(login)
+
                 for feature in features:
                     if 'attributes' in feature.keys():
                         attributes = feature['attributes']
@@ -521,7 +526,9 @@ def export_versions_per_file(folders, userMap, user):
         valence_arousal_count = len(valenceUserDataFound)
         norms_count = len(normsUserDataFound)
         change_point_count = len(changepointUserDataFound)
-        if emotions_count + valence_arousal_count + norms_count + change_point_count > 0:
+        if change_point_count == 0:
+            change_point_count = 'null'
+        if emotions_count + valence_arousal_count + norms_count > 0 or change_point_count != 'null':
             columns = [name, emotions_count, valence_arousal_count, norms_count, change_point_count]
             writer.writerow(columns)
     yield csvFile.getvalue()

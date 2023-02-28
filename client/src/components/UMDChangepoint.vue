@@ -35,7 +35,7 @@ export default defineComponent({
   setup() {
     const selectedTrackIdRef = useSelectedTrackId();
 
-    const { frame } = useTime();
+    const { frame, maxFrame } = useTime();
     const handler = useHandler();
     const restClient = useGirderRest();
     const cameraStore = useCameraStore();
@@ -46,6 +46,8 @@ export default defineComponent({
     const loadedAttributes = ref(false);
     const changePoints: Ref<{frame: number; comment: string; impact: number}[]> = ref([]);
     const selectedChangePoint: Ref<number | null> = ref(null);
+    const enableCompleteButton = ref(false);
+    const alreadyComplete = ref(false);
 
     const checkAttributes = () => {
       // load existing attributes
@@ -55,6 +57,17 @@ export default defineComponent({
       if (store) {
         // eslint-disable-next-line no-unused-expressions
         store?.trackStore.annotationMap.forEach((track) => {
+          if (track.attributes) {
+            Object.entries(track.attributes).forEach(([key, item]) => {
+              if (key.includes(userLogin.value)) {
+                const replaced = key.replace(`${userLogin.value}_`, '');
+                if (replaced === 'ChangePointComplete' && item) {
+                  alreadyComplete.value = true;
+                  handler.setMaxSegment(track.id);
+                }
+              }
+            });
+          }
           track.features.forEach((feature) => {
             const currentFrame = feature.frame;
             if (feature.attributes) {
@@ -115,6 +128,13 @@ export default defineComponent({
         if (selectedTrackIdRef.value !== segment) {
           handler.trackSelect(segment, false);
         }
+      }
+      console.log(maxFrame.value);
+      if (maxFrame.value > 0 && maxFrame.value - frame.value < 30) {
+        // Show submit button to complete data
+        enableCompleteButton.value = true;
+      } else {
+        enableCompleteButton.value = false;
       }
     });
 
@@ -233,6 +253,18 @@ export default defineComponent({
 
     const submitValid = ref(false);
 
+    const completeVideo = async () => {
+      const segment = Math.floor((frame.value - 151) / 450);
+      const track = cameraStore.getAnyTrack(segment);
+      // Set attributes;
+      // set Change Point Information
+      if (track !== undefined) {
+        track.setAttribute(`${userLogin.value}_ChangePointComplete`, true);
+      }
+      handler.save();
+      checkAttributes();
+    };
+
     return {
       selectedTrackIdRef,
       frame,
@@ -244,6 +276,9 @@ export default defineComponent({
       selectedChangePoint,
       existingFrames,
       submitValid,
+      enableCompleteButton,
+      alreadyComplete,
+      completeVideo,
       setChangepoint,
       submit,
       goToChangePoint,
@@ -291,6 +326,14 @@ export default defineComponent({
           </p>
         </v-tooltip>
       </v-col>
+    </v-row>
+    <v-row v-if="alreadyComplete">
+      <p class="pa-2">
+        This Video is marked as complete and has been
+        annotated even if no changepoint annotations exist.
+        <br>
+        You may modify the changepoints if necessary.
+      </p>
     </v-row>
     <v-btn
       :disabled="existingFrames.includes(frame)"
@@ -414,6 +457,22 @@ export default defineComponent({
         @click="submit"
       >
         Save
+      </v-btn>
+    </v-row>
+    <v-row
+      v-if="enableCompleteButton && !alreadyComplete"
+      dense
+    >
+      <p class="pa-2">
+        The dataset has been viewed completely.
+        Click complete if you are finished and then exit the tab.
+      </p>
+      <v-btn
+        color="success"
+        class="mx-2"
+        @click="completeVideo"
+      >
+        Complete
       </v-btn>
     </v-row>
   </v-container>

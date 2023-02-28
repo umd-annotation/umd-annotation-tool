@@ -22,6 +22,7 @@ export interface Time {
   frameRate: Readonly<Ref<number>>;
   originalFps: Readonly<Ref<number | null>>;
   maxSegment: Readonly<Ref<number>>;
+  maxFrame: Readonly<Ref<number>>;
 }
 
 export type SetTimeFunc = (

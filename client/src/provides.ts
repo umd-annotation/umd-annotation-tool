@@ -294,6 +294,7 @@ function dummyState(): State {
       frameRate: ref(0),
       originalFps: ref(null),
       maxSegment: ref(-1),
+      maxFrame: ref(0),
     },
     trackFilters: trackFilterControls,
     trackStyleManager: new StyleManager({ markChangesPending }),

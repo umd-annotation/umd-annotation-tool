@@ -271,6 +271,10 @@ export default defineComponent({
       seek(0);
       data.ready = true;
       emit('ready', true);
+      const updateData: {frame: number; flick: number; maxFrame: number} = {
+        frame: data.frame, flick: data.flick, maxFrame: data.maxFrame,
+      };
+      props.updateTime(updateData);
       data.volume = video.volume;
       data.speed = video.playbackRate;
       data.currentTime = video.currentTime;
