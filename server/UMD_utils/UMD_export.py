@@ -481,54 +481,52 @@ def export_versions_per_file(folders, userMap, user):
         change_point_count = 0
         changepointUserDataFound = []
         emotions_count = 0
-        emotionsUserDataFound = []
+        emotionsUserDataFound = {}
         norms_count = 0
-        normsUserDataFound = []
+        normsUserDataFound = {}
         valence_arousal_count = 0
-        valenceUserDataFound = []
+        valenceUserDataFound = {}
+        track_length = tracks.count()
         for t in tracks:
             if 'features' in t.keys():
                 features = t['features']
                 if 'attributes' in t.keys():
                     track_attributes = t['attributes']
-
                     for key in track_attributes.keys():
                         if '_Emotions' in key:
                             login = key.replace('_Emotions', '')
-                            if login not in emotionsUserDataFound:
-                                emotionsUserDataFound.append(login)                            
+                            if login not in emotionsUserDataFound.keys():
+                                emotionsUserDataFound[login] = 1
+                            else:
+                                emotionsUserDataFound[login] += 1
                         if '_Valence' in key:
                             login = key.replace('_Valence', '')
-                            if login not in valenceUserDataFound:
-                                valenceUserDataFound.append(login)                            
+                            if login not in valenceUserDataFound.keys():
+                                valenceUserDataFound[login] = 1
+                            else:
+                                valenceUserDataFound[login] += 1
                         if '_Norms' in key:
                             login = key.replace('_Norms', '')
-                            if login not in normsUserDataFound:
-                                normsUserDataFound.append(login)
+                            if login not in normsUserDataFound.keys():
+                                normsUserDataFound[login] = 1
+                            else:
+                                normsUserDataFound[login] += 1
                         if '_ChangePointComplete' in key:
                             login = key.replace('_Norms', '')
                             if login not in changepointUserDataFound:
                                 changepointUserDataFound.append(login)
-
-                for feature in features:
-                    if 'attributes' in feature.keys():
-                        attributes = feature['attributes']
-                        for key in attributes.keys():
-                            if '_Impact' in key:
-                                change_point_count += 1
-                            if '_ImpactV2.0' in key:
-                                change_point_count += 1
-                            if '_Comment' in key:
-                                login = key.replace('_Comment', '')
-                                if login not in changepointUserDataFound:
-                                    changepointUserDataFound.append(login)
-        emotions_count = len(emotionsUserDataFound)
-        valence_arousal_count = len(valenceUserDataFound)
-        norms_count = len(normsUserDataFound)
+        # iterate over the user counts and make sure they match the track length
+        for login in emotionsUserDataFound.keys():
+            if emotionsUserDataFound[login] == track_length:
+                emotions_count += 1
+        for login in valenceUserDataFound.keys():
+            if valenceUserDataFound[login] == track_length:
+                valence_arousal_count += 1
+        for login in normsUserDataFound.keys():
+            if normsUserDataFound[login] == track_length:
+                norms_count += 1
         change_point_count = len(changepointUserDataFound)
-        if change_point_count == 0:
-            change_point_count = 'null'
-        if emotions_count + valence_arousal_count + norms_count > 0 or change_point_count != 'null':
+        if emotions_count + valence_arousal_count + norms_count + change_point_count > 0:
             columns = [name, emotions_count, valence_arousal_count, norms_count, change_point_count]
             writer.writerow(columns)
     yield csvFile.getvalue()
@@ -570,7 +568,7 @@ def generate_tab(folders, userMap, user, type):
                 yield data
     return downloadGenerator
 
-def convert_to_zips(folders, userMap, user,):
+def convert_to_zips(folders, userMap, user):
     def stream():
         z = ziputil.ZipGenerator()            
         zip_path = './'

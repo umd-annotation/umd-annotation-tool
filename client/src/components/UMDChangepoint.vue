@@ -460,16 +460,21 @@ export default defineComponent({
       </v-btn>
     </v-row>
     <v-row
-      v-if="enableCompleteButton && !alreadyComplete"
+      v-if="!alreadyComplete"
       dense
+      style="position:absolute;bottom:10px"
     >
-      <p class="pa-2">
-        The dataset has been viewed completely.
-        Click complete if you are finished and then exit the tab.
+      <p
+        v-if="!alreadyComplete"
+        class="pa-2"
+      >
+        Once the dataset has been viewed completely.
+        The Complete button below will be enabled to submit.
       </p>
       <v-btn
         color="success"
         class="mx-2"
+        :disabled="!enableCompleteButton || alreadyComplete"
         @click="completeVideo"
       >
         Complete
