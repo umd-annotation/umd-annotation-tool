@@ -129,7 +129,6 @@ export default defineComponent({
           handler.trackSelect(segment, false);
         }
       }
-      console.log(maxFrame.value);
       if (maxFrame.value > 0 && maxFrame.value - frame.value < 30) {
         // Show submit button to complete data
         enableCompleteButton.value = true;

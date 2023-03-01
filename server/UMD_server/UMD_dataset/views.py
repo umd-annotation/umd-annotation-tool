@@ -28,6 +28,7 @@ class UMD_Dataset(Resource):
         self.route("GET", ("recursive_export", ":folder"), self.export_resursive_tabular)
         self.route("GET", ("links", ":folder"), self.export_links)
         self.route("POST", ("update_containers",), self.update_containers)
+        self.route("POST", ("mark_changepoint_complete",), self.mark_changepoint_complete)
 
     def recursive_folder_list(self, folder, totalFolders):
         subFolders = Folder().childFolders(folder, 'folder', user=self.getCurrentUser())
@@ -224,3 +225,52 @@ class UMD_Dataset(Resource):
             return f"Timeout Error: {err}"
         except requests.exceptions.RequestException as err:
             return f"Something went wrong: {err}"
+
+    @access.admin
+    @autoDescribeRoute(
+        Description(
+            "Force an update to the docker containers through watchtower using http interface"
+        )
+        .jsonParam(
+            "data",
+            description="Array of pairs of UserLogins and FolderIds",
+            requireObject=True,
+            paramType="body",
+        )
+
+    )
+    def mark_changepoint_complete(self, data):
+        # go through the list of data and fine the appropriate folder and user
+        user = self.getCurrentUser()
+        users = list(User().find())
+        userMap = {}
+        for item in users:
+            userMap[item["login"]] = item["_id"]
+        pairs = data['pairs']
+        for pair in pairs:
+            folderId = pair[1]
+            userLogin = pair[0]
+            print(f'UserLogin: {userLogin}')
+            print(f'FolderId: {folderId}')
+            if userLogin in userMap.keys():
+                # now lets find the folder
+                folder = Folder().load(folderId, level=AccessType.READ, user=user)
+                tracks = crud_annotation.TrackItem().list(folder)
+                last_track = tracks.limit(1).sort([('$natural', -1)])[0]
+                print(last_track)
+                attributes = last_track['attributes']
+                print(attributes)
+                attributes[f'{userLogin}_ChangePointComplete'] = True
+                last_track['attributes'] = attributes
+                upsert_tracks = [last_track]
+                delete_tracks = [last_track['id']]
+                crud_annotation.save_annotations(folder,
+                                                 user,
+                                                 upsert_tracks=upsert_tracks,
+                                                 delete_tracks=delete_tracks,
+                                                 upsert_groups=[],
+                                                 delete_groups=[],
+                                                 )
+        
+                
+    

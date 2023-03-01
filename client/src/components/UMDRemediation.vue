@@ -35,7 +35,7 @@ export default defineComponent({
   setup() {
     const selectedTrackIdRef = useSelectedTrackId();
 
-    const { frame } = useTime();
+    const { frame, maxFrame } = useTime();
     const handler = useHandler();
     const restClient = useGirderRest();
     const cameraStore = useCameraStore();
@@ -45,6 +45,8 @@ export default defineComponent({
     const loadedAttributes = ref(false);
     const remediations: Ref<{frame: number; comment: string}[]> = ref([]);
     const selectedRemediation: Ref<number | null> = ref(null);
+    const enableCompleteButton = ref(false);
+    const alreadyComplete = ref(false);
 
     const checkAttributes = () => {
       // load existing attributes
@@ -54,6 +56,18 @@ export default defineComponent({
       if (store) {
         // eslint-disable-next-line no-unused-expressions
         store?.trackStore.annotationMap.forEach((track) => {
+          if (track.attributes) {
+            Object.entries(track.attributes).forEach(([key, item]) => {
+              if (key.includes(userLogin.value)) {
+                const replaced = key.replace(`${userLogin.value}_`, '');
+                if (replaced === 'RemediationComplete' && item) {
+                  alreadyComplete.value = true;
+                  handler.setMaxSegment(track.id);
+                }
+              }
+            });
+          }
+
           track.features.forEach((feature) => {
             const currentFrame = feature.frame;
             if (feature.attributes) {
@@ -103,6 +117,12 @@ export default defineComponent({
         if (selectedTrackIdRef.value !== segment) {
           handler.trackSelect(segment, false);
         }
+      }
+      if (maxFrame.value > 0 && maxFrame.value - frame.value < 30) {
+        // Show submit button to complete data
+        enableCompleteButton.value = true;
+      } else {
+        enableCompleteButton.value = false;
       }
     });
 
@@ -210,6 +230,18 @@ export default defineComponent({
 
     const submitValid = ref(false);
 
+    const completeVideo = async () => {
+      const segment = Math.floor((frame.value - 151) / 450);
+      const track = cameraStore.getAnyTrack(segment);
+      // Set attributes;
+      // set Change Point Information
+      if (track !== undefined) {
+        track.setAttribute(`${userLogin.value}_RemediationComplete`, true);
+      }
+      handler.save();
+      checkAttributes();
+    };
+
     return {
       selectedTrackIdRef,
       frame,
@@ -220,6 +252,9 @@ export default defineComponent({
       selectedRemediation,
       existingFrames,
       submitValid,
+      enableCompleteButton,
+      alreadyComplete,
+      completeVideo,
       setRemediation,
       submit,
       goToRemediation,
@@ -262,6 +297,15 @@ export default defineComponent({
         </v-tooltip>
       </v-col>
     </v-row>
+    <v-row v-if="alreadyComplete">
+      <p class="pa-2">
+        This Video is marked as complete and has been
+        annotated even if no remediation annotations exist.
+        <br>
+        You may modify the remnediation if necessary.
+      </p>
+    </v-row>
+
     <v-btn
       :disabled="existingFrames.includes(frame)"
       color="success"
@@ -366,6 +410,27 @@ export default defineComponent({
         @click="submit"
       >
         Save
+      </v-btn>
+    </v-row>
+    <v-row
+      v-if="!alreadyComplete"
+      dense
+      style="position:absolute;bottom:10px"
+    >
+      <p
+        v-if="!alreadyComplete"
+        class="pa-2"
+      >
+        Once the dataset has been viewed completely.
+        The Complete button below will be enabled to submit.
+      </p>
+      <v-btn
+        color="success"
+        class="mx-2"
+        :disabled="!enableCompleteButton || alreadyComplete"
+        @click="completeVideo"
+      >
+        Complete
       </v-btn>
     </v-row>
   </v-container>
