@@ -247,6 +247,7 @@ class UMD_Dataset(Resource):
         for item in users:
             userMap[item["login"]] = item["_id"]
         pairs = data['pairs']
+        updated = []
         for pair in pairs:
             folderId = pair[1]
             userLogin = pair[0]
@@ -257,9 +258,7 @@ class UMD_Dataset(Resource):
                 folder = Folder().load(folderId, level=AccessType.READ, user=user)
                 tracks = crud_annotation.TrackItem().list(folder)
                 last_track = tracks.limit(1).sort([('$natural', -1)])[0]
-                print(last_track)
                 attributes = last_track['attributes']
-                print(attributes)
                 attributes[f'{userLogin}_ChangePointComplete'] = True
                 last_track['attributes'] = attributes
                 upsert_tracks = [last_track]
@@ -271,6 +270,5 @@ class UMD_Dataset(Resource):
                                                  upsert_groups=[],
                                                  delete_groups=[],
                                                  )
-        
-                
-    
+                updated.append(f'userId: {userLogin} and FolderId: {folderId} updated')
+        return updated
