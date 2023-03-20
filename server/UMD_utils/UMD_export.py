@@ -313,13 +313,18 @@ def export_segment_tab(folders, userMap, user):
         fme_id = ''
         recording_date = ''
         recording_time = ''
+        typebase = ''
         if len(splits) > 5:
             language = splits[0]
             condition = splits[1]
             scenario = splits[2]
             fle_id = splits[3]
             sme_id = splits[4]
-            updatedName = f'{language}_{condition}_{scenario}_{fle_id}_{sme_id}'
+            recording_date = splits[5]
+            if len(splits) > 6:
+                typebase = splits[6]
+
+            updatedName = f'{language}_{condition}_{scenario}_{fle_id}_{sme_id}_{recording_date}_{typebase}'
         if annotations_exists(tracks):
             for t in tracks:
                 start = t['begin'] * (1 / fps)
