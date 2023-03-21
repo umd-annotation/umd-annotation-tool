@@ -326,6 +326,7 @@ def export_segment_tab(folders, userMap, user):
 
             updatedName = f'{language}_{condition}_{scenario}_{fle_id}_{sme_id}_{recording_date}_{typebase}'
         if annotations_exists(tracks):
+            tracks.rewind()
             for t in tracks:
                 start = t['begin'] * (1 / fps)
                 end = t['end'] * (1 / fps)
