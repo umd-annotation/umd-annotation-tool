@@ -63,11 +63,11 @@ def annotations_exists(tracks):
 def export_changepoint_tab(folders, userMap, user):
     
     csvFile = io.StringIO()
-    writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
+    writer = csv.writer(csvFile, delimiter='\t', quotechar='"')
     writer.writerow(["user_id", "file_id", "timestamp", "impact_scalar", "comment"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
-        videoname = folder['name'].replace('Video', '').replace('.mp4', '')
+        videoname = folder['name'].replace('Video ', '').replace('.mp4', '')
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
         for t in tracks:
@@ -117,11 +117,11 @@ def export_changepoint_tab(folders, userMap, user):
 
 def export_remediation_tab(folders, userMap, user):
     csvFile = io.StringIO()
-    writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
+    writer = csv.writer(csvFile, delimiter='\t', quotechar='"')
     writer.writerow(["user_id", "file_id", "timestamp", "comment"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
-        videoname = folder['name'].replace('Video', '').replace('.mp4', '')
+        videoname = folder['name'].replace('Video ', '').replace('.mp4', '')
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
 
@@ -169,7 +169,7 @@ def export_norms_tab(folders, userMap, user):
     )
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
-        videoname = folder['name'].replace('Video', '').replace('.mp4', '')
+        videoname = folder['name'].replace('Video ', '').replace('.mp4', '')
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
 
@@ -247,7 +247,7 @@ def export_valence_tab(folders, userMap, user):
     )
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
-        videoname = folder['name'].replace('Video', '').replace('.mp4', '')
+        videoname = folder['name'].replace('Video ', '').replace('.mp4', '')
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
 
@@ -301,7 +301,7 @@ def export_segment_tab(folders, userMap, user):
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
         videoname = folder['name']
-        name = videoname.replace('Video', '').replace('.mp4', '')
+        name = videoname.replace('Video ', '').replace('.mp4', '')
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
         splits = name.split('_')
@@ -326,6 +326,7 @@ def export_segment_tab(folders, userMap, user):
 
             updatedName = f'{language}_{condition}_{scenario}_{fle_id}_{sme_id}_{recording_date}_{typebase}'
         if annotations_exists(tracks):
+            tracks.rewind()
             for t in tracks:
                 start = t['begin'] * (1 / fps)
                 end = t['end'] * (1 / fps)
@@ -339,19 +340,20 @@ def export_segment_tab(folders, userMap, user):
 
 def export_emotions_tab(folders, userMap, user):
     csvFile = io.StringIO()
-    writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
+    writer = csv.writer(csvFile, delimiter='\t', quotechar='"')
     writer.writerow(["user_id", "file_id", "segment_id", "emotion", "multi_speaker"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
-        videoname = folder['name'].replace('Video', '').replace('.mp4', '')
+        videoname = folder['name'].replace('Video ', '').replace('.mp4', '')
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
-        name = videoname.replace('Video', '').replace('.mp4', '')
+        name = videoname.replace('Video ', '').replace('.mp4', '')
 
         for t in tracks:
             if 'attributes' in t.keys():
                 attributes = t['attributes']
                 userDataFound = {}
+                emotionIsNone = False
                 for key in attributes.keys():
                     if '_Emotions' in key:
                         login = key.replace('_Emotions', '')
@@ -359,6 +361,8 @@ def export_emotions_tab(folders, userMap, user):
                         if mapped not in userDataFound.keys():
                             userDataFound[mapped] = {}
                         base = ','.join(attributes[key].split('_'))
+                        if base == 'No emotions':
+                            base = 'none'
                         userDataFound[mapped]['Emotions'] = base
                     if '_MultiSpeaker' in key:
                         login = key.replace('_MultiSpeaker', '')
@@ -367,12 +371,15 @@ def export_emotions_tab(folders, userMap, user):
                             userDataFound[mapped] = {}
                         userDataFound[mapped]['MultiSpeaker'] = attributes[key]
                 for key in userDataFound.keys():
+                    multiSpeaker = userDataFound[key]['MultiSpeaker']
+                    if userDataFound[key]["Emotions"] == 'none':
+                        multiSpeaker = 'EMPTY_NA'
                     columns = [
                         key,
                         name,
                         f'{name}_{t["id"]:04}',
-                        f'"{userDataFound[key]["Emotions"]}"',
-                        userDataFound[key]['MultiSpeaker'],
+                        f'{userDataFound[key]["Emotions"]}',
+                        multiSpeaker,
                     ]
                     writer.writerow(columns)
     yield csvFile.getvalue()
@@ -383,13 +390,13 @@ def export_emotions_tab(folders, userMap, user):
 
 def export_session_info_tab(folders, userMap, user):
     csvFile = io.StringIO()
-    writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
+    writer = csv.writer(csvFile, delimiter='\t', quotechar='"')
     writer.writerow(["session_id", "language", "condition", "scenario", "fle_id", "sme_id", 'recording_date', 'recording_time'])
     existing_session = []
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
         videoname = folder['name']
-        name = videoname.replace('Video', '').replace('.mp4', '')
+        name = videoname.replace('Video ', '').replace('.mp4', '')
         splits = name.split('_')
         session_id = name
         language = ''
@@ -420,13 +427,13 @@ def export_session_info_tab(folders, userMap, user):
 
 def export_file_info_tab(folders, userMap, user):
     csvFile = io.StringIO()
-    writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
+    writer = csv.writer(csvFile, delimiter='\t', quotechar='"')
     writer.writerow(["session_id", "file_uid", "type", "length", "source"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
         videoname = folder['name']
         length = folder['meta']['ffprobe_info']['duration']
-        name = videoname.replace('Video', '').replace('.mp4', '')
+        name = videoname.replace('Video ', '').replace('.mp4', '')
         splits = name.split('_')
         session_id = name
         language = ''
@@ -459,13 +466,13 @@ def export_file_info_tab(folders, userMap, user):
 
 def export_system_input(folders, userMap, user):
     csvFile = io.StringIO()
-    writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
+    writer = csv.writer(csvFile, delimiter='\t', quotechar='"')
     writer.writerow(["file_id"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
         videoname = folder['name']
         length = folder['meta']['ffprobe_info']['duration']
-        name = videoname.replace('Video', '').replace('.mp4', '')
+        name = videoname.replace('Video ', '').replace('.mp4', '')
         columns = [name]
         writer.writerow(columns)
     yield csvFile.getvalue()
@@ -475,13 +482,13 @@ def export_system_input(folders, userMap, user):
 
 def export_versions_per_file(folders, userMap, user):
     csvFile = io.StringIO()
-    writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
+    writer = csv.writer(csvFile, delimiter='\t', quotechar='"')
     writer.writerow(["file_id", "emotions_count", "valence_arousal_count", "norms_count", "changepoint_count"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
         videoname = folder['name']
         fps = folder['meta']['fps']
-        name = videoname.replace('Video', '').replace('.mp4', '')
+        name = videoname.replace('Video ', '').replace('.mp4', '')
         tracks = crud_annotation.TrackItem().list(folder)
         change_point_count = 0
         changepointUserDataFound = []
@@ -640,7 +647,7 @@ def export_links_tab(url, folders):
         ]
     )
     for folder in folders:
-        name = folder['name'].replace('.mp4', '').replace('Video', '')
+        name = folder['name'].replace('.mp4', '').replace('Video ', '')
         LC = 'missing'
         CONDITION = ''
         SCENARIO = ''
