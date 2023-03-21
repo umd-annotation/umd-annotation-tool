@@ -63,7 +63,7 @@ def annotations_exists(tracks):
 def export_changepoint_tab(folders, userMap, user):
     
     csvFile = io.StringIO()
-    writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
+    writer = csv.writer(csvFile, delimiter='\t', quotechar='"')
     writer.writerow(["user_id", "file_id", "timestamp", "impact_scalar", "comment"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
@@ -117,7 +117,7 @@ def export_changepoint_tab(folders, userMap, user):
 
 def export_remediation_tab(folders, userMap, user):
     csvFile = io.StringIO()
-    writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
+    writer = csv.writer(csvFile, delimiter='\t', quotechar='"')
     writer.writerow(["user_id", "file_id", "timestamp", "comment"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
@@ -340,7 +340,7 @@ def export_segment_tab(folders, userMap, user):
 
 def export_emotions_tab(folders, userMap, user):
     csvFile = io.StringIO()
-    writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
+    writer = csv.writer(csvFile, delimiter='\t', quotechar='"')
     writer.writerow(["user_id", "file_id", "segment_id", "emotion", "multi_speaker"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
@@ -353,6 +353,7 @@ def export_emotions_tab(folders, userMap, user):
             if 'attributes' in t.keys():
                 attributes = t['attributes']
                 userDataFound = {}
+                emotionIsNone = False
                 for key in attributes.keys():
                     if '_Emotions' in key:
                         login = key.replace('_Emotions', '')
@@ -360,6 +361,8 @@ def export_emotions_tab(folders, userMap, user):
                         if mapped not in userDataFound.keys():
                             userDataFound[mapped] = {}
                         base = ','.join(attributes[key].split('_'))
+                        if base == 'No emotions':
+                            base = 'none'
                         userDataFound[mapped]['Emotions'] = base
                     if '_MultiSpeaker' in key:
                         login = key.replace('_MultiSpeaker', '')
@@ -368,12 +371,15 @@ def export_emotions_tab(folders, userMap, user):
                             userDataFound[mapped] = {}
                         userDataFound[mapped]['MultiSpeaker'] = attributes[key]
                 for key in userDataFound.keys():
+                    multiSpeaker = userDataFound[key]['MultiSpeaker']
+                    if userDataFound[key]["Emotions"] == 'none':
+                        multiSpeaker = 'EMPTY_NA'
                     columns = [
                         key,
                         name,
                         f'{name}_{t["id"]:04}',
-                        f'"{userDataFound[key]["Emotions"]}"',
-                        userDataFound[key]['MultiSpeaker'],
+                        f'{userDataFound[key]["Emotions"]}',
+                        multiSpeaker,
                     ]
                     writer.writerow(columns)
     yield csvFile.getvalue()
@@ -384,7 +390,7 @@ def export_emotions_tab(folders, userMap, user):
 
 def export_session_info_tab(folders, userMap, user):
     csvFile = io.StringIO()
-    writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
+    writer = csv.writer(csvFile, delimiter='\t', quotechar='"')
     writer.writerow(["session_id", "language", "condition", "scenario", "fle_id", "sme_id", 'recording_date', 'recording_time'])
     existing_session = []
     for folderId in folders:
@@ -421,7 +427,7 @@ def export_session_info_tab(folders, userMap, user):
 
 def export_file_info_tab(folders, userMap, user):
     csvFile = io.StringIO()
-    writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
+    writer = csv.writer(csvFile, delimiter='\t', quotechar='"')
     writer.writerow(["session_id", "file_uid", "type", "length", "source"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
@@ -460,7 +466,7 @@ def export_file_info_tab(folders, userMap, user):
 
 def export_system_input(folders, userMap, user):
     csvFile = io.StringIO()
-    writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
+    writer = csv.writer(csvFile, delimiter='\t', quotechar='"')
     writer.writerow(["file_id"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
@@ -476,7 +482,7 @@ def export_system_input(folders, userMap, user):
 
 def export_versions_per_file(folders, userMap, user):
     csvFile = io.StringIO()
-    writer = csv.writer(csvFile, delimiter='\t', quotechar="'")
+    writer = csv.writer(csvFile, delimiter='\t', quotechar='"')
     writer.writerow(["file_id", "emotions_count", "valence_arousal_count", "norms_count", "changepoint_count"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
