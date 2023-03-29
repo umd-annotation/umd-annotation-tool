@@ -142,8 +142,9 @@ def export_remediation_tab(folders, userMap, user):
                                 userDataFound[mapped]['Timestamp'] = (1 / fps) * feature['frame']
 
                 for key in userDataFound.keys():
+                    userId = userMap[key]['uid']
                     columns = [
-                        key,
+                        userId,
                         videoname,
                         userDataFound[key]['Timestamp'],
                         userDataFound[key]['Comment'],
@@ -191,13 +192,14 @@ def export_norms_tab(folders, userMap, user):
                 for key in userDataFound.keys():
                     for normKey in userDataFound[key].keys():
                         value = userDataFound[key][normKey]
+                        userId = userMap[key]['uid']
                         if value in normValuesAdhere:
                             value = normAdhere
                         if value in normValuesViolate:
                             value = normViolate
                         if value in normValuesAdhereViolate:
                             columns = [
-                                key,
+                                userId,
                                 videoname,
                                 f'{videoname}_{t["id"]:04}',
                                 normKey,
@@ -205,7 +207,7 @@ def export_norms_tab(folders, userMap, user):
                             ]
                             writer.writerow(columns)
                             columns = [
-                                key,
+                                userId,
                                 videoname,
                                 f'{videoname}_{t["id"]:04}',
                                 normKey,
@@ -216,7 +218,7 @@ def export_norms_tab(folders, userMap, user):
                             if value in normValuesNone:
                                 value = normNone
                             columns = [
-                                key,
+                                userId,
                                 videoname,
                                 f'{videoname}_{t["id"]:04}',
                                 normKey,
@@ -271,8 +273,9 @@ def export_valence_tab(folders, userMap, user):
                         userDataFound[mapped]['arousal_continuous'] = attributes[key]
                         userDataFound[mapped]['arousal_binned'] = bin_value(attributes[key])
                 for key in userDataFound.keys():
+                    userId = userMap[key]['uid']
                     columns = [
-                        key,
+                        userId,
                         videoname,
                         f'{videoname}_{t["id"]:04}',
                         userDataFound[key]['valence_continuous'],
@@ -371,14 +374,15 @@ def export_emotions_tab(folders, userMap, user):
                             userDataFound[mapped] = {}
                         userDataFound[mapped]['MultiSpeaker'] = attributes[key]
                 for key in userDataFound.keys():
+                    userId = userMap[key]['uid']
                     multiSpeaker = userDataFound[key]['MultiSpeaker']
                     if userDataFound[key]["Emotions"] == 'none':
                         multiSpeaker = 'EMPTY_NA'
                     columns = [
-                        key,
+                        userId,
                         name,
                         f'{name}_{t["id"]:04}',
-                        f'{userDataFound[key]["Emotions"]}',
+                        f'{userDataFound[key]["Emotions"].lower()}',
                         multiSpeaker,
                     ]
                     writer.writerow(columns)
@@ -578,6 +582,9 @@ def generate_tab(folders, userMap, user, type):
         if type == 'versions_per_file':
             for data in export_versions_per_file(folders, userMap, user):
                 yield data
+        if type == 'userMap':
+            for data in export_user_map(userMap):
+                yield data
     return downloadGenerator
 
 def convert_to_zips(folders, userMap, user):
@@ -614,6 +621,9 @@ def convert_to_zips(folders, userMap, user):
             yield data
         version_per_file_gen = generate_tab(folders, userMap, user, 'versions_per_file')
         for data in z.addFile(version_per_file_gen, Path(f'{zip_path}/docs/versions_per_file.tab')):
+            yield data
+        userMap_file = generate_tab(folders, userMap, user, 'userMap')
+        for data in z.addFile(userMap_file, Path(f'{zip_path}/userMap.tab')):
             yield data
         yield z.footer()
 
@@ -688,6 +698,36 @@ def export_links_tab(url, folders):
             norms,
             changepoint,
             remediation]
+        writer.writerow(columns)
+        yield csvFile.getvalue()
+        csvFile.seek(0)
+        csvFile.truncate(0)
+    yield csvFile.getvalue()
+
+
+def export_user_map(userMap):
+    csvFile = io.StringIO()
+    writer = csv.writer(csvFile, delimiter='\t')
+    writer.writerow(
+        [
+            "uid",
+            "login",
+            "email",
+            "first",
+            "last",
+            "login",
+        ]
+    )
+    for key in userMap.keys():
+        user = userMap[key]
+        columns = [ 
+            user['uid'],
+            user['login'],
+            user['email'],
+            user['first'],
+            user['last'],
+            user['login'],
+        ]
         writer.writerow(columns)
         yield csvFile.getvalue()
         csvFile.seek(0)

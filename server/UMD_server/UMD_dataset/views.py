@@ -81,8 +81,15 @@ class UMD_Dataset(Resource):
         users = list(User().find())
         userMap = {}
         for item in users:
-            userMap[item["login"]] = item["_id"]
-
+            uid = int(str(item["_id"])[0:6], 16)
+            userMap[item["login"]] = {
+                'id': str(item["_id"]),
+                'login': item['login'],
+                'email': item['email'],
+                'first': item['firstName'],
+                'last': item['lastName'],
+                'uid': uid,
+            }
         gen = UMD_export.convert_to_zips(folderIds, userMap, user)
         if len(folderIds) > 1:
             zip_name = "batch_export.zip"
@@ -118,7 +125,15 @@ class UMD_Dataset(Resource):
         users = list(User().find())
         userMap = {}
         for item in users:
-            userMap[item["login"]] = item["_id"]
+            uid = int(str(item["_id"])[0:6], 16)
+            userMap[item["login"]] = {
+                'id': str(item["_id"]),
+                'login': item['login'],
+                'email': item['email'],
+                'first': item['firstName'],
+                'last': item['lastName'],
+                'uid': uid,
+            }
 
         gen = UMD_export.convert_to_zips(totalFolderIds, userMap, user)
         zip_name = "batch_export.zip"
