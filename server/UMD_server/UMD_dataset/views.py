@@ -17,6 +17,21 @@ from UMD_tasks import constants, tasks
 from UMD_utils import UMD_export
 
 
+def mapUserIds(users):
+    userMap = {}
+    for item in users:
+        uid = int(str(item["_id"])[0:6], 16)
+        userMap[item["login"]] = {
+            'id': str(item["_id"]),
+            'login': item['login'],
+            'email': item['email'],
+            'first': item['firstName'],
+            'last': item['lastName'],
+            'uid': uid,
+        }
+    return userMap
+
+
 class UMD_Dataset(Resource):
     def __init__(self):
         super(UMD_Dataset, self).__init__()
@@ -79,9 +94,7 @@ class UMD_Dataset(Resource):
     ):
         user = self.getCurrentUser()
         users = list(User().find())
-        userMap = {}
-        for item in users:
-            userMap[item["login"]] = item["_id"]
+        userMap = mapUserIds(users)
 
         gen = UMD_export.convert_to_zips(folderIds, userMap, user)
         if len(folderIds) > 1:
@@ -116,9 +129,7 @@ class UMD_Dataset(Resource):
         print(totalFolderIds)
         user = self.getCurrentUser()
         users = list(User().find())
-        userMap = {}
-        for item in users:
-            userMap[item["login"]] = item["_id"]
+        userMap = mapUserIds(users)
 
         gen = UMD_export.convert_to_zips(totalFolderIds, userMap, user)
         zip_name = "batch_export.zip"
