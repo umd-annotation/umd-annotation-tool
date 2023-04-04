@@ -20,7 +20,7 @@ from UMD_utils import UMD_export
 def mapUserIds(users):
     userMap = {}
     for item in users:
-        uid = int(str(item["_id"])[0:6], 16)
+        uid = int(str(item["_id"]), 16)
         userMap[item["login"]] = {
             'id': str(item["_id"]),
             'login': item['login'],
@@ -28,6 +28,7 @@ def mapUserIds(users):
             'first': item['firstName'],
             'last': item['lastName'],
             'uid': uid,
+            'girderId': str(item["_id"])
         }
     return userMap
 
