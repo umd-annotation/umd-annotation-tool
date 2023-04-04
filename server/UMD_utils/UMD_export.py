@@ -716,6 +716,7 @@ def export_user_map(userMap):
             "first",
             "last",
             "login",
+            'girderId'
         ]
     )
     for key in userMap.keys():
@@ -727,6 +728,7 @@ def export_user_map(userMap):
             user['first'],
             user['last'],
             user['login'],
+            user['girderId'],
         ]
         writer.writerow(columns)
         yield csvFile.getvalue()
