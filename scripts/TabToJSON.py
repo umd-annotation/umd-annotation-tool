@@ -248,7 +248,7 @@ def load_data(trackfile):
         tracks[segment]['features'] = sorted(tracks[segment]['features'], key=lambda d: d['frame'])
         tracks[segment]['attributes'] = OrderedDict(sorted(tracks[segment]['attributes'].items()))
 
-    with open(f"output.json", "w") as outfile:
+    with open(trackfile.replace('.json', '.output.json'), "w") as outfile:
         outfile.write(json.dumps({"tracks": tracks, "groups": {}, "version": 2}))
 
 
