@@ -36,6 +36,13 @@ normNone = 'EMPTY_NA'
 TrackAttributeExists = ['_Arousal', '_Valence', '_Norms', '_Emotions']
 FrameAttributeExists = ['_Impact', '_RemediationComment']
 
+removed_elements = ['Video ', '.mp4', '-TIGHT', '-MID']
+
+def process_video_name(name):
+    for remove in removed_elements:
+        name = name.replace(remove, '')
+    return name
+
 
 def bin_value(value):
     return math.floor((value - 1) / 200) + 1
@@ -67,7 +74,7 @@ def export_changepoint_tab(folders, userMap, user):
     writer.writerow(["user_id", "file_id", "timestamp", "impact_scalar", "comment"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
-        videoname = folder['name'].replace('Video ', '').replace('.mp4', '')
+        videoname = process_video_name(folder['name'])
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
         for t in tracks:
@@ -101,8 +108,9 @@ def export_changepoint_tab(folders, userMap, user):
                                 userDataFound[mapped]['Timestamp'] = (1 / fps) * feature['frame']
 
                 for key in userDataFound.keys():
+                    userId = userMap[key]['uid']
                     columns = [
-                        key,
+                        userId,
                         videoname,
                         userDataFound[key]['Timestamp'],
                         userDataFound[key]['Impact'],
@@ -121,7 +129,7 @@ def export_remediation_tab(folders, userMap, user):
     writer.writerow(["user_id", "file_id", "timestamp", "comment"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
-        videoname = folder['name'].replace('Video ', '').replace('.mp4', '')
+        videoname = process_video_name(folder['name'])
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
 
@@ -170,7 +178,7 @@ def export_norms_tab(folders, userMap, user):
     )
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
-        videoname = folder['name'].replace('Video ', '').replace('.mp4', '')
+        videoname = process_video_name(folder['name'])
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
 
@@ -249,7 +257,7 @@ def export_valence_tab(folders, userMap, user):
     )
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
-        videoname = folder['name'].replace('Video ', '').replace('.mp4', '')
+        videoname = process_video_name(folder['name'])
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
 
@@ -304,7 +312,7 @@ def export_segment_tab(folders, userMap, user):
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
         videoname = folder['name']
-        name = videoname.replace('Video ', '').replace('.mp4', '')
+        name = process_video_name(videoname)
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
         splits = name.split('_')
@@ -347,10 +355,10 @@ def export_emotions_tab(folders, userMap, user):
     writer.writerow(["user_id", "file_id", "segment_id", "emotion", "multi_speaker"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
-        videoname = folder['name'].replace('Video ', '').replace('.mp4', '')
+        videoname = process_video_name(folder['name'])
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
-        name = videoname.replace('Video ', '').replace('.mp4', '')
+        name = videoname
 
         for t in tracks:
             if 'attributes' in t.keys():
@@ -399,8 +407,8 @@ def export_session_info_tab(folders, userMap, user):
     existing_session = []
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
-        videoname = folder['name']
-        name = videoname.replace('Video ', '').replace('.mp4', '')
+        videoname = process_video_name(folder['name'])
+        name = videoname
         splits = name.split('_')
         session_id = name
         language = ''
@@ -435,9 +443,9 @@ def export_file_info_tab(folders, userMap, user):
     writer.writerow(["session_id", "file_uid", "type", "length", "source"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
-        videoname = folder['name']
+        videoname = process_video_name(folder['name'])
         length = folder['meta']['ffprobe_info']['duration']
-        name = videoname.replace('Video ', '').replace('.mp4', '')
+        name = videoname
         splits = name.split('_')
         session_id = name
         language = ''
@@ -474,9 +482,9 @@ def export_system_input(folders, userMap, user):
     writer.writerow(["file_id"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
-        videoname = folder['name']
+        videoname = process_video_name(folder['name'])
         length = folder['meta']['ffprobe_info']['duration']
-        name = videoname.replace('Video ', '').replace('.mp4', '')
+        name = videoname
         columns = [name]
         writer.writerow(columns)
     yield csvFile.getvalue()
@@ -490,9 +498,9 @@ def export_versions_per_file(folders, userMap, user):
     writer.writerow(["file_id", "emotions_count", "valence_arousal_count", "norms_count", "changepoint_count"])
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
-        videoname = folder['name']
+        videoname = process_video_name(folder['name'])
         fps = folder['meta']['fps']
-        name = videoname.replace('Video ', '').replace('.mp4', '')
+        name = videoname
         tracks = crud_annotation.TrackItem().list(folder)
         change_point_count = 0
         changepointUserDataFound = []

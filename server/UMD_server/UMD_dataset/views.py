@@ -126,8 +126,6 @@ class UMD_Dataset(Resource):
         totalFolderIds = []
         for item in totalFolders:
             totalFolderIds.append(str(item['_id']))
-        print(totalFolders)
-        print(totalFolderIds)
         user = self.getCurrentUser()
         users = list(User().find())
         userMap = mapUserIds(users)
