@@ -36,7 +36,7 @@ normNone = 'EMPTY_NA'
 TrackAttributeExists = ['_Arousal', '_Valence', '_Norms', '_Emotions']
 FrameAttributeExists = ['_Impact', '_RemediationComment']
 
-removed_elements = ['Video ', '.mp4', '-TIGHT', '-MID']
+removed_elements = ['Video ', '.mp4', '-TIGHT', '-MID', '-WIDE']
 
 def process_video_name(name):
     for remove in removed_elements:
