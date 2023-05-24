@@ -19,8 +19,14 @@ from UMD_utils import UMD_export
 
 def mapUserIds(users):
     userMap = {}
+    conflictMap = {}
     for item in users:
-        uid = int(str(item["_id"]), 16)
+        base_uid = int(str(item["_id"]), 16)
+        # lets grab the last 5 digits
+        uid = int(str(base_uid)[-5:])
+        while uid in conflictMap.keys():  # ensure a unique ID
+            uid = uid + 1
+        conflictMap[uid] = True
         userMap[item["login"]] = {
             'id': str(item["_id"]),
             'login': item['login'],
