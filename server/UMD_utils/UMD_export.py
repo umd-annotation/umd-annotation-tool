@@ -338,9 +338,12 @@ def export_segment_tab(folders, userMap, user):
             updatedName = f'{language}_{condition}_{scenario}_{fle_id}_{sme_id}_{recording_date}_{typebase}'
         if annotations_exists(tracks):
             tracks.rewind()
+            minus_frames = 0
             for t in tracks:
-                start = t['begin'] * (1 / fps)
-                end = t['end'] * (1 / fps)
+                if t['id'] == 0 and t['begin'] > 0:
+                    minus_frames = t['begin']
+                start = (t['begin'] - minus_frames) * (1 / fps)
+                end = (t['end'] - minus_frames) * (1 / fps)
                 columns = [updatedName, f'{updatedName}_{t["id"]:04}', start, end]
                 writer.writerow(columns)
     yield csvFile.getvalue()
