@@ -68,7 +68,6 @@ def annotations_exists(tracks):
 
 
 def export_changepoint_tab(folders, userMap, user):
-    
     csvFile = io.StringIO()
     writer = csv.writer(csvFile, delimiter='\t', quotechar='"')
     writer.writerow(["user_id", "file_id", "timestamp", "impact_scalar", "comment"])
@@ -77,7 +76,10 @@ def export_changepoint_tab(folders, userMap, user):
         videoname = process_video_name(folder['name'])
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
+        minus_frames = 0
         for t in tracks:
+            if t['id'] == 0 and t['begin'] > 0:
+                minus_frames = t['begin']
             if 'features' in t.keys():
                 features = t['features']
                 userDataFound = {}
@@ -91,21 +93,21 @@ def export_changepoint_tab(folders, userMap, user):
                                 if mapped not in userDataFound.keys():
                                     userDataFound[mapped] = {}
                                 userDataFound[mapped]['Impact'] = bin_changepoint(attributes[key])
-                                userDataFound[mapped]['Timestamp'] = (1 / fps) * feature['frame']
+                                userDataFound[mapped]['Timestamp'] = (1 / fps) * (feature['frame'] - minus_frames)
                             elif '_Impact' in key:
                                 login = key.replace('_Impact', '')
                                 mapped = login
                                 if mapped not in userDataFound.keys():
                                     userDataFound[mapped] = {}
                                 userDataFound[mapped]['Impact'] = bin_changepoint(attributes[key] * 1000)
-                                userDataFound[mapped]['Timestamp'] = (1 / fps) * feature['frame']
+                                userDataFound[mapped]['Timestamp'] = (1 / fps) * (feature['frame'] - minus_frames)
                             if '_Comment' in key:
                                 login = key.replace('_Comment', '')
                                 mapped = login
                                 if mapped not in userDataFound.keys():
                                     userDataFound[mapped] = {}
                                 userDataFound[mapped]['Comment'] = str(attributes[key])
-                                userDataFound[mapped]['Timestamp'] = (1 / fps) * feature['frame']
+                                userDataFound[mapped]['Timestamp'] = (1 / fps) * (feature['frame'] - minus_frames)
 
                 for key in userDataFound.keys():
                     userId = userMap[key]['uid']
@@ -132,8 +134,10 @@ def export_remediation_tab(folders, userMap, user):
         videoname = process_video_name(folder['name'])
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
-
+        minus_frames = 0
         for t in tracks:
+            if t['id'] == 0 and t['begin'] > 0:
+                minus_frames = t['begin']
             if 'features' in t.keys():
                 features = t['features']
                 userDataFound = {}
@@ -147,7 +151,7 @@ def export_remediation_tab(folders, userMap, user):
                                 if mapped not in userDataFound.keys():
                                     userDataFound[mapped] = {}
                                 userDataFound[mapped]['Comment'] = attributes[key]
-                                userDataFound[mapped]['Timestamp'] = (1 / fps) * feature['frame']
+                                userDataFound[mapped]['Timestamp'] = (1 / fps) * (feature['frame'] - minus_frames)
 
                 for key in userDataFound.keys():
                     userId = userMap[key]['uid']
