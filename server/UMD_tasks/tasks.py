@@ -99,7 +99,11 @@ def generate_splits(
         tracks = {}
         track_count = 0
         while current_frame < framecount:
-            end = min(framecount, current_frame + (segment_length * originalFps))
+            endframe = current_frame + (segment_length * originalFps)
+            if framecount - (current_frame + (segment_length * originalFps)) < originalFps * segment_length:
+                # Now we need to extend the last frame to fill the remaining time
+                endframe = framecount
+            end = min(framecount, endframe)
             tracks[track_count] = {
                 "begin": current_frame,
                 "end": end,
@@ -123,7 +127,7 @@ def generate_splits(
                 "meta": {},
             }
             track_count += 1
-            current_frame = current_frame + (segment_length * originalFps)
+            current_frame = endframe
         desfile = str(_working_directory_path / 'generatedAnnotations.json')
         with open(desfile, "w") as outfile:
             outfile.write(json.dumps({"tracks": tracks, "groups": {}, "version": 2}))

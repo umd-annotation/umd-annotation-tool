@@ -68,7 +68,6 @@ def annotations_exists(tracks):
 
 
 def export_changepoint_tab(folders, userMap, user):
-    
     csvFile = io.StringIO()
     writer = csv.writer(csvFile, delimiter='\t', quotechar='"')
     writer.writerow(["user_id", "file_id", "timestamp", "impact_scalar", "comment"])
@@ -77,7 +76,10 @@ def export_changepoint_tab(folders, userMap, user):
         videoname = process_video_name(folder['name'])
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
+        minus_frames = 0
         for t in tracks:
+            if t['id'] == 0 and t['begin'] > 0:
+                minus_frames = t['begin']
             if 'features' in t.keys():
                 features = t['features']
                 userDataFound = {}
@@ -91,21 +93,21 @@ def export_changepoint_tab(folders, userMap, user):
                                 if mapped not in userDataFound.keys():
                                     userDataFound[mapped] = {}
                                 userDataFound[mapped]['Impact'] = bin_changepoint(attributes[key])
-                                userDataFound[mapped]['Timestamp'] = (1 / fps) * feature['frame']
+                                userDataFound[mapped]['Timestamp'] = (1 / fps) * (feature['frame'] - minus_frames)
                             elif '_Impact' in key:
                                 login = key.replace('_Impact', '')
                                 mapped = login
                                 if mapped not in userDataFound.keys():
                                     userDataFound[mapped] = {}
                                 userDataFound[mapped]['Impact'] = bin_changepoint(attributes[key] * 1000)
-                                userDataFound[mapped]['Timestamp'] = (1 / fps) * feature['frame']
+                                userDataFound[mapped]['Timestamp'] = (1 / fps) * (feature['frame'] - minus_frames)
                             if '_Comment' in key:
                                 login = key.replace('_Comment', '')
                                 mapped = login
                                 if mapped not in userDataFound.keys():
                                     userDataFound[mapped] = {}
                                 userDataFound[mapped]['Comment'] = str(attributes[key])
-                                userDataFound[mapped]['Timestamp'] = (1 / fps) * feature['frame']
+                                userDataFound[mapped]['Timestamp'] = (1 / fps) * (feature['frame'] - minus_frames)
 
                 for key in userDataFound.keys():
                     userId = userMap[key]['uid']
@@ -132,8 +134,10 @@ def export_remediation_tab(folders, userMap, user):
         videoname = process_video_name(folder['name'])
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
-
+        minus_frames = 0
         for t in tracks:
+            if t['id'] == 0 and t['begin'] > 0:
+                minus_frames = t['begin']
             if 'features' in t.keys():
                 features = t['features']
                 userDataFound = {}
@@ -147,7 +151,7 @@ def export_remediation_tab(folders, userMap, user):
                                 if mapped not in userDataFound.keys():
                                     userDataFound[mapped] = {}
                                 userDataFound[mapped]['Comment'] = attributes[key]
-                                userDataFound[mapped]['Timestamp'] = (1 / fps) * feature['frame']
+                                userDataFound[mapped]['Timestamp'] = (1 / fps) * (feature['frame'] - minus_frames)
 
                 for key in userDataFound.keys():
                     userId = userMap[key]['uid']
@@ -338,9 +342,12 @@ def export_segment_tab(folders, userMap, user):
             updatedName = f'{language}_{condition}_{scenario}_{fle_id}_{sme_id}_{recording_date}_{typebase}'
         if annotations_exists(tracks):
             tracks.rewind()
+            minus_frames = 0
             for t in tracks:
-                start = t['begin'] * (1 / fps)
-                end = t['end'] * (1 / fps)
+                if t['id'] == 0 and t['begin'] > 0:
+                    minus_frames = t['begin']
+                start = (t['begin'] - minus_frames) * (1 / fps)
+                end = (t['end'] - minus_frames) * (1 / fps)
                 columns = [updatedName, f'{updatedName}_{t["id"]:04}', start, end]
                 writer.writerow(columns)
     yield csvFile.getvalue()
