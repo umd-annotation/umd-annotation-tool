@@ -12,11 +12,10 @@ export default defineComponent({
     const update = async () => {
       loading.value = true;
       try {
-        const result = await updateContainers();
+        await updateContainers();
         loading.value = false;
         complete.value = 'Already Updated';
       } catch (error) {
-        console.log(error);
         // When it is good the container restarts resulting a badgateway 502 error
         // We should wait like 20 seconds after the error and reload the page to show the update
         if (error.response && error.response.status === 502) {
@@ -53,12 +52,18 @@ export default defineComponent({
           for a few seconds while it relaunches. Please ensure that no jobs are
           running when you press this button.
         </p>
-        <v-alert type="warning" v-if="complete == 'Reload'">
+        <v-alert
+          v-if="complete == 'Reload'"
+          type="warning"
+        >
           <h2>
             Update is complete: Reloading the page in {{ reloadTime }} seconds
           </h2>
         </v-alert>
-        <v-alert type="info" v-if="complete == 'Already Updated'">
+        <v-alert
+          v-if="complete == 'Already Updated'"
+          type="info"
+        >
           <h2>
             The system is already up to date and doesn't need to pull the latest containers.
           </h2>
@@ -66,7 +71,12 @@ export default defineComponent({
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn color="primary" class="ml-2" :disable="complete" @click="update">
+        <v-btn
+          color="primary"
+          class="ml-2"
+          :disable="complete"
+          @click="update"
+        >
           <v-icon>
             {{ loading ? "mdi-spin mdi-sync" : "" }}
           </v-icon>

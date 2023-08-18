@@ -9,8 +9,16 @@ function updateContainers() {
   return girderRest.post(`${rootAPI}/update_containers`);
 }
 
+async function createFilterFolder(folderId: string) {
+  const result = await girderRest.post(`${rootAPI}/filter/${folderId}`);
+  if (result.status === 200) {
+    return result.data;
+  }
+  return false;
+}
 
 export {
   ingestVideo,
   updateContainers,
+  createFilterFolder,
 };
