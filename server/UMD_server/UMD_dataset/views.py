@@ -116,17 +116,27 @@ class UMD_Dataset(Resource):
 
     @access.public(scope=TokenScope.DATA_READ, cookie=True)
     @autoDescribeRoute(
-        Description("Export annotations for all the folders").modelParam(
-            "folder",
-            description="FolderId to get state from",
-            model=Folder,
-            level=AccessType.READ,
-            destName="folder",
+        Description("Export annotations for all the folders")
+            .modelParam(
+                "folder",
+                description="FolderId to get state from",
+                model=Folder,
+                level=AccessType.READ,
+                destName="folder",
+            )
+            .param(
+            "applyFilter",
+            "Apply Filter file if it exists.",
+            paramType="query",
+            dataType="boolean",
+            default=False,
         )
+
     )
     def export_resursive_tabular(
         self,
         folder,
+        applyFilter,
     ):
         totalFolders = []
         totalFolders = self.recursive_folder_list(folder, totalFolders)
@@ -137,7 +147,20 @@ class UMD_Dataset(Resource):
         user = self.getCurrentUser()
         users = list(User().find())
         userMap = mapUserIds(users)
-
+        filterMap = None
+        if applyFilter:
+            # get the filter file and create a mapping that can be used
+            filterFolder = Folder().findOne(
+                {
+                    'parentFolderId': folder["_id"],
+                    f'meta.{AnnotationFilterMarker}': True,
+                }
+            )
+            if filterFolder:
+                for item in Folder().childItems(filterFolder):
+                    for path, file in Item().fileList(item):
+                        # we now read in the excel file to create a mapping that can be used for exporting
+                        filterMap = UMD_export.create_filter_mapping(file)
         gen = UMD_export.convert_to_zips(totalFolderIds, userMap, user)
         zip_name = "batch_export.zip"
         setContentDisposition(zip_name, mime='application/zip')
