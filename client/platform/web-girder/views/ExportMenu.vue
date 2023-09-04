@@ -38,9 +38,12 @@ export default defineComponent({
       window.location.assign(link);
     };
 
-    const exportAnnotations = () => {
+    const exportAnnotations = (filtered = false) => {
       const idbase = locationStore.location && (locationStore.location as RootlessLocationType)._id;
-      const url = `UMD_dataset/recursive_export/${idbase}`;
+      let url = `UMD_dataset/recursive_export/${idbase}`;
+      if (filtered) {
+        url = `${url}?applyFilter=true`;
+      }
       const link = getUri({ url });
       window.location.assign(link);
     };
@@ -67,14 +70,11 @@ export default defineComponent({
       <v-tooltip bottom>
         <template #activator="{ on: tooltipOn }">
           <v-btn
-            class="ma-0"
-            text
-            small
             v-bind="buttonOptions"
             v-on="{ ...tooltipOn, ...menuOn }"
           >
             <v-icon color="accent">
-              mdi-download
+              mdi-table
             </v-icon>
             <span
               v-show="!$vuetify.breakpoint.mdAndDown || buttonOptions.block"
@@ -132,6 +132,30 @@ export default defineComponent({
               mdi-file-delimited
             </v-icon>
             Export Annotations
+          </v-btn>
+        </v-card-actions>
+        <v-card-actions>
+          <v-btn
+            v-if="locationStore &&
+              locationStore.location && locationStore.location._modelType === 'folder'"
+            class="ma-0"
+            text
+            small
+            @click="exportAnnotations(true)"
+          >
+            <v-icon
+              left
+              color="accent"
+            >
+              mdi-file-delimited
+            </v-icon>
+            Export Annotations Filtered
+            <v-icon
+              right
+              color="accent"
+            >
+              mdi-filter
+            </v-icon>
           </v-btn>
         </v-card-actions>
         <v-card-actions>

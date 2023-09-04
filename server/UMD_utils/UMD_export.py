@@ -46,6 +46,17 @@ def process_video_name(name):
     return name
 
 
+def record_user_annotations(filterMap, folderId, userId):
+    record_user = True
+    if filterMap is not None:
+        if folderId in filterMap.keys():
+            if userId not in filterMap[folderId]['UserGirderIds']:
+                record_user = False
+        else:
+            record_user = False
+
+    return record_user
+
 def bin_value(value):
     return math.floor((value - 1) / 200) + 1
 
@@ -69,7 +80,10 @@ def annotations_exists(tracks):
     return False
 
 
-def export_changepoint_tab(folders, userMap, user):
+def export_changepoint_tab(folders, userMap, user, filterMap):
+    changepoint_filterMap = None
+    if filterMap is not None:
+        changepoint_filterMap = filterMap['videos']['Changepoint']
     csvFile = io.StringIO()
     writer = csv.writer(csvFile, delimiter='\t', quotechar='"')
     writer.writerow(["user_id", "file_id", "timestamp", "impact_scalar", "comment"])
@@ -110,9 +124,11 @@ def export_changepoint_tab(folders, userMap, user):
                                     userDataFound[mapped] = {}
                                 userDataFound[mapped]['Comment'] = str(attributes[key])
                                 userDataFound[mapped]['Timestamp'] = (1 / fps) * (feature['frame'] - minus_frames)
-
                 for key in userDataFound.keys():
                     userId = userMap[key]['uid']
+                    userGirderId = userMap[key]['id']
+                    if not record_user_annotations(changepoint_filterMap, folderId, userGirderId):
+                        continue
                     columns = [
                         userId,
                         videoname,
@@ -170,8 +186,11 @@ def export_remediation_tab(folders, userMap, user):
     yield csvFile.getvalue()
 
 
-def export_norms_tab(folders, userMap, user):
+def export_norms_tab(folders, userMap, user, filterMap):
     csvFile = io.StringIO()
+    norms_filterMap = None
+    if filterMap is not None and 'Social Norms' in filterMap['videos']:
+        norms_filterMap = filterMap['videos']['Social Norms']
     writer = csv.writer(csvFile, delimiter='\t')
     writer.writerow(
         [
@@ -207,6 +226,9 @@ def export_norms_tab(folders, userMap, user):
                     for normKey in userDataFound[key].keys():
                         value = userDataFound[key][normKey]
                         userId = userMap[key]['uid']
+                        userGirderId = userMap[key]['id']
+                        if not record_user_annotations(norms_filterMap, folderId, userGirderId):
+                            continue
                         if value in normValuesAdhere:
                             value = normAdhere
                         if value in normValuesViolate:
@@ -247,9 +269,12 @@ def export_norms_tab(folders, userMap, user):
     yield csvFile.getvalue()
 
 
-def export_valence_tab(folders, userMap, user):
+def export_valence_tab(folders, userMap, user, filterMap):
     csvFile = io.StringIO()
     writer = csv.writer(csvFile, delimiter='\t')
+    VAE_filterMap = None
+    if filterMap is not None:
+        VAE_filterMap = filterMap['videos']['VAE']
     writer.writerow(
         [
             "user_id",
@@ -286,8 +311,11 @@ def export_valence_tab(folders, userMap, user):
                             userDataFound[mapped] = {}
                         userDataFound[mapped]['arousal_continuous'] = attributes[key]
                         userDataFound[mapped]['arousal_binned'] = bin_value(attributes[key])
-                for key in userDataFound.keys():
+                for key in userDataFound.keys():                        
                     userId = userMap[key]['uid']
+                    userGirderId = userMap[key]['id']
+                    if not record_user_annotations(VAE_filterMap, folderId, userGirderId):
+                        continue
                     columns = [
                         userId,
                         videoname,
@@ -358,10 +386,14 @@ def export_segment_tab(folders, userMap, user):
     yield csvFile.getvalue()
 
 
-def export_emotions_tab(folders, userMap, user):
+def export_emotions_tab(folders, userMap, user, filterMap):
     csvFile = io.StringIO()
     writer = csv.writer(csvFile, delimiter='\t', quotechar='"')
     writer.writerow(["user_id", "file_id", "segment_id", "emotion", "multi_speaker"])
+    emotions_filterMap = None
+    if filterMap is not None:
+        emotions_filterMap = filterMap['videos']['VAE']
+
     for folderId in folders:
         folder = Folder().load(folderId, level=AccessType.READ, user=user)
         videoname = process_video_name(folder['name'])
@@ -392,6 +424,9 @@ def export_emotions_tab(folders, userMap, user):
                         userDataFound[mapped]['MultiSpeaker'] = attributes[key]
                 for key in userDataFound.keys():
                     userId = userMap[key]['uid']
+                    userGirderId = userMap[key]['id']
+                    if not record_user_annotations(emotions_filterMap, folderId, userGirderId):
+                        continue
                     multiSpeaker = userDataFound[key]['MultiSpeaker']
                     if userDataFound[key]["Emotions"] == 'none':
                         multiSpeaker = 'EMPTY_NA'
@@ -567,22 +602,22 @@ def export_versions_per_file(folders, userMap, user):
     csvFile.truncate(0)
     yield csvFile.getvalue()
 
-def generate_tab(folders, userMap, user, type):
+def generate_tab(folders, userMap, user, type, filterMap=None):
     def downloadGenerator():
         if type == 'segment':
             for data in export_segment_tab(folders, userMap, user):
                 yield data
         if type == 'valence':
-            for data in export_valence_tab(folders, userMap, user):
+            for data in export_valence_tab(folders, userMap, user, filterMap):
                 yield data
         if type == 'emotions':
-            for data in export_emotions_tab(folders, userMap, user):
+            for data in export_emotions_tab(folders, userMap, user, filterMap):
                 yield data
         if type == 'norms':
-            for data in export_norms_tab(folders, userMap, user):
+            for data in export_norms_tab(folders, userMap, user, filterMap):
                 yield data
         if type == 'changepoint':
-            for data in export_changepoint_tab(folders, userMap, user):
+            for data in export_changepoint_tab(folders, userMap, user, filterMap):
                 yield data
         if type == 'remediation':
             for data in export_remediation_tab(folders, userMap, user):
@@ -604,28 +639,28 @@ def generate_tab(folders, userMap, user, type):
                 yield data
     return downloadGenerator
 
-def convert_to_zips(folders, userMap, user):
+def convert_to_zips(folders, userMap, user, filterMap):
     def stream():
         z = ziputil.ZipGenerator()            
         zip_path = './'
 
-        seg_gen = generate_tab(folders, userMap, user, 'segment')
+        seg_gen = generate_tab(folders, userMap, user, 'segment', filterMap)
         for data in z.addFile(seg_gen, Path(f'{zip_path}/docs/segments.tab')):
             yield data
-        valence_gen = generate_tab(folders, userMap, user, 'valence')
+        valence_gen = generate_tab(folders, userMap, user, 'valence', filterMap)
         for data in z.addFile(valence_gen, Path(f'{zip_path}/data/valence_arousal.tab')):
             yield data
-        emotion_gen = generate_tab(folders, userMap, user, 'emotions')
+        emotion_gen = generate_tab(folders, userMap, user, 'emotions', filterMap)
         for data in z.addFile(emotion_gen, Path(f'{zip_path}/data/emotions.tab')):
             yield data
-        norm_gen = generate_tab(folders, userMap, user, 'norms')
+        norm_gen = generate_tab(folders, userMap, user, 'norms', filterMap)
         for data in z.addFile(norm_gen, Path(f'{zip_path}/data/norms.tab')):
             yield data
-        norm_gen = generate_tab(folders, userMap, user, 'changepoint')
-        for data in z.addFile(norm_gen, Path(f'{zip_path}/data/changepoint.tab')):
+        changepoint_gen = generate_tab(folders, userMap, user, 'changepoint', filterMap)
+        for data in z.addFile(changepoint_gen, Path(f'{zip_path}/data/changepoint.tab')):
             yield data
-        norm_gen = generate_tab(folders, userMap, user, 'remediation')
-        for data in z.addFile(norm_gen, Path(f'{zip_path}/data/remediation.tab')):
+        remediation_gen = generate_tab(folders, userMap, user, 'remediation', filterMap)
+        for data in z.addFile(remediation_gen, Path(f'{zip_path}/data/remediation.tab')):
             yield data
         session_gen = generate_tab(folders, userMap, user, 'session_info')
         for data in z.addFile(session_gen, Path(f'{zip_path}/docs/session_info.tab')):
@@ -783,10 +818,7 @@ def create_user_filter_map(excel_file):
         users[user_data['Name']] = user_data
     return users
 
-def read_sheet(excel_file, sheet_name):
-        # Name of the sheet you want to extract data from
-    sheet_name = 'FLE VAE'
-
+def read_sheet(excel_file, sheet_name, userMap):
     # Read the Excel file
     try:
         df = pd.read_excel(excel_file, sheet_name=sheet_name, header=1)  # Skip the first row (header) in the data
@@ -811,19 +843,28 @@ def read_sheet(excel_file, sheet_name):
     for _, row in df.iterrows():
         file_name = row['File Name']
         link = row['Link']
-        annotator = row['Annotator']
+        annotators = []
+        userGirderIds = []
+        if not row['Annotator'] or pd.isna(row['Annotator']):
+            continue
+        annotators.append(row['Annotator'])
+        userGirderIds = [userMap[row['Annotator']]['GirderId']]
         status = row['Status']
         completion_date = row['Completion Date']
         # Extract GirderId from the link
         girder_id_match = re.search(r'/([a-f0-9\-]+)\?', link)
         girder_id = girder_id_match.group(1) if girder_id_match else None
+        if 'Annotator.1' in row.keys() and not pd.isna(row['Annotator.1']):
+            annotators.append(row['Annotator.1'])
+            userGirderIds.append(userMap[row['Annotator.1']]['GirderId'])
 
         # Create a dictionary for the current row
         row_data = {
             'FileName': file_name,
             'Link': link,
             'GirderId': girder_id,
-            'Annotator': annotator,
+            'Annotator': annotators,
+            'UserGirderIds': userGirderIds,
             'Status': status,
             'Completion Date': completion_date
         }
@@ -837,16 +878,17 @@ def create_filter_mapping(excel_file):
     filterMap = {}
 
     userMap = create_user_filter_map(excel_file)
-    print(userMap)
-    fle_vae = read_sheet(excel_file, 'FLE VAUE')
-    fle_social_norms = read_sheet(excel_file, 'FLE Social Norms')
-    change_point = read_sheet(excel_file, 'Changepoint')
-    sme_social_norms = read_sheet(excel_file, 'SME Social Norms')
-
+    fle_vae = read_sheet(excel_file, 'FLE VAE', userMap)
+    fle_social_norms = read_sheet(excel_file, 'FLE Social Norms', userMap)
+    change_point = read_sheet(excel_file, 'Changepoint', userMap)
+    sme_social_norms = read_sheet(excel_file, 'SME Social Norms', userMap)
     filterMap['users'] = userMap
     filterMap['videos'] = {
         'VAE': fle_vae,
-        'ChangePoint': change_point,
-        'Social Norms': {**fle_social_norms, ** sme_social_norms},
+        'Changepoint': change_point,
     }
+    if (fle_social_norms):
+        filterMap['videos']['Social Norms'] = fle_social_norms
+    if sme_social_norms:
+        filterMap['videos']['Social Norms'] = {**filterMap['videos']['Social Norms'], **sme_social_norms}
     return filterMap

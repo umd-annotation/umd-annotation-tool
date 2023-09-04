@@ -5,7 +5,7 @@ import re
 def create_user_map(excel_file):
     # Read the Excel file
     try:
-        df = pd.read_excel(excel_file, sheet_name='UserMap')
+        df = pd.read_excel(excel_file, sheet_name='UserMap',)
     except pd.errors.EmptyDataError:
         click.echo("The UserMap sheet is empty.")
         return
@@ -31,24 +31,22 @@ def create_user_map(excel_file):
         users[user_data['Name']] = user_data
     return users
 
-def read_sheet(excel_file, sheet_name):
-        # Name of the sheet you want to extract data from
-    sheet_name = 'FLE VAE'
-
+def read_sheet(excel_file, sheet_name, userMap):
+    # Name of the sheet you want to extract data from
     # Read the Excel file
     try:
         df = pd.read_excel(excel_file, sheet_name=sheet_name, header=1)  # Skip the first row (header) in the data
     except pd.errors.EmptyDataError:
-        click.echo(f"The '{sheet_name}' sheet is empty.")
+        print(f"The '{sheet_name}' sheet is empty.")
         return
     except Exception as e:
-        click.echo(f"An error occurred: {str(e)}")
+        print(f"An error occurred: {str(e)}")
         return
 
     # Verify that the expected columns exist in the sheet
     expected_columns = ['File Name', 'Link', 'Annotator', 'Status', 'Completion Date']
     if not all(col in df.columns for col in expected_columns):
-        click.echo(f"The sheet '{sheet_name}' does not contain all the expected columns.")
+        print(f"The sheet '{sheet_name}' does not contain all the expected columns.")
         return
     df = df.dropna(subset=['File Name', 'Link'])
 
@@ -59,19 +57,28 @@ def read_sheet(excel_file, sheet_name):
     for _, row in df.iterrows():
         file_name = row['File Name']
         link = row['Link']
-        annotator = row['Annotator']
+        annotators = []
+        userGirderIds = []
+        if not row['Annotator'] or pd.isna(row['Annotator']):
+            continue
+        annotators.append(row['Annotator'])
+        userGirderIds = [userMap[row['Annotator']]['GirderId']]
         status = row['Status']
         completion_date = row['Completion Date']
         # Extract GirderId from the link
         girder_id_match = re.search(r'/([a-f0-9\-]+)\?', link)
         girder_id = girder_id_match.group(1) if girder_id_match else None
+        if 'Annotator.1' in row.keys() and not pd.isna(row['Annotator.1']):
+            annotators.append(row['Annotator.1'])
+            userGirderIds.append(userMap[row['Annotator.1']]['GirderId'])
 
         # Create a dictionary for the current row
         row_data = {
             'FileName': file_name,
             'Link': link,
             'GirderId': girder_id,
-            'Annotator': annotator,
+            'Annotator': annotators,
+            'UserGirderIds': userGirderIds,
             'Status': status,
             'Completion Date': completion_date
         }
@@ -82,6 +89,7 @@ def read_sheet(excel_file, sheet_name):
     return data_dict
 
 
+
 @click.command()
 @click.argument('excel_file', type=click.Path(exists=True))
 def main(excel_file):
@@ -89,11 +97,11 @@ def main(excel_file):
     sheet_name = 'UserMap'
 
     userMap = create_user_map(excel_file)
-    print(userMap)
-    fle_vae = read_sheet(excel_file, 'FLE VAUE')
-    fle_social_norms = read_sheet(excel_file, 'FLE Social Norms')
-    change_point = read_sheet(excel_file, 'Changepoint')
-    sme_social_norms = read_sheet(excel_file, 'SME Social Norms')
+    # print(userMap)
+    fle_vae = read_sheet(excel_file, 'FLE VAE', userMap)
+    fle_social_norms = read_sheet(excel_file, 'FLE Social Norms', userMap)
+    change_point = read_sheet(excel_file, 'Changepoint', userMap)
+    sme_social_norms = read_sheet(excel_file, 'SME Social Norms', userMap)
 
     print(fle_vae)
     print(fle_social_norms)

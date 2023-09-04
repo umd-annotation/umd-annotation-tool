@@ -8,6 +8,7 @@ from girder.api.rest import Resource, getApiUrl
 from girder.constants import AccessType, TokenScope
 from girder.models.folder import Folder
 from girder.models.item import Item
+from girder.models.file import File
 from girder.models.token import Token
 from girder.models.user import User
 from girder_jobs.models.job import Job
@@ -16,6 +17,7 @@ import requests
 from UMD_tasks import constants, tasks
 from UMD_utils import UMD_export
 from UMD_utils.constants import AnnotationFilterMarker
+from UMD_utils import TRUTHY_META_VALUES
 
 
 def mapUserIds(users):
@@ -152,16 +154,19 @@ class UMD_Dataset(Resource):
             # get the filter file and create a mapping that can be used
             filterFolder = Folder().findOne(
                 {
-                    'parentFolderId': folder["_id"],
-                    f'meta.{AnnotationFilterMarker}': True,
+                    'parentId': folder["_id"],
+                    f'meta.{AnnotationFilterMarker}': {'$in': TRUTHY_META_VALUES},
                 }
             )
             if filterFolder:
                 for item in Folder().childItems(filterFolder):
-                    for path, file in Item().fileList(item):
+                    print(item)
+                    for file in Item().childFiles(item):
                         # we now read in the excel file to create a mapping that can be used for exporting
-                        filterMap = UMD_export.create_filter_mapping(file)
-        gen = UMD_export.convert_to_zips(totalFolderIds, userMap, user)
+                        file_generator = File().download(file, headers=False)()
+                        file_string = b"".join(list(file_generator))
+                        filterMap = UMD_export.create_filter_mapping(file_string)
+        gen = UMD_export.convert_to_zips(totalFolderIds, userMap, user, filterMap)
         zip_name = "batch_export.zip"
         setContentDisposition(zip_name, mime='application/zip')
         return gen
@@ -331,6 +336,15 @@ class UMD_Dataset(Resource):
         folder,
     ):
         user = self.getCurrentUser()
+        filterFolder = Folder().createFolder(
+            folder,
+            "annotationFilter",
+            description="Filter Folder",
+            parentType="folder",
+            creator=user,
+            reuseExisting=True,
+        )
+        Folder().remove(filterFolder)
         filterFolder = Folder().createFolder(
             folder,
             "annotationFilter",

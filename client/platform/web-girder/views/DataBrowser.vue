@@ -11,13 +11,11 @@ import { getUri } from 'platform/web-girder/api';
 import { useStore, LocationType, RootlessLocationType } from '../store/types';
 import Upload from './Upload.vue';
 import eventBus from '../eventBus';
-import ExportMenu from './ExportMenu.vue';
 
 export default defineComponent({
   components: {
     GirderFileManager,
     Upload,
-    ExportMenu,
   },
 
   setup() {
@@ -116,7 +114,6 @@ export default defineComponent({
     @update:location="setLocation($event)"
   >
     <template #headerwidget>
-      <export-menu />
       <v-dialog
         v-if="shouldShowUpload"
         v-model="uploaderDialog"
