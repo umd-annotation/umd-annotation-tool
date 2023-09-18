@@ -8,6 +8,7 @@ from girder.api.rest import Resource, getApiUrl
 from girder.constants import AccessType, TokenScope
 from girder.models.folder import Folder
 from girder.models.item import Item
+from girder.models.file import File
 from girder.models.token import Token
 from girder.models.user import User
 from girder_jobs.models.job import Job
@@ -15,6 +16,8 @@ import requests
 
 from UMD_tasks import constants, tasks
 from UMD_utils import UMD_export
+from UMD_utils.constants import AnnotationFilterMarker
+from UMD_utils import TRUTHY_META_VALUES
 
 
 def mapUserIds(users):
@@ -51,6 +54,7 @@ class UMD_Dataset(Resource):
         self.route("GET", ("links", ":folder"), self.export_links)
         self.route("POST", ("update_containers",), self.update_containers)
         self.route("POST", ("mark_changepoint_complete",), self.mark_changepoint_complete)
+        self.route("POST", ("filter", ":folder"), self.create_filter_folder)
 
     def recursive_folder_list(self, folder, totalFolders):
         subFolders = Folder().childFolders(folder, 'folder', user=self.getCurrentUser())
@@ -114,17 +118,27 @@ class UMD_Dataset(Resource):
 
     @access.public(scope=TokenScope.DATA_READ, cookie=True)
     @autoDescribeRoute(
-        Description("Export annotations for all the folders").modelParam(
-            "folder",
-            description="FolderId to get state from",
-            model=Folder,
-            level=AccessType.READ,
-            destName="folder",
+        Description("Export annotations for all the folders")
+            .modelParam(
+                "folder",
+                description="FolderId to get state from",
+                model=Folder,
+                level=AccessType.READ,
+                destName="folder",
+            )
+            .param(
+            "applyFilter",
+            "Apply Filter file if it exists.",
+            paramType="query",
+            dataType="boolean",
+            default=False,
         )
+
     )
     def export_resursive_tabular(
         self,
         folder,
+        applyFilter,
     ):
         totalFolders = []
         totalFolders = self.recursive_folder_list(folder, totalFolders)
@@ -135,8 +149,24 @@ class UMD_Dataset(Resource):
         user = self.getCurrentUser()
         users = list(User().find())
         userMap = mapUserIds(users)
-
-        gen = UMD_export.convert_to_zips(totalFolderIds, userMap, user)
+        filterMap = None
+        if applyFilter:
+            # get the filter file and create a mapping that can be used
+            filterFolder = Folder().findOne(
+                {
+                    'parentId': folder["_id"],
+                    f'meta.{AnnotationFilterMarker}': {'$in': TRUTHY_META_VALUES},
+                }
+            )
+            if filterFolder:
+                for item in Folder().childItems(filterFolder):
+                    print(item)
+                    for file in Item().childFiles(item):
+                        # we now read in the excel file to create a mapping that can be used for exporting
+                        file_generator = File().download(file, headers=False)()
+                        file_string = b"".join(list(file_generator))
+                        filterMap = UMD_export.create_filter_mapping(file_string)
+        gen = UMD_export.convert_to_zips(totalFolderIds, userMap, user, filterMap)
         zip_name = "batch_export.zip"
         setContentDisposition(zip_name, mime='application/zip')
         return gen
@@ -288,3 +318,45 @@ class UMD_Dataset(Resource):
                                                  )
                 updated.append(f'userId: {userLogin} and FolderId: {folderId} updated')
         return updated
+
+    @access.user
+    @autoDescribeRoute(
+        Description(
+            "Create or Return the filter folder for the current Annotation dataset"
+        ).modelParam(
+            "folder",
+            description="FolderId to get state from",
+            model=Folder,
+            level=AccessType.WRITE,
+            destName="folder",
+        )
+    )
+    def create_filter_folder(
+        self,
+        folder,
+    ):
+        user = self.getCurrentUser()
+        filterFolder = Folder().createFolder(
+            folder,
+            "annotationFilter",
+            description="Filter Folder",
+            parentType="folder",
+            creator=user,
+            reuseExisting=True,
+        )
+        Folder().remove(filterFolder)
+        filterFolder = Folder().createFolder(
+            folder,
+            "annotationFilter",
+            description="Filter Folder",
+            parentType="folder",
+            creator=user,
+            reuseExisting=True,
+        )
+        Folder().setMetadata(
+            filterFolder,
+            {f"{AnnotationFilterMarker}": True},
+            allowNull=True,
+        )
+        return filterFolder
+

@@ -108,6 +108,12 @@ const zipFileTypes = [
   'zip',
 ];
 
+const xlsFileTypes = [
+  'xls',
+  'xlsx',
+];
+
+
 const stereoPipelineMarker = 'measurement';
 const multiCamPipelineMarkers = ['2-cam', '3-cam'];
 
@@ -140,4 +146,5 @@ export {
   multiCamPipelineMarkers,
   JsonMetaRegEx,
   simplifyTrainingName,
+  xlsFileTypes,
 };

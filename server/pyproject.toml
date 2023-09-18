@@ -62,6 +62,8 @@ urllib3 = "<1.27"
 CherryPy = "^18.8.0"
 Pillow = "^9.2.0"
 image = "^1.5.33"
+pandas = "^2.0.3"
+openpyxl = "^3.1.2"
 [tool.poetry.dev-dependencies]
 numpy = "^1.21.4"
 opencv-python = "^4.5.5"

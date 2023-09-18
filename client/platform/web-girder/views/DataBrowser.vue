@@ -142,7 +142,7 @@ export default defineComponent({
           @close="uploaderDialog = false"
         />
       </v-dialog>
-      <v-btn
+      <!-- <v-btn
         v-if="locationStore &&
           locationStore.location && locationStore.location._modelType === 'folder'"
         class="ma-0"
@@ -173,8 +173,7 @@ export default defineComponent({
           mdi-file-delimited
         </v-icon>
         Export Annotations
-      </v-btn>
-
+      </v-btn> -->
     </template>
     <template #row="{item}">
       <span>{{ item.name }}</span>

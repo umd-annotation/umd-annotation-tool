@@ -21,6 +21,7 @@ import ShareTab from './ShareTab.vue';
 import DataShared from './DataShared.vue';
 import { useStore } from '../store/types';
 import eventBus from '../eventBus';
+import ExportMenu from './ExportMenu.vue';
 
 const buttonOptions = {
   block: true,
@@ -49,6 +50,7 @@ export default defineComponent({
     RunTrainingMenu,
     DataShared,
     ShareTab,
+    ExportMenu,
   },
   setup() {
     const loading = ref(false);
@@ -152,6 +154,9 @@ export default defineComponent({
           >
             <template #actions>
               <div class="pa-2">
+                <export-menu
+                  v-bind="{ buttonOptions, menuOptions }"
+                />
                 <Clone
                   v-if="false"
                   v-bind="{ buttonOptions, menuOptions }"
