@@ -122,6 +122,13 @@ def process_outputjson(output):
         if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('type', False) == 'arousal':
             turn = create_or_get_turn(turns, item['message']['start_seconds'], item['message']['end_seconds'])
             turn['arousal'] = item['message']['level']
+        if item.get('queue', False) == 'ACTION' and item.get('message', {}).get('type', False) == 'hololens' and item.get('message', {}).get('prefix', False) == 'alert':
+            turn = create_or_get_turn(turns, item['message']['start_seconds'], item['message']['end_seconds'])
+            if turn.get('actions', None) is None:
+                turn['actions'] = []
+            turn['actions'].append({
+                'display': item['message']['display'],
+            })
 
     output = []
     for item in turns:
@@ -188,18 +195,20 @@ def convert_output_to_tracks(output, width=1920, height=1080, framerate=30, offs
             translation = item['translation']['text']
             sourceLanguage = item['translation']['source_language']
             targetLanguage = item['translation']['target_language']
-            track['translation'] = translation
-            track['sourceLanguage'] = sourceLanguage
-            track['targetLanguage'] = targetLanguage
+            track['attributes']['translation'] = translation
+            track['attributes']['sourceLanguage'] = sourceLanguage
+            track['attributes']['targetLanguage'] = targetLanguage
         emotions = None
         if item.get('emotions', False):
             emotions = item['emotions']
-            track['emotions'] = emotions
+            track['attributes']['emotions'] = emotions
         if item.get('valence', False):
-            track['valence'] = item['valence']
-            track['arousal'] = item['arousal']
+            track['attributes']['valence'] = item['valence']
+            track['attributes']['arousal'] = item['arousal']
         if item.get('norms', False):
-            track['norms'] = item['norms']
+            track['attributes']['norms'] = item['norms']
+        if item.get('actions', False):
+            track['attributes']['alerts'] = item['actions']
         tracks[count] = track
         count += 1
 
