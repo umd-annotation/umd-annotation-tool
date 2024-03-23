@@ -46,8 +46,10 @@ import { usePrompt } from 'dive-common/vue-utilities/prompt-service';
 import context from 'dive-common/store/context';
 import ImageEnhancementsVue from 'vue-media-annotator/components/ImageEnhancements.vue';
 import RevisionHistoryVue from 'platform/web-girder/views/RevisionHistory.vue';
+import UMDAnnotationWrapper from 'vue-media-annotator/components/UMDAnnotationWrapper.vue';
 import { FormatTextRow, TextData } from 'vue-media-annotator/layers/AnnotationLayers/TextLayer';
 import { FrameDataTrack } from 'vue-media-annotator/layers/LayerTypes';
+import UMDTA2AnnotationWrapper from 'vue-media-annotator/components/UMDTA2AnnotationWrapper.vue';
 import GroupSidebarVue from './GroupSidebar.vue';
 import MultiCamToolsVue from './MultiCamTools.vue';
 import TypeThresholdVue from './TypeThreshold.vue';
@@ -114,6 +116,7 @@ export default defineComponent({
     const saveInProgress = ref(false);
     const videoUrl: Ref<Record<string, string>> = ref({});
     const { loadDetections, loadMetadata, saveMetadata } = useApi();
+    const TA2Annotator = ref(false);
     const progress = reactive({
       // Loaded flag prevents annotator window from populating
       // with stale data from props, for example if a persistent store
@@ -497,6 +500,7 @@ export default defineComponent({
         // Close and reset sideBar
         context.resetActive();
         const meta = await loadMetadata(datasetId.value);
+        TA2Annotator.value = (meta.UMDAnnotation === 'TA2');
         const defaultCameraMeta = meta.multiCamMedia?.cameras[meta.multiCamMedia.defaultDisplay];
         baseMulticamDatasetId.value = datasetId.value;
         if (defaultCameraMeta !== undefined && meta.multiCamMedia) {
@@ -598,6 +602,21 @@ export default defineComponent({
           context.register({
             description: 'Group Manager',
             component: GroupSidebarVue,
+          });
+        }
+        if (TA2Annotator.value) {
+          context.unregister({
+            component: UMDAnnotationWrapper,
+            description: 'UMD Annotator',
+          });
+          context.register({
+            component: UMDTA2AnnotationWrapper,
+            description: 'UMD TA2 Annotator',
+          });
+        } else {
+          context.unregister({
+            component: UMDTA2AnnotationWrapper,
+            description: 'UMD TA2 Annotator',
           });
         }
       } catch (err) {
@@ -746,6 +765,15 @@ export default defineComponent({
     };
 
 
+    const handleAnnotatorToggle = () => {
+      if (!TA2Annotator.value) {
+        context.toggle('UMDAnnotationWrapper');
+      } else {
+        context.toggle('UMDTA2AnnotationWrapper');
+      }
+    };
+
+
     return {
       /* props */
       annotating,
@@ -787,6 +815,7 @@ export default defineComponent({
       readonlyState,
       brightness,
       intercept,
+      TA2Annotator,
       /* methods */
       handler: globalHandler,
       save,
@@ -804,6 +833,7 @@ export default defineComponent({
       formatTextRow,
       // Media Errors
       handleMediaError,
+      handleAnnotatorToggle,
     };
   },
 });
@@ -857,7 +887,7 @@ export default defineComponent({
           }"
           :tail-settings.sync="clientSettings.annotatorPreferences.trackTails"
           @set-annotation-state="handler.setAnnotationState"
-          @annotator="context.toggle('UMDAnnotationWrapper')"
+          @annotator="handleAnnotatorToggle()"
           @exit-edit="handler.trackAbort"
         >
           <template slot="delete-controls">
@@ -997,7 +1027,7 @@ export default defineComponent({
                 v-bind="{
                   imageData: imageData[camera], videoUrl: videoUrl[camera],
                   updateTime, frameRate, originalFps, camera, brightness, intercept, mode }"
-                @ready="context.toggle('UMDAnnotationWrapper')"
+                @ready="handleAnnotatorToggle()"
                 @error="handleMediaError($event)"
               >
                 <LayerManager

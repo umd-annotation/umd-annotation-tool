@@ -7,6 +7,7 @@ import GroupSidebar from 'dive-common/components/GroupSidebar.vue';
 import AttributesSideBar from 'dive-common/components/AttributesSideBar.vue';
 import MultiCamTools from 'dive-common/components/MultiCamTools.vue';
 import UMDAnnotationWrapper from 'vue-media-annotator/components/UMDAnnotationWrapper.vue';
+import UMDTA2AnnotationWrapper from 'vue-media-annotator/components/UMDTA2AnnotationWrapper.vue';
 
 Vue.use(Install);
 
@@ -51,6 +52,10 @@ const componentMap: Record<string, ComponentMapItem> = {
   [UMDAnnotationWrapper.name]: {
     description: 'UMD Annotator',
     component: UMDAnnotationWrapper,
+  },
+  [UMDTA2AnnotationWrapper.name]: {
+    description: 'UMD TA2 Annotator',
+    component: UMDTA2AnnotationWrapper,
   },
 
 };
