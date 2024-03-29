@@ -10,6 +10,8 @@ export interface TA2Translation {
     translation: string;
     sourceLanguage: string;
     targetLanguage: string;
+    alerts?: { display: string }[];
+    rephrase?: { display: string }[];
 }
 
 export default defineComponent({
@@ -49,6 +51,30 @@ export default defineComponent({
     <p>{{ data.ASRText }}</p>
     <h3>Translation</h3>
     <p>{{ data.translation }}</p>
+    <h3 v-if="data.alerts">
+      Alerts
+    </h3>
+    <p v-if="data.alerts">
+      <v-row
+        v-for="(alert, index) in data.alerts"
+        :key="`alert_${index}`"
+        class="mx-2"
+      >
+        <div><b>{{ index+1 }}.</b><span class="ml-2">{{ alert.display }}</span></div>
+      </v-row>
+    </p>
+    <h3 v-if="data.rephrase">
+      Rephrase
+    </h3>
+    <p v-if="data.rephrase">
+      <v-row
+        v-for="(alert, index) in data.rephrase"
+        :key="`rephrase_${index}`"
+        class="mx-2"
+      >
+        <div><b>{{ index+1 }}.</b><span class="ml-2">{{ alert.display }}</span></div>
+      </v-row>
+    </p>
   </div>
 </template>
 

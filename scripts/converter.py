@@ -129,6 +129,13 @@ def process_outputjson(output):
             turn['actions'].append({
                 'display': item['message']['display'],
             })
+        if item.get('queue', False) == 'ACTION' and item.get('message', {}).get('type', False) == 'hololens' and 'Rephrased:' in item.get('message', {}).get('display', ''):
+            turn = create_or_get_turn(turns, item['message']['start_seconds'], item['message']['end_seconds'])
+            if turn.get('rephrase', None) is None:
+                turn['rephrase'] = []
+            turn['rephrase'].append({
+                'display': item['message']['display'],
+            })
 
     output = []
     for item in turns:
@@ -209,6 +216,8 @@ def convert_output_to_tracks(output, width=1920, height=1080, framerate=30, offs
             track['attributes']['norms'] = item['norms']
         if item.get('actions', False):
             track['attributes']['alerts'] = item['actions']
+        if item.get('rephrase', False):
+            track['attributes']['rephrase'] = item['rephrase']
         tracks[count] = track
         count += 1
 

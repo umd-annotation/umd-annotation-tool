@@ -51,6 +51,7 @@ export default defineComponent({
 
     const translationData: Ref<TA2Translation | null> = ref(null);
 
+    const activePanel = ref(0);
 
     const normsSelected: Ref<string[]> = ref([]);
     const baseNormsList = computed(() => {
@@ -117,6 +118,8 @@ export default defineComponent({
           speaker: null,
           sourceLanguage: null,
           targetLanguage: null,
+          alerts: null,
+          rephrase: null,
         };
         const transKeys = Object.keys(transObject);
         Object.keys(track.attributes).forEach((key) => {
@@ -271,7 +274,6 @@ export default defineComponent({
           //dataStore.normsObject = normsObject.value;
         }
       }
-
       handler.trackSelectNext(direction, true);
     };
 
@@ -363,6 +365,7 @@ export default defineComponent({
       seekEnd,
       playSegment,
       translationData,
+      activePanel,
       //refs
     };
   },
@@ -418,10 +421,17 @@ export default defineComponent({
           Next
         </v-btn>
       </v-row>
-      <UMDTA2Translation
-        v-if="translationData"
-        :data="translationData"
-      />
+      <v-expansion-panels v-model="activePanel">
+        <v-expansion-panel>
+          <v-expansion-panel-header><h3>Information</h3></v-expansion-panel-header>
+          <v-expansion-panel-content>
+            <UMDTA2Translation
+              v-if="translationData"
+              :data="translationData"
+            />
+          </v-expansion-panel-content>
+        </v-expansion-panel>
+      </v-expansion-panels>
       <v-row>
         <v-col>
           <v-btn
