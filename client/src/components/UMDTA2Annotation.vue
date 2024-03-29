@@ -16,7 +16,6 @@ import { usePrompt } from 'dive-common/vue-utilities/prompt-service';
 import UMDTA2Translation, { TA2Translation } from './UMDTA2Translation.vue';
 
 
-type NormsObjectValues = Record<string, 'adhered' |'violated' | 'EMPTY_NA' | 'adhered_violated'>;
 
 export default defineComponent({
   name: 'UMDTA2Annotation',
