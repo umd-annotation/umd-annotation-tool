@@ -128,6 +128,7 @@ interface DatasetMeta extends DatasetMetaMutable {
   originalFps?: Readonly<number>;
   subType: Readonly<SubType>; // In future this could have stuff like IR/EO
   multiCamMedia: Readonly<MultiCamMedia | null>;
+  UMDAnnotation: Readonly<undefined | 'TA2'>; // Indicates that this a UMD TA2 dataset
 }
 
 interface Api {

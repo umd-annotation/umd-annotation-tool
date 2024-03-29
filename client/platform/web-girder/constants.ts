@@ -23,6 +23,7 @@ interface GirderMetadataStatic extends DatasetMetaMutable {
   originalFps?: number;
   ffprobe_info?: Record<string, string>;
   foreign_media_id?: string;
+  UMDAnnotation?: string;
 }
 
 /**
