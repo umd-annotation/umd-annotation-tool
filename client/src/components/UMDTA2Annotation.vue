@@ -97,14 +97,15 @@ export default defineComponent({
           rephrase: null,
         };
         const transKeys = Object.keys(transObject);
+        console.log(track.attributes);
+        annotation.value = { };
         Object.keys(track.attributes).forEach((key) => {
           // Grab Translation root data
           if (transKeys.includes(key)) {
             transObject[key] = track.attributes[key];
           }
-          if (key.includes(userLogin.value)) { // Get User Attributes
+          if (key.includes(userLogin.value) && annotation.value) { // Get User Attributes
             const replaced = key.replace(`${userLogin.value}_`, '');
-            annotation.value = { };
             if (replaced === 'ASRQuality') {
               if (loadValues) {
                 annotation.value.ASRQuality = track.attributes[key] as number;
@@ -235,36 +236,27 @@ export default defineComponent({
           track.setAttribute(`${userLogin.value}_ASRQuality`, data.ASRQuality);
         }
         if (data.MTQuality !== undefined) {
-          track.setAttribute(`${userLogin.value}_MTQuality`, data.ASRQuality);
+          track.setAttribute(`${userLogin.value}_MTQuality`, data.MTQuality);
         }
         if (data.AlertsQuality !== undefined) {
-          track.setAttribute(`${userLogin.value}_AlertsQuality`, data.ASRQuality);
+          track.setAttribute(`${userLogin.value}_AlertsQuality`, data.AlertsQuality);
         }
         if (data.RephrasingQuality !== undefined) {
-          track.setAttribute(`${userLogin.value}_RephrasingQuality`, data.ASRQuality);
+          track.setAttribute(`${userLogin.value}_RephrasingQuality`, data.RephrasingQuality);
         }
         if (data.DelayedRemediation !== undefined) {
-          track.setAttribute(`${userLogin.value}_DelayedRemediation`, data.ASRQuality);
+          track.setAttribute(`${userLogin.value}_DelayedRemediation`, data.DelayedRemediation);
         }
         if (data.Norms !== undefined) {
-          track.setAttribute(`${userLogin.value}_TA2Norms`, data.ASRQuality);
+          track.setAttribute(`${userLogin.value}_TA2Norms`, data.Norms);
         }
         // save the file
         handler.save();
-        const oldTrackNum = selectedTrackIdRef.value;
-        const newTrack = cameraStore.getAnyPossibleTrack(oldTrackNum + 1);
-        if (newTrack) {
-          handler.trackSelectNext(1, true);
-        } else {
-          alreadyAnnotated.value = true;
-        }
-        if (selectedTrackIdRef.value !== null && selectedTrackIdRef.value !== oldTrackNum) {
-          await nextTick();
-        }
       }
     };
     const changeTrack = (direction: -1 | 1) => {
       handler.trackSelectNext(direction, true);
+      checkAttributes(selectedTrackIdRef.value);
     };
 
     watch(() => frame.value, () => {
@@ -328,7 +320,7 @@ export default defineComponent({
         class="scroll-sticky"
       >
         <h2 class="mr-4 mt-1">
-          Segment {{ selectedTrackIdRef }}
+          Turn {{ (selectedTrackIdRef || 0) + 1 }}
         </h2>
         <div class="ml-2 mt-2">
           <tooltip-btn
@@ -383,18 +375,9 @@ export default defineComponent({
         <UMDTA2AnnotationWizard
           :annotations="annotation"
           :outside-segment="outsideSegment"
+          @save="submit($event)"
+          @next-turn="changeTrack(1)"
         />
-      </v-row>
-      <v-row>
-        <v-col>
-          <v-btn
-            :color="loadedAttributes ? 'warning' : 'success'"
-            :disabled="outsideSegment"
-            @click="submit"
-          >
-            {{ loadedAttributes ? 'Update' : 'Submit' }}
-          </v-btn>
-        </v-col>
       </v-row>
       <v-row>
         <v-alert

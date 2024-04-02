@@ -1,7 +1,8 @@
 <script lang="ts">
 import {
-  defineComponent, PropType, ref, Ref,
+  defineComponent, PropType, ref, Ref, watch,
 } from '@vue/composition-api';
+import { useSelectedTrackId } from 'vue-media-annotator/provides';
 
 export type NormsList =
   | 'Admiration'
@@ -47,6 +48,8 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const annotationState: Ref<'ASRMTQuality' | 'Norms' | 'AlertRephrasing'> = ref('ASRMTQuality');
+    const selectedTrackIdRef = useSelectedTrackId();
+
     const steps = ref([
       'ASR/Translation Quality',
       'Norm Adherence/Violation',
@@ -72,6 +75,59 @@ export default defineComponent({
       'Taking Leave',
       'Thanks',
     ]);
+    watch(() => props.annotations, () => {
+      stepper.value = 1;
+      ASRQuality.value = props.annotations.ASRQuality || 0;
+      MTQuality.value = props.annotations.MTQuality || 0;
+      AlertsQuality.value = props.annotations.AlertsQuality || 0;
+      DelayedRemediation.value = props.annotations.DelayedRemediation || false;
+      Norms.value = props.annotations.Norms || {};
+      selectedNorms.value = Object.keys(Norms.value) as NormsList[];
+    });
+    watch(selectedNorms, () => {
+      const addNorms: Partial<Record<NormsList, TA2NormStatus>> = {};
+      selectedNorms.value.forEach((norm) => {
+        if (!addNorms[norm]) {
+          addNorms[norm] = {
+            status: (props.annotations.Norms && props.annotations.Norms[norm].status) || 'adhered',
+            remediation: (props.annotations.Norms && props.annotations.Norms[norm].remediation) || 0,
+          };
+        }
+      });
+      Norms.value = addNorms;
+    });
+    const advanceStep = (currentStep: 'ASRMTQuality' | 'Norms' | 'AlertRephrasing') => {
+      const annotationUpdate: TA2Annotation = { };
+      if (currentStep === 'ASRMTQuality') {
+        annotationUpdate.ASRQuality = ASRQuality.value;
+        annotationUpdate.MTQuality = MTQuality.value;
+      } else if (currentStep === 'Norms') {
+        annotationUpdate.Norms = Norms.value as Record<NormsList, TA2NormStatus>;
+      } else if (currentStep === 'AlertRephrasing') {
+        annotationUpdate.AlertsQuality = AlertsQuality.value;
+        annotationUpdate.DelayedRemediation = DelayedRemediation.value;
+        annotationUpdate.RephrasingQuality = RephrasingQuality.value;
+      }
+      emit('save', annotationUpdate);
+      if (currentStep !== 'AlertRephrasing') {
+        stepper.value += 1;
+      } else {
+        emit('next-turn');
+      }
+    };
+
+    const updateNorm = (norm: NormsList, field: 'status' | 'remediation', value: 'adhered' | 'violated' | number) => {
+      if (field === 'status') {
+        if (Norms.value[norm]) {
+          Norms.value[norm].status = value as 'adhered' | 'violated';
+        }
+      }
+      if (field === 'remediation') {
+        if (Norms.value[norm]) {
+          Norms.value[norm].remediation = value as number;
+        }
+      }
+    };
     return {
       annotationState,
       steps,
@@ -84,6 +140,9 @@ export default defineComponent({
       AlertsQuality,
       RephrasingQuality,
       DelayedRemediation,
+      selectedTrackIdRef,
+      advanceStep,
+      updateNorm,
     };
   },
 });
@@ -94,6 +153,7 @@ export default defineComponent({
   <v-stepper
     v-model="stepper"
     style="width:100%"
+    non-linear
   >
     <v-stepper-header>
       <v-stepper-step
@@ -137,8 +197,8 @@ export default defineComponent({
                 <v-col>
                   <v-slider
                     v-model="ASRQuality"
-                    min="1"
-                    max="1000"
+                    min="0"
+                    max="3"
                     step="1"
                     dense
                     persistent-hint
@@ -195,8 +255,8 @@ export default defineComponent({
                 <v-col>
                   <v-slider
                     v-model="MTQuality"
-                    min="1"
-                    max="1000"
+                    min="0"
+                    max="3"
                     step="1"
                     dense
                     persistent-hint
@@ -241,6 +301,16 @@ export default defineComponent({
               </v-row>
             </v-col>
           </v-row>
+          <v-row class="mx-2">
+            <v-spacer />
+            <v-btn
+              color="primary"
+              class="mb-2"
+              @click="advanceStep('ASRMTQuality')"
+            >
+              Next Step
+            </v-btn>
+          </v-row>
         </v-card>
       </v-stepper-content>
 
@@ -258,32 +328,58 @@ export default defineComponent({
               chips
               clearable
               deletable-chips
+              class="mx-5"
             />
           </v-row>
           <v-list v-if="Norms">
             <v-list-item
               v-for="(item,key) in Norms"
-              :key="key"
+              :key="`${key}_track_${selectedTrackIdRef}_${item.status}`"
             >
-              <v-select
-                v-if="item && item.status"
-                label="status"
-                :items="['adhered', 'violated']"
-                :value="item.status"
-              />
-              <v-select
-                v-if="item && item.remediation"
-                :disabled="item && item.status === 'adhered'"
-                label="status"
-                :items="[
-                  { title: 'Unnecessary', value: 0 },
-                  { title: 'Recommended', value: 1 },
-                  { title: 'Necessary', value: 2 },
-                ]"
-                :value="item.status"
-              />
+              <v-row dense>
+                <v-col>
+                  <h5 class="mr-2">
+                    {{ key }}:
+                  </h5>
+                </v-col>
+                <v-col>
+                  <v-select
+                    v-if="item && item.status"
+                    label="status"
+                    :items="['adhered', 'violated']"
+                    :value="item.status"
+                    @change="updateNorm(key, 'status', $event)"
+                  />
+                </v-col>
+                <v-col>
+                  <v-select
+                    v-if="item && item.remediation !== undefined"
+                    :disabled="item && item.status === 'adhered'"
+                    label="status"
+                    item-text="title"
+                    item-value="value"
+                    :items="[
+                      { title: 'Unnecessary', value: 0 },
+                      { title: 'Recommended', value: 1 },
+                      { title: 'Necessary', value: 2 },
+                    ]"
+                    :value="item.remediation"
+                    @change="updateNorm(key, 'remediation', $event)"
+                  />
+                </v-col>
+              </v-row>
             </v-list-item>
           </v-list>
+          <v-row class="mx-2">
+            <v-spacer />
+            <v-btn
+              color="primary"
+              class="mb-2"
+              @click="advanceStep('Norms')"
+            >
+              Next Step
+            </v-btn>
+          </v-row>
         </v-card>
       </v-stepper-content>
 
@@ -298,7 +394,7 @@ export default defineComponent({
           >
             <v-col>
               <v-row dense>
-                <v-col cols="2">
+                <v-col cols="4">
                   Alerts Quality
                 </v-col>
                 <v-col>
@@ -354,7 +450,7 @@ export default defineComponent({
           >
             <v-col>
               <v-row dense>
-                <v-col cols="2">
+                <v-col cols="4">
                   Rephrasing Quality
                 </v-col>
                 <v-col>
@@ -408,11 +504,23 @@ export default defineComponent({
               </v-row>
             </v-col>
           </v-row>
-          <v-row>
-            <v-switch
-              v-model="DelayedRemediation"
-              label="Delayed Remediation"
-            />
+          <v-row class="mx-3">
+            <v-col>
+              <v-switch
+                v-model="DelayedRemediation"
+                label="Delayed Remediation"
+              />
+            </v-col>
+          </v-row>
+          <v-row class="mx-2">
+            <v-spacer />
+            <v-btn
+              color="primary"
+              class="mb-2"
+              @click="advanceStep('AlertRephrasing')"
+            >
+              Next Turn
+            </v-btn>
           </v-row>
         </v-card>
       </v-stepper-content>
