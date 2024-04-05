@@ -118,13 +118,13 @@ export default defineComponent({
 
     const updateNorm = (norm: NormsList, field: 'status' | 'remediation', value: 'adhered' | 'violated' | number) => {
       if (field === 'status') {
-        if (Norms.value[norm]) {
-          Norms.value[norm].status = value as 'adhered' | 'violated';
+        if (Norms.value && Norms.value[norm] !== undefined) {
+          (Norms.value[norm] as TA2NormStatus).status = value as 'adhered' | 'violated';
         }
       }
       if (field === 'remediation') {
         if (Norms.value[norm]) {
-          Norms.value[norm].remediation = value as number;
+          (Norms.value[norm] as TA2NormStatus).remediation = value as number;
         }
       }
     };

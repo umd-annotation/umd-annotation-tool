@@ -95,9 +95,10 @@ export default defineComponent({
           targetLanguage: null,
           alerts: null,
           rephrase: null,
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          rephrase_translation: null,
         };
         const transKeys = Object.keys(transObject);
-        console.log(track.attributes);
         annotation.value = { };
         Object.keys(track.attributes).forEach((key) => {
           // Grab Translation root data
@@ -362,7 +363,7 @@ export default defineComponent({
       </v-row>
       <v-expansion-panels v-model="activePanel">
         <v-expansion-panel style="border: 1px solid white">
-          <v-expansion-panel-header><h3>Information</h3></v-expansion-panel-header>
+          <v-expansion-panel-header><h3>Translation</h3></v-expansion-panel-header>
           <v-expansion-panel-content>
             <UMDTA2Translation
               v-if="translationData"

@@ -10,8 +10,12 @@ export interface TA2Translation {
     translation: string;
     sourceLanguage: string;
     targetLanguage: string;
-    alerts?: { display: string }[];
+    alerts?: { display: string; delayed?: boolean }[];
     rephrase?: { display: string }[];
+    rephrase_translation?: {
+      translation: string;
+      sourceText: string;
+    }[];
 }
 
 export default defineComponent({
@@ -60,7 +64,13 @@ export default defineComponent({
         :key="`alert_${index}`"
         class="mx-2"
       >
-        <div><b>{{ index+1 }}.</b><span class="ml-2">{{ alert.display }}</span></div>
+        <div>
+          <b>{{ index+1 }}.</b><span class="ml-2"><v-chip
+            v-if="alert.delayed"
+            color="warning"
+            class="mx-2"
+          >Delayed</v-chip>{{ alert.display }}</span>
+        </div>
       </v-row>
     </p>
     <h3 v-if="data.rephrase">
@@ -73,6 +83,30 @@ export default defineComponent({
         class="mx-2"
       >
         <div><b>{{ index+1 }}.</b><span class="ml-2">{{ alert.display }}</span></div>
+      </v-row>
+    </p>
+    <h3 v-if="data.rephrase_translation">
+      Additional Translations
+    </h3>
+    <p v-if="data.rephrase_translation">
+      <v-row
+        v-for="(rephrase, index) in data.rephrase_translation"
+        :key="`rephrase_translation_${index}`"
+        class="mx-2"
+      >
+        <b>{{ index+1 }}.</b>
+        <v-container class="mx-5">
+          <v-row>
+            <div class="ml-2">
+              <b class="mr-2">Source Text:</b>{{ rephrase.sourceText }}
+            </div>
+          </v-row>
+          <v-row>
+            <div class="ml-2">
+              <b class="mr-2">Translation:</b>{{ rephrase.translation }}
+            </div>
+          </v-row>
+        </v-container>
       </v-row>
     </p>
   </div>
