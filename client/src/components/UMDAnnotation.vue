@@ -31,7 +31,7 @@ export default defineComponent({
       default: 500,
     },
     mode: {
-      type: String as PropType<'VAE' | 'norms' | 'changepoint' | 'emotion' | 'remediation' | 'review'>,
+      type: String as PropType<'VAE' | 'norms' | 'changepoint' | 'emotion' | 'remediation' | 'review' | 'TA2Annotation'>,
       default: 'review',
     },
   },

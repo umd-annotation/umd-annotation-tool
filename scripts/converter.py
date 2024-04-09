@@ -196,8 +196,8 @@ def convert_output_to_tracks(output, width=1920, height=1080, framerate=30, offs
         start_frame = offset_frames + (framerate * item['startTime'])
         end_frame = offset_frames + (framerate * item['endTime'])
         track = {
-            "begin": start_frame,
-            "end":end_frame,
+            "begin": int(start_frame),
+            "end": int(end_frame),
             "id": count,
             "confidencePairs": [
                 [
@@ -212,7 +212,7 @@ def convert_output_to_tracks(output, width=1920, height=1080, framerate=30, offs
             },
             "features": [
                 {
-                    "frame": start_frame,
+                    "frame": int(start_frame),
                     "bounds": [
                         0,
                         0,
@@ -224,7 +224,7 @@ def convert_output_to_tracks(output, width=1920, height=1080, framerate=30, offs
                     "attributes": {}
                 },
                                 {
-                    "frame": end_frame,
+                    "frame": int(end_frame),
                     "bounds": [
                         0,
                         0,

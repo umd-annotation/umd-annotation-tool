@@ -272,7 +272,7 @@ export default defineComponent({
         x-small
         color="primary"
         depressed
-        :to="{ name: 'viewer', params: { id: item._id } }"
+        :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'TA2Annotation' } }"
       >
         Launch TA2 Annotator
       </v-btn>

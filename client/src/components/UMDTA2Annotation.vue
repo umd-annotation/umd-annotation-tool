@@ -188,7 +188,7 @@ export default defineComponent({
       seekBegin();
     };
     const initialize = async () => {
-      handler.setMaxSegment(0);
+      handler.setMaxSegment(99999);
       const user = await restClient.fetchUser();
       userLogin.value = user.login;
       if (selectedTrackIdRef.value === null) {
@@ -199,12 +199,6 @@ export default defineComponent({
     loadedAttributes.value = checkAttributes(selectedTrackIdRef.value, true);
     watch(selectedTrackIdRef, () => {
       loadedAttributes.value = checkAttributes(selectedTrackIdRef.value, true);
-      if (selectedTrackIdRef.value === maxSegment.value && !loadedAttributes.value) {
-        console.log('reloading datastore');
-      }
-      if (selectedTrackIdRef.value !== null) {
-        handler.setMaxSegment(selectedTrackIdRef.value);
-      }
     });
 
 

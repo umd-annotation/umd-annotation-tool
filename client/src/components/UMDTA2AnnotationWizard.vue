@@ -159,6 +159,7 @@ export default defineComponent({
       <v-stepper-step
         :complete="stepper > 1"
         step="1"
+        editable
       >
         ASR/MT
       </v-stepper-step>
@@ -168,13 +169,17 @@ export default defineComponent({
       <v-stepper-step
         :complete="stepper > 2"
         step="2"
+        editable
       >
         Norms
       </v-stepper-step>
 
       <v-divider />
 
-      <v-stepper-step step="3">
+      <v-stepper-step
+        step="3"
+        editable
+      >
         Remediation
       </v-stepper-step>
     </v-stepper-header>
