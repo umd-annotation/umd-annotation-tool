@@ -46,10 +46,8 @@ import { usePrompt } from 'dive-common/vue-utilities/prompt-service';
 import context from 'dive-common/store/context';
 import ImageEnhancementsVue from 'vue-media-annotator/components/ImageEnhancements.vue';
 import RevisionHistoryVue from 'platform/web-girder/views/RevisionHistory.vue';
-import UMDAnnotationWrapper from 'vue-media-annotator/components/UMDAnnotationWrapper.vue';
 import { FormatTextRow, TextData } from 'vue-media-annotator/layers/AnnotationLayers/TextLayer';
 import { FrameDataTrack } from 'vue-media-annotator/layers/LayerTypes';
-import UMDTA2AnnotationWrapper from 'vue-media-annotator/components/UMDTA2AnnotationWrapper.vue';
 import GroupSidebarVue from './GroupSidebar.vue';
 import MultiCamToolsVue from './MultiCamTools.vue';
 import TypeThresholdVue from './TypeThreshold.vue';
@@ -604,21 +602,6 @@ export default defineComponent({
             component: GroupSidebarVue,
           });
         }
-        if (TA2Annotator.value) {
-          context.unregister({
-            component: UMDAnnotationWrapper,
-            description: 'UMD Annotator',
-          });
-          context.register({
-            component: UMDTA2AnnotationWrapper,
-            description: 'UMD TA2 Annotator',
-          });
-        } else {
-          context.unregister({
-            component: UMDTA2AnnotationWrapper,
-            description: 'UMD TA2 Annotator',
-          });
-        }
       } catch (err) {
         progress.loaded = false;
         console.error(err);
@@ -766,11 +749,7 @@ export default defineComponent({
 
 
     const handleAnnotatorToggle = () => {
-      if (!TA2Annotator.value) {
-        context.toggle('UMDAnnotationWrapper');
-      } else {
-        context.toggle('UMDTA2AnnotationWrapper');
-      }
+      context.toggle('UMDAnnotationWrapper');
     };
 
 

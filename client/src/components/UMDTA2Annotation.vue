@@ -14,9 +14,8 @@ import {
 } from 'vue-media-annotator/provides';
 import { usePrompt } from 'dive-common/vue-utilities/prompt-service';
 import UMDTA2Translation, { TA2Translation } from './UMDTA2Translation.vue';
+import UMDTA2AnnotationWizard, { TA2Annotation } from './UMDTA2AnnotationWizard.vue';
 
-
-type NormsObjectValues = Record<string, 'adhered' |'violated' | 'EMPTY_NA' | 'adhered_violated'>;
 
 export default defineComponent({
   name: 'UMDTA2Annotation',
@@ -25,6 +24,7 @@ export default defineComponent({
     StackedVirtualSidebarContainer,
     TooltipBtn,
     UMDTA2Translation,
+    UMDTA2AnnotationWizard,
   },
 
   props: {
@@ -53,34 +53,9 @@ export default defineComponent({
 
     const activePanel = ref(0);
 
-    const normsSelected: Ref<string[]> = ref([]);
-    const baseNormsList = computed(() => {
-      if (normsSelected.value.includes('None')) {
-        return ['None'];
-      }
-      const root = [
-        'Admiration',
-        'Apology',
-        'Criticism',
-        'Finalizing Negotiating/Deal',
-        'Greeting',
-        'Persuasion',
-        'Refusing a Request',
-        'Request',
-        'Taking Leave',
-        'Thanks',
-      ];
-      const normVariants = root
-        .map((item) => [`${item} (adhered)`, `${item} (violated)`])
-        .reduce((acc, x) => acc.concat(x)).sort();
-
-      return [
-        'None',
-        ...normVariants,
-      ];
-    });
     const userLogin = ref('');
     const loadedAttributes = ref(false);
+    const annotation: Ref<TA2Annotation | null> = ref({});
 
     let framePlaying = -1;
     const seekBegin = () => {
@@ -120,41 +95,51 @@ export default defineComponent({
           targetLanguage: null,
           alerts: null,
           rephrase: null,
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          rephrase_translation: null,
         };
         const transKeys = Object.keys(transObject);
+        annotation.value = { };
         Object.keys(track.attributes).forEach((key) => {
           // Grab Translation root data
           if (transKeys.includes(key)) {
             transObject[key] = track.attributes[key];
           }
-          if (key.includes(userLogin.value)) {
+          if (key.includes(userLogin.value) && annotation.value) { // Get User Attributes
             const replaced = key.replace(`${userLogin.value}_`, '');
-            if (replaced === 'Valence' && props.mode === 'VAE') {
+            if (replaced === 'ASRQuality') {
               if (loadValues) {
-                console.log('where we load data for attributes');
+                annotation.value.ASRQuality = track.attributes[key] as number;
               }
               hasAttributes = true;
             }
-            if (replaced === 'Norms' && props.mode === 'norms') {
+            if (replaced === 'MTQuality') {
               if (loadValues) {
-                // Norms saving
-                /*
-                normsObject.value = (track.attributes[key] as NormsObjectValues);
-                normsSelected.value = [];
-                Object.entries(normsObject.value).forEach(([normKey, val]) => {
-                  const adhered = `${normKey} (adhered)`;
-                  const violated = `${normKey} (violated)`;
-                  if (val.includes('adhered')) {
-                    normsSelected.value.push(adhered);
-                  }
-                  if (val.includes('violated')) {
-                    normsSelected.value.push(violated);
-                  }
-                  if (val.includes('noann') || val.includes('EMPTY_NA')) {
-                    normsSelected.value.push('None');
-                  }
-                });
-                */
+                annotation.value.MTQuality = track.attributes[key] as number;
+              }
+              hasAttributes = true;
+            }
+            if (replaced === 'AlertsQuality') {
+              if (loadValues) {
+                annotation.value.AlertsQuality = track.attributes[key] as number;
+              }
+              hasAttributes = true;
+            }
+            if (replaced === 'RephrasingQuality') {
+              if (loadValues) {
+                annotation.value.RephrasingQuality = track.attributes[key] as number;
+              }
+              hasAttributes = true;
+            }
+            if (replaced === 'DelayedRemediation') {
+              if (loadValues) {
+                annotation.value.DelayedRemediation = track.attributes[key] as boolean;
+              }
+              hasAttributes = true;
+            }
+            if (replaced === 'TA2Norms') {
+              if (loadValues) {
+                annotation.value.Norms = (track.attributes[key] as TA2Annotation['Norms']);
               }
               hasAttributes = true;
             }
@@ -203,7 +188,7 @@ export default defineComponent({
       seekBegin();
     };
     const initialize = async () => {
-      handler.setMaxSegment(0);
+      handler.setMaxSegment(99999);
       const user = await restClient.fetchUser();
       userLogin.value = user.login;
       if (selectedTrackIdRef.value === null) {
@@ -214,12 +199,6 @@ export default defineComponent({
     loadedAttributes.value = checkAttributes(selectedTrackIdRef.value, true);
     watch(selectedTrackIdRef, () => {
       loadedAttributes.value = checkAttributes(selectedTrackIdRef.value, true);
-      if (selectedTrackIdRef.value === maxSegment.value && !loadedAttributes.value) {
-        console.log('reloading datastore');
-      }
-      if (selectedTrackIdRef.value !== null) {
-        handler.setMaxSegment(selectedTrackIdRef.value);
-      }
     });
 
 
@@ -240,7 +219,7 @@ export default defineComponent({
       return false;
     });
 
-    const submit = async () => {
+    const submit = async (data: TA2Annotation) => {
       // Need to get information and set it for the track attributes
       if (selectedTrackIdRef.value !== null) {
         const track = cameraStore.getPossibleTrack(selectedTrackIdRef.value);
@@ -248,68 +227,32 @@ export default defineComponent({
         if (track === undefined) {
           return;
         }
-        if (props.mode === 'norms' || props.mode === 'review') {
-          // Seting Norms value
-          //track.setAttribute(`${userLogin.value}_Norms`, normsObject.value);
+        if (data.ASRQuality !== undefined) {
+          track.setAttribute(`${userLogin.value}_ASRQuality`, data.ASRQuality);
+        }
+        if (data.MTQuality !== undefined) {
+          track.setAttribute(`${userLogin.value}_MTQuality`, data.MTQuality);
+        }
+        if (data.AlertsQuality !== undefined) {
+          track.setAttribute(`${userLogin.value}_AlertsQuality`, data.AlertsQuality);
+        }
+        if (data.RephrasingQuality !== undefined) {
+          track.setAttribute(`${userLogin.value}_RephrasingQuality`, data.RephrasingQuality);
+        }
+        if (data.DelayedRemediation !== undefined) {
+          track.setAttribute(`${userLogin.value}_DelayedRemediation`, data.DelayedRemediation);
+        }
+        if (data.Norms !== undefined) {
+          track.setAttribute(`${userLogin.value}_TA2Norms`, data.Norms);
         }
         // save the file
         handler.save();
-        const oldTrackNum = selectedTrackIdRef.value;
-        const newTrack = cameraStore.getAnyPossibleTrack(oldTrackNum + 1);
-        if (newTrack) {
-          handler.trackSelectNext(1, true);
-        } else {
-          alreadyAnnotated.value = true;
-        }
-        if (selectedTrackIdRef.value !== null && selectedTrackIdRef.value !== oldTrackNum) {
-          await nextTick();
-        }
       }
     };
     const changeTrack = (direction: -1 | 1) => {
-      if (selectedTrackIdRef.value === maxSegment.value) {
-        if (props.mode === 'norms') {
-          // Norms data
-          //dataStore.normsSelected = normsSelected.value;
-          //dataStore.normsObject = normsObject.value;
-        }
-      }
       handler.trackSelectNext(direction, true);
+      checkAttributes(selectedTrackIdRef.value);
     };
-
-    // const syncNorms = (data: string[]) => {
-    //   const keys = Object.keys(normsObject.value);
-    //   for (let i = 0; i < keys.length; i += 1) {
-    //     if (!normsSelected.value.includes(keys[i])) {
-    //       delete normsObject.value[keys[i]];
-    //     }
-    //   }
-    //   if (data.includes('None')) {
-    //     normsObject.value.None = 'EMPTY_NA';
-    //   } else {
-    //     for (let i = 0; i < data.length; i += 1) {
-    //       let adhered = data[i].includes('(adhered)');
-    //       let violated = data[i].includes('(violated)');
-    //       const baseKey = data[i].replace('(adhered)', '').replace('(violated)', '').trim();
-    //       if (normsObject.value[baseKey]) {
-    //         const existing = normsObject.value[baseKey];
-    //         if (existing === 'adhered') {
-    //           adhered = true;
-    //         }
-    //         if (existing === 'violated') {
-    //           violated = true;
-    //         }
-    //       }
-    //       if (adhered && violated) {
-    //         normsObject.value[baseKey] = 'adhered_violated';
-    //       } else if (adhered) {
-    //         normsObject.value[baseKey] = 'adhered';
-    //       } else if (violated) {
-    //         normsObject.value[baseKey] = 'violated';
-    //       }
-    //     }
-    //   }
-    // };
 
     watch(() => frame.value, () => {
       if (framePlaying !== -1 && frame.value >= framePlaying) {
@@ -340,25 +283,15 @@ export default defineComponent({
 
     const normsValid = ref(false);
 
-    const submitValid = computed(() => {
-      if (props.mode === 'norms') {
-        return normsValid.value;
-      }
-      return false;
-    });
-
     return {
       alreadyAnnotated,
       hasPrevious,
       hasNext,
       selectedTrackIdRef,
-      baseNormsList,
-      normsSelected,
       frame,
       outsideSegment,
       loadedAttributes,
       normsValid,
-      submitValid,
       submit,
       changeTrack,
       seekBegin,
@@ -367,6 +300,7 @@ export default defineComponent({
       translationData,
       activePanel,
       //refs
+      annotation,
     };
   },
 });
@@ -381,7 +315,7 @@ export default defineComponent({
         class="scroll-sticky"
       >
         <h2 class="mr-4 mt-1">
-          Segment {{ selectedTrackIdRef }}
+          Turn {{ (selectedTrackIdRef || 0) + 1 }}
         </h2>
         <div class="ml-2 mt-2">
           <tooltip-btn
@@ -422,8 +356,8 @@ export default defineComponent({
         </v-btn>
       </v-row>
       <v-expansion-panels v-model="activePanel">
-        <v-expansion-panel>
-          <v-expansion-panel-header><h3>Information</h3></v-expansion-panel-header>
+        <v-expansion-panel style="border: 1px solid white">
+          <v-expansion-panel-header><h3>Translation</h3></v-expansion-panel-header>
           <v-expansion-panel-content>
             <UMDTA2Translation
               v-if="translationData"
@@ -432,16 +366,13 @@ export default defineComponent({
           </v-expansion-panel-content>
         </v-expansion-panel>
       </v-expansion-panels>
-      <v-row>
-        <v-col>
-          <v-btn
-            :color="loadedAttributes ? 'warning' : 'success'"
-            :disabled="outsideSegment || !submitValid"
-            @click="submit"
-          >
-            {{ loadedAttributes ? 'Update' : 'Submit' }}
-          </v-btn>
-        </v-col>
+      <v-row v-if="loadedAttributes || annotation">
+        <UMDTA2AnnotationWizard
+          :annotations="annotation"
+          :outside-segment="outsideSegment"
+          @save="submit($event)"
+          @next-turn="changeTrack(1)"
+        />
       </v-row>
       <v-row>
         <v-alert

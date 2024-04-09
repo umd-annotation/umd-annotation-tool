@@ -76,8 +76,8 @@ export default defineComponent({
 
   setup(props, ctx) {
     const { prompt } = usePrompt();
-    const mode: Ref<'VAE' | 'norms' | 'changepoint' | 'emotion' | 'remediation' | 'review'> = ref(
-      ctx.root.$route.query.mode as 'VAE' | 'norms' | 'changepoint' | 'emotion' | 'remediation' | 'review',
+    const mode: Ref<'VAE' | 'norms' | 'changepoint' | 'emotion' | 'remediation' | 'review' | 'TA2Annotation'> = ref(
+      ctx.root.$route.query.mode as 'VAE' | 'norms' | 'changepoint' | 'emotion' | 'remediation' | 'review' | 'TA2Annotation',
     );
     const viewerRef = ref();
     const store = useStore();

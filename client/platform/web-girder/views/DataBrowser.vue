@@ -43,7 +43,10 @@ export default defineComponent({
     }
 
     function isAnnotationFolder(item: GirderModel) {
-      return item._modelType === 'folder' && item.meta.annotate;
+      return item._modelType === 'folder' && item.meta.annotate && item.meta.UMDAnnotation !== 'TA2';
+    }
+    function isTA2Folder(item: GirderModel) {
+      return item._modelType === 'folder' && item.meta.annotate && item.meta.UMDAnnotation === 'TA2';
     }
 
     const shouldShowUpload = computed(() => (
@@ -94,6 +97,7 @@ export default defineComponent({
       copyLink,
       exportLinks,
       exportAnnotations,
+      isTA2Folder,
     };
   },
 });
@@ -262,6 +266,17 @@ export default defineComponent({
           mdi-content-copy
         </v-icon>
       </v-btn>
+      <v-btn
+        v-if="isTA2Folder(item)"
+        class="ml-2"
+        x-small
+        color="primary"
+        depressed
+        :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'TA2Annotation' } }"
+      >
+        Launch TA2 Annotator
+      </v-btn>
+
       <v-chip
         v-if="(item.foreign_media_id)"
         color="white"

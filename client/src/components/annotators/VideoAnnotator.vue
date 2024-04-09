@@ -153,7 +153,7 @@ export default defineComponent({
       video.currentTime = data.currentTime;
       data.frame = requestedFrame;
       data.flick = Math.round(data.currentTime * Flick);
-      if (!['changepoint', 'remediation'].includes(props.mode)) {
+      if (!['changepoint', 'remediation', 'TA2Annotation'].includes(props.mode)) {
         props.updateTime(data);
       } else if (data.frame < data.maxFrame) {
         const update = { frame: requestedFrame, flick: Math.round(data.currentTime * Flick) };
@@ -187,7 +187,7 @@ export default defineComponent({
         const updateData: {frame: number; flick: number; maxSegment?: number} = {
           frame: data.frame, flick: data.flick,
         };
-        if (['changepoint', 'remediation'].includes(props.mode)) {
+        if (['changepoint', 'remediation', 'TA2Annotation'].includes(props.mode)) {
           updateData.maxSegment = segment;
         }
         props.updateTime(updateData);

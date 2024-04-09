@@ -7,6 +7,7 @@ import StackedVirtualSidebarContainer from 'dive-common/components/StackedVirtua
 import UMDAnnotation from './UMDAnnotation.vue';
 import UMDChangepoint from './UMDChangepoint.vue';
 import UMDRemediation from './UMDRemediation.vue';
+import UMDTA2Annotation from './UMDTA2Annotation.vue';
 
 export default defineComponent({
   name: 'UMDAnnotationWrapper',
@@ -16,6 +17,7 @@ export default defineComponent({
     UMDAnnotation,
     UMDChangepoint,
     UMDRemediation,
+    UMDTA2Annotation,
   },
   props: {
     width: {
@@ -23,7 +25,7 @@ export default defineComponent({
       default: 500,
     },
     mode: {
-      type: String as PropType<'VAE' | 'norms' | 'changepoint' | 'emotion' | 'remediation' | 'review'>,
+      type: String as PropType<'VAE' | 'norms' | 'changepoint' | 'emotion' | 'remediation' | 'review' | 'TA2Annotation'>,
       default: 'review',
     },
   },
@@ -37,7 +39,7 @@ export default defineComponent({
 
 <template>
   <UMDAnnotation
-    v-if="!['changepoint', 'remediation'].includes(mode)"
+    v-if="!['changepoint', 'remediation', 'TA2Annotation'].includes(mode)"
     :mode="mode"
   />
   <UMDChangepoint
@@ -47,6 +49,9 @@ export default defineComponent({
   <UMDRemediation
     v-else-if="mode ==='remediation'"
     :mode="mode"
+  />
+  <UMDTA2Annotation
+    v-else-if="mode === 'TA2Annotation'"
   />
 </template>
 
