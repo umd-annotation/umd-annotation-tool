@@ -4,6 +4,7 @@ import {
 } from '@vue/composition-api';
 import TooltipBtn from 'vue-media-annotator/components/TooltipButton.vue';
 import StackedVirtualSidebarContainer from 'dive-common/components/StackedVirtualSidebarContainer.vue';
+import { UMDAnnotationMode } from 'platform/web-girder/store/types';
 import UMDAnnotation from './UMDAnnotation.vue';
 import UMDChangepoint from './UMDChangepoint.vue';
 import UMDRemediation from './UMDRemediation.vue';
@@ -25,7 +26,7 @@ export default defineComponent({
       default: 500,
     },
     mode: {
-      type: String as PropType<'VAE' | 'norms' | 'changepoint' | 'emotion' | 'remediation' | 'review' | 'TA2Annotation'>,
+      type: String as PropType<UMDAnnotationMode>,
       default: 'review',
     },
   },
@@ -39,7 +40,7 @@ export default defineComponent({
 
 <template>
   <UMDAnnotation
-    v-if="!['changepoint', 'remediation', 'TA2Annotation'].includes(mode)"
+    v-if="!['changepoint', 'remediation'].includes(mode) && !mode.includes('TA2Annotation')"
     :mode="mode"
   />
   <UMDChangepoint
@@ -51,7 +52,8 @@ export default defineComponent({
     :mode="mode"
   />
   <UMDTA2Annotation
-    v-else-if="mode === 'TA2Annotation'"
+    v-else-if="mode.includes('TA2Annotation')"
+    :mode="mode"
   />
 </template>
 

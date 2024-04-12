@@ -10,7 +10,7 @@ import ImportAnnotations from 'dive-common/components/ImportAnnotations.vue';
 import SidebarContext from 'dive-common/components/SidebarContext.vue';
 import BrandIcon from 'dive-common/components/BrandIcon.vue';
 import context from 'dive-common/store/context';
-import { useStore } from 'platform/web-girder/store/types';
+import { UMDAnnotationMode, useStore } from 'platform/web-girder/store/types';
 import { usePrompt } from 'dive-common/vue-utilities/prompt-service';
 import JobsTab from './JobsTab.vue';
 import Export from './Export.vue';
@@ -76,8 +76,8 @@ export default defineComponent({
 
   setup(props, ctx) {
     const { prompt } = usePrompt();
-    const mode: Ref<'VAE' | 'norms' | 'changepoint' | 'emotion' | 'remediation' | 'review' | 'TA2Annotation'> = ref(
-      ctx.root.$route.query.mode as 'VAE' | 'norms' | 'changepoint' | 'emotion' | 'remediation' | 'review' | 'TA2Annotation',
+    const mode: Ref<UMDAnnotationMode> = ref(
+      ctx.root.$route.query.mode as UMDAnnotationMode,
     );
     const viewerRef = ref();
     const store = useStore();

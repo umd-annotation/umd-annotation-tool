@@ -64,7 +64,7 @@ def remove_base64_from_jsonl(input_file, output_file):
                         print('Deleting Audio')
                         del data['message']['audio']
                     if 'type' in data['message']:
-                        if data['message']['type'] in  ['webcam', 'image_ready', 'check-status' , 'image_start', 'pipeline_response', 'pipeline_request', 'control', 'audio_status']:
+                        if data['message']['type'] in  ['webcam', 'image_ready', 'check-status', 'image_start', 'pipeline_response', 'pipeline_request', 'control', 'audio_status']:
                             continue
                         if data['message']['type'] == 'norm_occurrence' and data['message']['name']:
                             if normMap[str(data['message']['name'])]:

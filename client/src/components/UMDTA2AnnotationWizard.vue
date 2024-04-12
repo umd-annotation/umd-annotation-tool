@@ -1,7 +1,8 @@
 <script lang="ts">
 import {
-  defineComponent, PropType, ref, Ref, watch,
+  defineComponent, onMounted, PropType, ref, Ref, watch,
 } from '@vue/composition-api';
+import { UMDAnnotationMode } from 'platform/web-girder/store/types';
 import { useSelectedTrackId } from 'vue-media-annotator/provides';
 
 export type NormsList =
@@ -30,6 +31,47 @@ export interface TA2Annotation {
   Norms?: Record<NormsList, TA2NormStatus>;
 }
 
+const helpDialogTextBase = {
+  ASRQuality: {
+    title: 'Evaluating the ASR Quality',
+    list: [
+      'Very low quality, inadequate; overall gist of message and details may be very difficult to comprehend without relying on contextual clues.',
+      'Tending toward low quality, but minimally adequate; overall gist of message and most details is comprehensible with some difficulty',
+      'Tending toward high quality, adequate; some inaccurate (ASR)/non-native (MT)/missing (interpretation) elements but mainly comprehensible',
+      'Very high quality; equivalent to professional transcription (ASR)/ interpretation (MT and ceiling condition interpretation).',
+    ],
+  },
+  MTQuality: {
+    title: 'Evaluating the Machine Translation Quality',
+    list: [
+      'Very low quality, inadequate; overall gist of message and details may be very difficult to comprehend without relying on contextual clues.',
+      'Tending toward low quality, but minimally adequate; overall gist of message and most details is comprehensible with some difficulty',
+      'Tending toward high quality, adequate; some inaccurate (ASR)/non-native (MT)/missing (interpretation) elements but mainly comprehensible',
+      'Very high quality; equivalent to professional transcription (ASR)/ interpretation (MT and ceiling condition interpretation).',
+    ],
+  },
+  AlertsQuality: {
+    title: 'Evaluating the Alerts Quality',
+    list: [
+      'Alerts have a siginficant negative impact to the dialog by distracting the speaker or are categorically inaccurate',
+      'Alerts have a slight negative impact by distracting the speaker or are slightly inaccurate.',
+      'Alerts are benign/basically have no impact',
+      'Alerts help slightly, lead to a slightly more culturally appropriate utterance.',
+      'Alerts have a significant positive impact on the dialog by generating accruate alerts that lead to significantly improved cultural appropriatenesss of the utterance.',
+    ],
+  },
+  RephrashingQuality: {
+    title: 'Evaluating the Rephrasing Quality',
+    list: [
+      'Rephrasing has a significant negative impact to the dialog, resulting in little improvement in the cultural appropriateness of the utterance, introduces new or additional norm violations, or distorts the intended message unacceptably.',
+      'Rephrasing has a slightly negative impact.',
+      'Rephrasing is benign / basically has no impact.',
+      'Rephrasing helps slightly',
+      'Rephrasing has a significant positive impact on the dialog by making the utterance culturally appropriate, while staying loyal to the original meaning.',
+    ],
+  },
+};
+
 export default defineComponent({
   name: 'UMDTA2AnnotationWizard',
 
@@ -44,6 +86,11 @@ export default defineComponent({
       type: Boolean,
       required: true,
     },
+    mode: {
+      type: String as PropType<UMDAnnotationMode>,
+      default: 'review',
+    },
+
   },
 
   setup(props, { emit }) {
@@ -56,13 +103,23 @@ export default defineComponent({
       'Remediation Qaulity',
     ]);
     const stepper = ref(1);
-    const ASRQuality = ref(0);
-    const MTQuality = ref(0);
-    const AlertsQuality = ref(0);
-    const RephrasingQuality = ref(0);
-    const DelayedRemediation = ref(false);
-    const Norms: Ref<Partial<Record<NormsList, TA2NormStatus>>> = ref({});
-    const selectedNorms: Ref<NormsList[]> = ref([]);
+    onMounted(() => {
+      if (props.mode === 'TA2Annotation_Norms') {
+        stepper.value = 2;
+      }
+      if (props.mode === 'TA2Annotation_Remediation') {
+        stepper.value = 3;
+      }
+    });
+    const ASRQuality = ref(props.annotations.ASRQuality || 0);
+    const MTQuality = ref(props.annotations.MTQuality || 0);
+    const AlertsQuality = ref(props.annotations.AlertsQuality || 0);
+    const RephrasingQuality = ref(props.annotations.RephrasingQuality || 0);
+    const DelayedRemediation = ref(props.annotations.DelayedRemediation || false);
+    const Norms: Ref<Partial<Record<NormsList, TA2NormStatus>>> = ref(props.annotations.Norms || {});
+    const selectedNorms: Ref<NormsList[]> = ref(Object.keys(Norms.value) as NormsList[] || []);
+    const helpDialog = ref(false);
+    const helpDialogText: Ref<{title: string; list: string[]}> = ref(helpDialogTextBase.ASRQuality);
     const baseNorms = ref([
       'Admiration',
       'Apology',
@@ -77,9 +134,17 @@ export default defineComponent({
     ]);
     watch(() => props.annotations, () => {
       stepper.value = 1;
+      if (props.mode === 'TA2Annotation_Norms') {
+        stepper.value = 2;
+      }
+      if (props.mode === 'TA2Annotation_Remediation') {
+        stepper.value = 3;
+      }
       ASRQuality.value = props.annotations.ASRQuality || 0;
       MTQuality.value = props.annotations.MTQuality || 0;
       AlertsQuality.value = props.annotations.AlertsQuality || 0;
+      RephrasingQuality.value = props.annotations.RephrasingQuality || 0;
+
       DelayedRemediation.value = props.annotations.DelayedRemediation || false;
       Norms.value = props.annotations.Norms || {};
       selectedNorms.value = Object.keys(Norms.value) as NormsList[];
@@ -109,7 +174,7 @@ export default defineComponent({
         annotationUpdate.RephrasingQuality = RephrasingQuality.value;
       }
       emit('save', annotationUpdate);
-      if (currentStep !== 'AlertRephrasing') {
+      if (currentStep !== 'AlertRephrasing' && props.mode === 'TA2Annotation_All') {
         stepper.value += 1;
       } else {
         emit('next-turn');
@@ -128,6 +193,11 @@ export default defineComponent({
         }
       }
     };
+    const openHelpDialog = (key: 'ASRQuality' | 'MTQuality' | 'AlertsQuality' | 'RephrashingQuality') => {
+      helpDialogText.value = helpDialogTextBase[key];
+      helpDialog.value = true;
+    };
+
     return {
       annotationState,
       steps,
@@ -143,6 +213,9 @@ export default defineComponent({
       selectedTrackIdRef,
       advanceStep,
       updateNorm,
+      openHelpDialog,
+      helpDialog,
+      helpDialogText,
     };
   },
 });
@@ -155,7 +228,7 @@ export default defineComponent({
     style="width:100%"
     non-linear
   >
-    <v-stepper-header>
+    <v-stepper-header v-if="mode === 'TA2Annotation_All'">
       <v-stepper-step
         :complete="stepper > 1"
         step="1"
@@ -205,45 +278,17 @@ export default defineComponent({
                     min="0"
                     max="3"
                     step="1"
+                    :tick-labels="['0', '1', '2', '3']"
                     dense
                     persistent-hint
                   />
                 </v-col>
                 <v-col cols="1">
-                  <v-tooltip
-                    open-delay="200"
-                    left
-                    max-width="300"
+                  <v-icon
+                    @click="openHelpDialog('ASRQuality')"
                   >
-                    <template #activator="{ on }">
-                      <v-icon
-                        v-on="on"
-                      >
-                        mdi-help
-                      </v-icon>
-                    </template>
-                    <p style="font-size:1.4em">
-                      Evaluation the ASR Quality
-                      <ul>
-                        <li>
-                          0: Very low quality, inadequate; overall gist of message and details may be very difficult to
-                          comprehend without relying on contextual clues.
-                        </li>
-                        <li>
-                          1: Tending toward low quality, but minimally adequate; overall gist of message and most
-                          details is comprehensible with some difficulty
-                        </li>
-                        <li>
-                          2: Tending toward high quality, adequate; some inaccurate (ASR)/non-native (MT)/missing
-                          (interpretation) elements but mainly comprehensible
-                        </li>
-                        <li>
-                          3: Very high quality; equivalent to professional transcription (ASR)/ interpretation (MT and
-                          ceiling condition interpretation).
-                        </li>
-                      </ul>
-                    </p>
-                  </v-tooltip>
+                    mdi-help
+                  </v-icon>
                 </v-col>
               </v-row>
             </v-col>
@@ -263,45 +308,15 @@ export default defineComponent({
                     min="0"
                     max="3"
                     step="1"
+                    :tick-labels="['0', '1', '2', '3']"
                     dense
                     persistent-hint
                   />
                 </v-col>
                 <v-col cols="1">
-                  <v-tooltip
-                    open-delay="200"
-                    left
-                    max-width="300"
-                  >
-                    <template #activator="{ on }">
-                      <v-icon
-                        v-on="on"
-                      >
-                        mdi-help
-                      </v-icon>
-                    </template>
-                    <p style="font-size:1.4em">
-                      Evaluation the Machine Translation Quality
-                      <ul>
-                        <li>
-                          0: Very low quality, inadequate; overall gist of message and details may be very difficult to
-                          comprehend without relying on contextual clues.
-                        </li>
-                        <li>
-                          1: Tending toward low quality, but minimally adequate; overall gist of message and most
-                          details is comprehensible with some difficulty
-                        </li>
-                        <li>
-                          2: Tending toward high quality, adequate; some inaccurate (ASR)/non-native (MT)/missing
-                          (interpretation) elements but mainly comprehensible
-                        </li>
-                        <li>
-                          3: Very high quality; equivalent to professional transcription (ASR)/ interpretation (MT and
-                          ceiling condition interpretation).
-                        </li>
-                      </ul>
-                    </p>
-                  </v-tooltip>
+                  <v-icon @click="openHelpDialog('MTQuality')">
+                    mdi-help
+                  </v-icon>
                 </v-col>
               </v-row>
             </v-col>
@@ -313,7 +328,7 @@ export default defineComponent({
               class="mb-2"
               @click="advanceStep('ASRMTQuality')"
             >
-              Next Step
+              {{ mode === 'TA2Annotation_All' ? 'Next Step' : 'Save + Next Turn' }}
             </v-btn>
           </v-row>
         </v-card>
@@ -382,7 +397,7 @@ export default defineComponent({
               class="mb-2"
               @click="advanceStep('Norms')"
             >
-              Next Step
+              {{ mode === 'TA2Annotation_All' ? 'Next Step' : 'Save + Next Turn' }}
             </v-btn>
           </v-row>
         </v-card>
@@ -408,43 +423,17 @@ export default defineComponent({
                     min="0"
                     max="4"
                     step="1"
+                    :tick-labels="['0', '1', '2', '3', '4']"
                     dense
                     persistent-hint
                   />
                 </v-col>
                 <v-col cols="1">
-                  <v-tooltip
-                    open-delay="200"
-                    left
-                    max-width="300"
+                  <v-icon
+                    @click="openHelpDialog('AlertsQuality')"
                   >
-                    <template #activator="{ on }">
-                      <v-icon
-                        v-on="on"
-                      >
-                        mdi-help
-                      </v-icon>
-                    </template>
-                    <p style="font-size:1.4em">
-                      Evaluation the Alerts Quality
-                      <ul>
-                        <li>
-                          0: Alerts have a siginficant negative impact to the dialog by distracting the speaker or are categorically inaccurate
-                        </li>
-                        <li>
-                          1: Alerts have a slight negative impact by distracting the speaker or are slightly inaccurate.
-                        </li>
-                        <li>
-                          2: Alerts are benign/basically have no impact
-                        </li><li>
-                          3: Alerts help slightly, lead to a slightly more culturally appropriate utterance.
-                        </li>
-                        <li>
-                          4: Alerts have a significant positive impact on the dialog by generating accruate alerts that lead to significantly improved cultural appropriatenesss of the utterance.
-                        </li>
-                      </ul>
-                    </p>
-                  </v-tooltip>
+                    mdi-help
+                  </v-icon>
                 </v-col>
               </v-row>
             </v-col>
@@ -464,47 +453,17 @@ export default defineComponent({
                     min="0"
                     max="4"
                     step="1"
+                    :tick-labels="['0', '1', '2', '3', '4']"
                     dense
                     persistent-hint
                   />
                 </v-col>
                 <v-col cols="1">
-                  <v-tooltip
-                    open-delay="200"
-                    left
-                    max-width="300"
+                  <v-icon
+                    @click="openHelpDialog('RephrashingQuality')"
                   >
-                    <template #activator="{ on }">
-                      <v-icon
-                        v-on="on"
-                      >
-                        mdi-help
-                      </v-icon>
-                    </template>
-                    <p style="font-size:1.4em">
-                      Evaluation the Rephrasing Quality
-                      <ul>
-                        <li>
-                          0: Rephrasing has a significant negative impact to the dialog, resulting in little improvement in the
-                          cultural appropriateness of the utterance, introduces new or additional norm violations, or distorts the
-                          intended message unacceptably.
-                        </li>
-                        <li>
-                          1: Rephrasing has a slightly negative impact.
-                        </li>
-                        <li>
-                          2: Rephrasing is benign / basically has no impact.
-                        </li>
-                        <li>
-                          3: Rephrasing helps slightly
-                        </li>
-                        <li>
-                          4: Rephrasing has a significant positive impact on the dialog by making the utterance culturally
-                          appropriate, while staying loyal to the original meaning.
-                        </li>
-                      </ul>
-                    </p>
-                  </v-tooltip>
+                    mdi-help
+                  </v-icon>
                 </v-col>
               </v-row>
             </v-col>
@@ -524,14 +483,45 @@ export default defineComponent({
               class="mb-2"
               @click="advanceStep('AlertRephrasing')"
             >
-              Next Turn
+              Save + Next Turn
             </v-btn>
           </v-row>
         </v-card>
       </v-stepper-content>
     </v-stepper-items>
+    <v-dialog
+      v-model="helpDialog"
+      width="500"
+    >
+      <v-card>
+        <v-card-title>{{ helpDialogText.title }} </v-card-title>
+        <v-card-text class="help-text">
+          <ol start="0">
+            <li
+              v-for="(item, index) in helpDialogText.list"
+              :key="`helpitem_${index}`"
+              class="my-2"
+            >
+              {{ item }}
+            </li>
+          </ol>
+        </v-card-text>
+        <v-card-actions>
+          <v-row>
+            <v-spacer />
+            <v-btn @click="helpDialog = false">
+              Dismiss
+            </v-btn>
+            <v-spacer />
+          </v-row>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-stepper>
 </template>
 
 <style scoped lang="scss">
+.help-text {
+  font-size: 20px !important;
+}
 </style>

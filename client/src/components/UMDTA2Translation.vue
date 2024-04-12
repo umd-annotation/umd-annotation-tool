@@ -1,6 +1,6 @@
 <script lang="ts">
 import {
-  defineComponent, PropType, reactive, ref, toRef, watch,
+  defineComponent, PropType,
 } from '@vue/composition-api';
 
 
@@ -28,7 +28,7 @@ export default defineComponent({
     },
   },
 
-  setup(props, { emit }) {
+  setup() {
     return {
     };
   },
