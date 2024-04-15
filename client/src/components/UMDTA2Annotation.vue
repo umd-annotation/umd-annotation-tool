@@ -179,7 +179,7 @@ export default defineComponent({
         }
       }
       const track = cameraStore.getAnyPossibleTrack(maxId + 1);
-      if (track === undefined) {
+      if (track === undefined && maxId !== -1) {
         // We are at max segment
         const text = 'You have already fully annotated this video. You can choose to edit or re-do these annotations, but you should do so with caution, and generally only if you have been instructed to.';
         const res = await prompt({
