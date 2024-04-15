@@ -13,12 +13,13 @@ export default defineComponent({
       default: undefined,
     },
   },
-  setup() {
+  setup(props) {
     const options = computed(() => Object.entries(context.componentMap).map(([value, entry]) => ({
       text: entry.description,
       value,
     })));
-    return { context, options };
+    const updateWidth = props.mode.includes('TA2Annotation') ? window.innerWidth * 0.45 : props.width;
+    return { context, options, updateWidth };
   },
 });
 </script>
@@ -27,7 +28,7 @@ export default defineComponent({
   <div>
     <v-card
       v-if="context.state.active !== null"
-      :width="width"
+      :width="updateWidth"
       tile
       outlined
       class="d-flex flex-column"

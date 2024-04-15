@@ -272,9 +272,39 @@ export default defineComponent({
         x-small
         color="primary"
         depressed
-        :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'TA2Annotation' } }"
+        :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'TA2Annotation_ASRMTQuality' } }"
       >
-        Launch TA2 Annotator
+        TA2 ASR/MT Quality
+      </v-btn>
+      <v-btn
+        v-if="isTA2Folder(item)"
+        class="ml-2"
+        x-small
+        color="purple"
+        depressed
+        :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'TA2Annotation_Norms' } }"
+      >
+        TA2 Norms
+      </v-btn>
+      <v-btn
+        v-if="isTA2Folder(item)"
+        class="ml-2"
+        x-small
+        color="orange"
+        depressed
+        :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'TA2Annotation_Remediation' } }"
+      >
+        TA2 Remediation
+      </v-btn>
+      <v-btn
+        v-if="isTA2Folder(item) && false"
+        class="ml-2"
+        x-small
+        color="primary"
+        depressed
+        :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'TA2Annotation_All' } }"
+      >
+        TA2 All
       </v-btn>
 
       <v-chip

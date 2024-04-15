@@ -55,3 +55,5 @@ export function useStore(): Store<RootState> {
 export function isGirderModel(value: any): value is GirderModel {
   return value._id && value._modelType;
 }
+
+export type UMDAnnotationMode = 'VAE' | 'norms' | 'changepoint' | 'emotion' | 'remediation' | 'review' | 'TA2Annotation_ASRMTQuality' | 'TA2Annotation_Norms' | 'TA2Annotation_Remediation' | 'TA2Annotation_All';

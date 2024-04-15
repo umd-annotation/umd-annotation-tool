@@ -1,6 +1,6 @@
 <script lang="ts">
 import {
-  computed, defineComponent, ref, Ref, watch, PropType, onMounted, nextTick,
+  computed, defineComponent, ref, Ref, watch, PropType, onMounted,
 } from '@vue/composition-api';
 
 import TooltipBtn from 'vue-media-annotator/components/TooltipButton.vue';
@@ -13,6 +13,7 @@ import {
   useTime,
 } from 'vue-media-annotator/provides';
 import { usePrompt } from 'dive-common/vue-utilities/prompt-service';
+import { UMDAnnotationMode } from 'platform/web-girder/store/types';
 import UMDTA2Translation, { TA2Translation } from './UMDTA2Translation.vue';
 import UMDTA2AnnotationWizard, { TA2Annotation } from './UMDTA2AnnotationWizard.vue';
 
@@ -33,8 +34,8 @@ export default defineComponent({
       default: 500,
     },
     mode: {
-      type: String as PropType<'VAE' | 'norms' | 'changepoint' | 'emotion' | 'remediation' | 'review'>,
-      default: 'review',
+      type: String as PropType<UMDAnnotationMode>,
+      default: 'TA2Annotation_ASRMTQuality',
     },
   },
 
@@ -105,43 +106,55 @@ export default defineComponent({
           if (transKeys.includes(key)) {
             transObject[key] = track.attributes[key];
           }
-          if (key.includes(userLogin.value) && annotation.value) { // Get User Attributes
+          if (key.includes(`${userLogin.value}_`) && annotation.value) { // Get User Attributes
             const replaced = key.replace(`${userLogin.value}_`, '');
             if (replaced === 'ASRQuality') {
               if (loadValues) {
                 annotation.value.ASRQuality = track.attributes[key] as number;
               }
-              hasAttributes = true;
+              if (props.mode === 'TA2Annotation_ASRMTQuality') {
+                hasAttributes = true;
+              }
             }
             if (replaced === 'MTQuality') {
               if (loadValues) {
                 annotation.value.MTQuality = track.attributes[key] as number;
               }
-              hasAttributes = true;
+              if (props.mode === 'TA2Annotation_ASRMTQuality') {
+                hasAttributes = true;
+              }
             }
             if (replaced === 'AlertsQuality') {
               if (loadValues) {
                 annotation.value.AlertsQuality = track.attributes[key] as number;
               }
-              hasAttributes = true;
+              if (props.mode === 'TA2Annotation_Remediation') {
+                hasAttributes = true;
+              }
             }
             if (replaced === 'RephrasingQuality') {
               if (loadValues) {
                 annotation.value.RephrasingQuality = track.attributes[key] as number;
               }
-              hasAttributes = true;
+              if (props.mode === 'TA2Annotation_Remediation') {
+                hasAttributes = true;
+              }
             }
             if (replaced === 'DelayedRemediation') {
               if (loadValues) {
                 annotation.value.DelayedRemediation = track.attributes[key] as boolean;
               }
-              hasAttributes = true;
+              if (props.mode === 'TA2Annotation_Remediation') {
+                hasAttributes = true;
+              }
             }
             if (replaced === 'TA2Norms') {
               if (loadValues) {
                 annotation.value.Norms = (track.attributes[key] as TA2Annotation['Norms']);
               }
-              hasAttributes = true;
+              if (props.mode === 'TA2Annotation_Norms') {
+                hasAttributes = true;
+              }
             }
           }
         });
@@ -166,7 +179,7 @@ export default defineComponent({
         }
       }
       const track = cameraStore.getAnyPossibleTrack(maxId + 1);
-      if (track === undefined) {
+      if (track === undefined && maxId !== -1) {
         // We are at max segment
         const text = 'You have already fully annotated this video. You can choose to edit or re-do these annotations, but you should do so with caution, and generally only if you have been instructed to.';
         const res = await prompt({
@@ -194,9 +207,9 @@ export default defineComponent({
       if (selectedTrackIdRef.value === null) {
         getMaxSegmentAnnotated();
       }
+      loadedAttributes.value = checkAttributes(selectedTrackIdRef.value, true);
     };
     onMounted(() => initialize());
-    loadedAttributes.value = checkAttributes(selectedTrackIdRef.value, true);
     watch(selectedTrackIdRef, () => {
       loadedAttributes.value = checkAttributes(selectedTrackIdRef.value, true);
     });
@@ -206,13 +219,10 @@ export default defineComponent({
       selectedTrackIdRef.value !== null && selectedTrackIdRef.value > 0));
 
     const hasNext = computed(() => {
-      if (props.mode === 'review') {
-        return true;
-      }
       if (selectedTrackIdRef.value !== null) {
         const newTrack = cameraStore.getAnyPossibleTrack(selectedTrackIdRef.value + 1);
         if (newTrack) {
-          return checkAttributes(selectedTrackIdRef.value);
+          return true;
         }
         return false;
       }
@@ -370,6 +380,7 @@ export default defineComponent({
         <UMDTA2AnnotationWizard
           :annotations="annotation"
           :outside-segment="outsideSegment"
+          :mode="mode"
           @save="submit($event)"
           @next-turn="changeTrack(1)"
         />

@@ -13,6 +13,7 @@ import {
   useTime,
 } from 'vue-media-annotator/provides';
 import { usePrompt } from 'dive-common/vue-utilities/prompt-service';
+import { UMDAnnotationMode } from 'platform/web-girder/store/types';
 
 
 type NormsObjectValues = Record<string, 'adhered' |'violated' | 'EMPTY_NA' | 'adhered_violated'>;
@@ -31,7 +32,7 @@ export default defineComponent({
       default: 500,
     },
     mode: {
-      type: String as PropType<'VAE' | 'norms' | 'changepoint' | 'emotion' | 'remediation' | 'review' | 'TA2Annotation'>,
+      type: String as PropType<UMDAnnotationMode>,
       default: 'review',
     },
   },
