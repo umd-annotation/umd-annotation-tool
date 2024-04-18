@@ -1,7 +1,5 @@
 import json
-import base64
 import click
-import string
 normMap = {
     '101': "Apology",
     '102': "Criticism",
@@ -17,28 +15,7 @@ normMap = {
 }
 
 
-def preprocess_text(text):
-    # Remove punctuation and convert to lowercase
-    text = text.translate(str.maketrans('', '', string.punctuation)).lower()
-    # Split the text into words
-    words = text.split()
-    return words
 
-
-def calculate_similarity(text1, text2):
-    # Preprocess both texts
-    words1 = preprocess_text(text1)
-    words2 = preprocess_text(text2)
-
-    # Calculate intersection of words
-    intersection = len(set(words1) & set(words2))
-    # Calculate union of words
-    union = len(set(words1) | set(words2))
-
-    # Calculate Jaccard similarity coefficient
-    similarity_score = intersection / union if union > 0 else 0
-
-    return similarity_score
 
 def remove_base64_from_jsonl(input_file, output_file):
     output = []
@@ -56,6 +33,9 @@ def remove_base64_from_jsonl(input_file, output_file):
                     if 'CONTROL' == data['queue']:
                         raw.append(data)                    
                         continue
+                    if 'AUDIO_SELF' == data['queue'] and  (data['message']['type'] == 'audio_status' and data['message']['status'] in ['ptt-pressed', 'ptt-released']):
+                        output.append(data)
+
                 if 'message' in data and isinstance(data['message'], dict):
                     if 'original_text' in data['message']:
                         original_text = data['message']['original_text']
@@ -68,7 +48,7 @@ def remove_base64_from_jsonl(input_file, output_file):
                         print('Deleting Audio')
                         del data['message']['audio']
                     if 'type' in data['message']:
-                        if data['message']['type'] in  ['webcam', 'image_ready', 'check-status', 'image_start', 'pipeline_response', 'pipeline_request', 'control', 'audio_status']:
+                        if data['message']['type'] in  ['webcam', 'image_ready', 'check-status', 'image_start', 'pipeline_response', 'pipeline_request', 'control', 'audio_status']:                            
                             raw.append(data)
                             continue
                         if data['message']['type'] == 'norm_occurrence' and data['message']['name']:
@@ -104,7 +84,13 @@ def process_outputjson(output):
     turns = []
     print('processing output file')
     translations = []
+    ptt_turns = []
     for item in output:
+        if item.get('queue', False) == 'AUDIO_SELF' and item.get('message', {}).get('status', False) in ['ptt-pressed', 'ptt-released']:
+            ptt_turns.append({
+                "status": item.get('message', {}).get('status', False),
+                "seconds": item.get('time_seconds')
+            })
         # we have a turn with ASR information
         if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('asr_type', False) == 'TURN' and item.get('message', {}).get('type', False) == 'asr_result':
             turn = create_or_get_turn(turns, item['message']['start_seconds'], item['message']['end_seconds'], item['time_seconds'])
@@ -194,6 +180,9 @@ def process_outputjson(output):
     for item in turns:
         if item.get('ASRText', None) is not None:
             output.append(item)
+    with open('ptt-status.json', 'w') as outfile:
+        json.dump(ptt_turns, outfile, ensure_ascii=False, indent=True)
+        outfile.write('\n')
 
     return output
 
