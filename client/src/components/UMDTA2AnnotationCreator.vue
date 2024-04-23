@@ -148,24 +148,19 @@ export default defineComponent({
       // So we need to update the tracks so they have the proper begin/end times
       trackCopy.forEach((item, index) => {
         const getTrack = cameraStore.getTrack(index);
-        console.log(`index: ${index} : id: ${getTrack.id} begin : ${getTrack.begin} end: ${getTrack.end}`);
-        console.log(`item: ${item.id} begin : ${item.begin} end: ${item.end}`);
         if (getTrack) {
           const updateBeginFeature = item.getFeature(item.begin);
           if (updateBeginFeature[0]) {
-            console.log('updating begin feature');
             getTrack.deleteFeature(getTrack.begin);
             getTrack.setFeature(updateBeginFeature[0]);
           }
           const updateEndFeature = item.getFeature(item.end);
           if (updateEndFeature[0]) {
-            console.log('updating end feature');
             getTrack.deleteFeature(getTrack.end);
             getTrack.setFeature(updateEndFeature[0]);
           }
         }
       });
-      console.log(cameraStore.sortedTracks);
       // Now tracks should be reordered with their proper numbers
     };
 
