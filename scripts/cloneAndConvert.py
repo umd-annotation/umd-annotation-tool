@@ -1,7 +1,7 @@
 import girder_client
 import json
 import click
-import certifi
+import requests
 
 
 
@@ -12,9 +12,11 @@ CloneDestinationFolderId = ""
 apiURL = "annotation.umd.edu"
 
 def login():
-    gc = girder_client.GirderClient(apiURL, port=443, apiRoot='girder/api/v1')
-    gc.authenticate(interactive=True)
-    return gc
+    gc = girder_client.GirderClient(apiURL, port=443, apiRoot='girder/api/v1' )
+    with gc.session() as session:
+        session.verify = False
+        gc.authenticate(interactive=True)
+        return gc
 
 
 def getFolderList(gc: girder_client.GirderClient, folderId, parentType = "folder"):
@@ -36,7 +38,6 @@ def get_processVideos(gc, folderId):
 
 @click.command(name="removeDups", help="Load in ")
 def run_script():
-    print(certifi.where())
     gc = login()
     VideoList = getFolderList(gc, VideoSourceFolderId)
 
