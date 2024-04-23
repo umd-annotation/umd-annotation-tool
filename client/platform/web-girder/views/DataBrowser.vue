@@ -1,13 +1,14 @@
 <script lang="ts">
 import {
-  computed, defineComponent, ref, onBeforeUnmount,
+  computed, defineComponent, ref, onBeforeUnmount, onMounted,
 } from '@vue/composition-api';
 import {
   GirderFileManager, getLocationType, GirderModel,
 } from '@girder/components/src';
 import { itemsPerPageOptions } from 'dive-common/constants';
 import { clientSettings } from 'dive-common/store/settings';
-import { getUri } from 'platform/web-girder/api';
+import { getManagerGroup, getUri } from 'platform/web-girder/api';
+import { useGirderRest } from 'platform/web-girder/plugins/girder';
 import { useStore, LocationType, RootlessLocationType } from '../store/types';
 import Upload from './Upload.vue';
 import eventBus from '../eventBus';
@@ -21,6 +22,7 @@ export default defineComponent({
   setup() {
     const fileManager = ref();
     const store = useStore();
+    const restClient = useGirderRest();
     const uploading = ref(false);
     const uploaderDialog = ref(false);
     const locationStore = store.state.Location;
@@ -41,6 +43,18 @@ export default defineComponent({
         uploaderDialog.value = false;
       }
     }
+
+    const isManager = ref(false);
+
+    const checkUser = async () => {
+      const managerGroup = await getManagerGroup();
+      const user = await restClient.fetchUser();
+      if (managerGroup.data.length && user.groups.includes(managerGroup.data[0]._id)) {
+        isManager.value = true;
+      }
+    };
+
+    onMounted(() => checkUser());
 
     function isAnnotationFolder(item: GirderModel) {
       return item._modelType === 'folder' && item.meta.annotate && item.meta.UMDAnnotation !== 'TA2';
@@ -98,6 +112,7 @@ export default defineComponent({
       exportLinks,
       exportAnnotations,
       isTA2Folder,
+      isManager,
     };
   },
 });
@@ -267,15 +282,26 @@ export default defineComponent({
         </v-icon>
       </v-btn>
       <v-btn
-        v-if="isTA2Folder(item)"
+        v-if="isTA2Folder(item) && item.name.include('CLNG')"
+        class="ml-2"
+        x-small
+        color="primary"
+        depressed
+        :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'TA2Annotation_MTQuality' } }"
+      >
+        TA2 Translation Quality
+      </v-btn>
+      <v-btn
+        v-if="isTA2Folder(item) && !item.name.include('CLNG')"
         class="ml-2"
         x-small
         color="primary"
         depressed
         :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'TA2Annotation_ASRMTQuality' } }"
       >
-        TA2 ASR/MT Quality
+        TA2 Translation Quality
       </v-btn>
+
       <v-btn
         v-if="isTA2Folder(item)"
         class="ml-2"
@@ -305,6 +331,16 @@ export default defineComponent({
         :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'TA2Annotation_All' } }"
       >
         TA2 All
+      </v-btn>
+      <v-btn
+        v-if="isTA2Folder(item) && isManager && item.name.include('CLNG')"
+        class="ml-2"
+        x-small
+        color="cyan"
+        depressed
+        :to="{ name: 'viewer', params: { id: item._id }, query : { mode: 'TA2Annotation_Creation' } }"
+      >
+        TA2 Creation
       </v-btn>
 
       <v-chip

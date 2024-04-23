@@ -759,6 +759,58 @@ export default function useModeManager({
     recipes.forEach((r) => r.bus.$off('activate', handleSetAnnotationState));
   });
 
+  function addFullFrameTrack(type: string, width = 0) {
+    handleEscapeMode();
+    const { frame, flick, frameSize } = aggregateController.value;
+    const trackType = type;
+
+    // eslint-disable-next-line no-param-reassign
+    const overrideTrackId = cameraStore.getNewTrackId();
+    const trackStore = cameraStore.camMap.value.get(selectedCamera.value)?.trackStore;
+    if (trackStore) {
+      const newTrackId = trackStore.add(
+        frame.value, trackType,
+        selectedTrackId.value || undefined,
+        overrideTrackId,
+      ).trackId;
+      selectTrack(newTrackId, true);
+      const newbounds: RectBounds = [0, 0, frameSize.value[0], frameSize.value[1]];
+      handleUpdateRectBounds(frame.value, flick.value, newbounds);
+      if (width > 0) {
+        handleUpdateRectBounds(frame.value + width, flick.value, newbounds);
+      }
+      creating = true;
+      selectTrack(null);
+      return newTrackId;
+    }
+    return null;
+  }
+
+  function updateFullFrame(trackId: AnnotationId, pos: 'begin' | 'end') {
+    const track = cameraStore.getAnyTrack(trackId);
+    if (track) {
+      const { frame, flick, frameSize } = aggregateController.value;
+      const newbounds: RectBounds = [0, 0, frameSize.value[0], frameSize.value[1]];
+      if (track.features.length > 1) {
+        let removeFrame = pos === 'begin' ? Infinity : -Infinity;
+        track.features.forEach((item, index) => {
+          if (pos === 'begin') {
+            removeFrame = Math.min(index, removeFrame);
+          }
+          if (pos === 'end') {
+            removeFrame = Math.max(index, removeFrame);
+          }
+        });
+        //track.deleteFeature(removeFrame);
+      }
+      selectTrack(trackId, true);
+      handleUpdateRectBounds(frame.value, flick.value, newbounds);
+      creating = true;
+      selectTrack(null);
+      selectTrack(trackId, false);
+    }
+  }
+
   return {
     selectedTrackId,
     editingGroupId,
@@ -776,6 +828,8 @@ export default function useModeManager({
     selectedCamera,
     selectNextTrack,
     handler: {
+      addFullFrameTrack,
+      updateFullFrame,
       commitMerge: handleCommitMerge,
       groupAdd: handleAddGroup,
       groupEdit: handleGroupEdit,

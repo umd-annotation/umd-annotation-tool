@@ -9,6 +9,7 @@ import UMDAnnotation from './UMDAnnotation.vue';
 import UMDChangepoint from './UMDChangepoint.vue';
 import UMDRemediation from './UMDRemediation.vue';
 import UMDTA2Annotation from './UMDTA2Annotation.vue';
+import UMDTA2AnnotationCreator from './UMDTA2AnnotationCreator.vue';
 
 export default defineComponent({
   name: 'UMDAnnotationWrapper',
@@ -19,6 +20,7 @@ export default defineComponent({
     UMDChangepoint,
     UMDRemediation,
     UMDTA2Annotation,
+    UMDTA2AnnotationCreator,
   },
   props: {
     width: {
@@ -51,6 +53,11 @@ export default defineComponent({
     v-else-if="mode ==='remediation'"
     :mode="mode"
   />
+  <UMDTA2AnnotationCreator
+    v-else-if="mode.includes('TA2Annotation_Creation')"
+    :mode="mode"
+  />
+
   <UMDTA2Annotation
     v-else-if="mode.includes('TA2Annotation')"
     :mode="mode"

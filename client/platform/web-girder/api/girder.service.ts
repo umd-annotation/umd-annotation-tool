@@ -23,6 +23,10 @@ function getItemsInFolder(folderId: string, limit: number) {
   });
 }
 
+function getManagerGroup() {
+  return girderRest.get<GirderModel[]>('group?text=Manager&exact=false&limit=50&sort=name&sortdir=1');
+}
+
 function getFolder(folderId: string) {
   return girderRest.get<GirderModel>(`folder/${folderId}`);
 }
@@ -42,4 +46,5 @@ export {
   getItemsInFolder,
   getFolder,
   setUsePrivateQueue,
+  getManagerGroup,
 };

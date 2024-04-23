@@ -120,7 +120,7 @@ export default defineComponent({
               if (loadValues) {
                 annotation.value.MTQuality = track.attributes[key] as number;
               }
-              if (props.mode === 'TA2Annotation_ASRMTQuality') {
+              if (props.mode === 'TA2Annotation_ASRMTQuality' || props.mode === 'TA2Annotation_MTQuality') {
                 hasAttributes = true;
               }
             }
