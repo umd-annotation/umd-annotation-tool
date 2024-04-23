@@ -42,7 +42,7 @@ const helpDialogTextBase = {
     ],
   },
   MTQuality: {
-    title: 'Evaluating the Machine Translation Quality',
+    title: 'Evaluating the Translation Quality',
     list: [
       'Very low quality, inadequate; overall gist of message and details may be very difficult to comprehend without relying on contextual clues.',
       'Tending toward low quality, but minimally adequate; overall gist of message and most details is comprehensible with some difficulty',
@@ -260,10 +260,11 @@ export default defineComponent({
     <v-stepper-items>
       <v-stepper-content step="1">
         <v-card
-          title="ASR/Translation Quality"
+          :title=" mode === 'TA2Annotation_ASRMTQuality' ? 'ASR/Translation Quality' : 'TranslationQuality'"
           flat
         >
           <v-row
+            v-if="mode === 'TA2Annotation_ASRMTQuality'"
             dense
             class="bottomborder"
           >
@@ -300,7 +301,7 @@ export default defineComponent({
             <v-col>
               <v-row dense>
                 <v-col cols="2">
-                  MT Quality
+                  Translation Quality
                 </v-col>
                 <v-col>
                   <v-slider

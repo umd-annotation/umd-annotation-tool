@@ -115,6 +115,8 @@ export interface Handler {
   /* Add new empty track and select it */
   trackAdd(): AnnotationId;
   /* update Rectangle bounds for track */
+  addFullFrameTrack(type: string, width: number): AnnotationId | null;
+  updateFullFrame(trackId: AnnotationId, pos: 'begin' | 'end'): void;
   updateRectBounds(
     frameNum: number,
     flickNum: number,
@@ -190,6 +192,8 @@ function dummyHandler(handle: (name: string, args: unknown[]) => void): Handler 
     trackSelectNext(...args) { handle('trackSelectNext', args); },
     trackSplit(...args) { handle('trackSplit', args); },
     trackAdd(...args) { handle('trackAdd', args); return 0; },
+    addFullFrameTrack(...args) { handle('addFullFrameTrack', args); return null; },
+    updateFullFrame(...args) { handle('updateFullFrame', args); },
     updateRectBounds(...args) { handle('updateRectBounds', args); },
     updateGeoJSON(...args) { handle('updateGeoJSON', args); },
     removeTrack(...args) { handle('removeTrack', args); },

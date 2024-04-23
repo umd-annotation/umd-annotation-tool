@@ -18,7 +18,7 @@ export default defineComponent({
       text: entry.description,
       value,
     })));
-    const updateWidth = props.mode.includes('TA2Annotation') ? window.innerWidth * 0.45 : props.width;
+    const updateWidth = props.mode && props.mode.includes('TA2Annotation') ? window.innerWidth * 0.45 : props.width;
     return { context, options, updateWidth };
   },
 });

@@ -120,7 +120,7 @@ export default defineComponent({
               if (loadValues) {
                 annotation.value.MTQuality = track.attributes[key] as number;
               }
-              if (props.mode === 'TA2Annotation_ASRMTQuality') {
+              if (props.mode === 'TA2Annotation_ASRMTQuality' || props.mode === 'TA2Annotation_MTQuality') {
                 hasAttributes = true;
               }
             }
@@ -263,22 +263,6 @@ export default defineComponent({
       handler.trackSelectNext(direction, true);
       checkAttributes(selectedTrackIdRef.value);
     };
-
-    watch(() => frame.value, () => {
-      if (framePlaying !== -1 && frame.value >= framePlaying) {
-        handler.pausePlayback();
-        framePlaying = -1;
-      }
-      if (frame.value > (150 + (maxSegment.value + 2) * 450)) {
-        handler.pausePlayback();
-        if (selectedTrackIdRef.value !== null) {
-          const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
-          if (track) {
-            handler.seekToFrame(150 + (maxSegment.value + 2) * 450);
-          }
-        }
-      }
-    });
 
     const outsideSegment = computed(() => {
       if (selectedTrackIdRef.value !== null) {
