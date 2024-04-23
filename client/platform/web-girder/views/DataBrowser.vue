@@ -282,7 +282,7 @@ export default defineComponent({
         </v-icon>
       </v-btn>
       <v-btn
-        v-if="isTA2Folder(item) && item.name.include('CLNG')"
+        v-if="isTA2Folder(item) && item.name.includes('CLNG')"
         class="ml-2"
         x-small
         color="primary"
@@ -292,7 +292,7 @@ export default defineComponent({
         TA2 Translation Quality
       </v-btn>
       <v-btn
-        v-if="isTA2Folder(item) && !item.name.include('CLNG')"
+        v-if="isTA2Folder(item) && !item.name.includes('CLNG')"
         class="ml-2"
         x-small
         color="primary"
@@ -333,7 +333,7 @@ export default defineComponent({
         TA2 All
       </v-btn>
       <v-btn
-        v-if="isTA2Folder(item) && isManager && item.name.include('CLNG')"
+        v-if="isTA2Folder(item) && isManager && item.name.includes('CLNG')"
         class="ml-2"
         x-small
         color="cyan"
