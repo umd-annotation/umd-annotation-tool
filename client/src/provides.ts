@@ -19,6 +19,7 @@ import type { ImageEnhancements } from './use/useImageEnhancements';
 import TrackFilterControls from './TrackFilterControls';
 import GroupFilterControls from './GroupFilterControls';
 import CameraStore from './CameraStore';
+import Track from './track';
 
 
 /**
@@ -116,6 +117,7 @@ export interface Handler {
   trackAdd(): AnnotationId;
   /* update Rectangle bounds for track */
   addFullFrameTrack(type: string, width: number): AnnotationId | null;
+  addReplacementTrack(track: Track): void;
   updateFullFrame(trackId: AnnotationId, pos: 'begin' | 'end'): void;
   updateRectBounds(
     frameNum: number,
@@ -193,6 +195,7 @@ function dummyHandler(handle: (name: string, args: unknown[]) => void): Handler 
     trackSplit(...args) { handle('trackSplit', args); },
     trackAdd(...args) { handle('trackAdd', args); return 0; },
     addFullFrameTrack(...args) { handle('addFullFrameTrack', args); return null; },
+    addReplacementTrack(...args) { handle('addReplacementTrack', args); return null; },
     updateFullFrame(...args) { handle('updateFullFrame', args); },
     updateRectBounds(...args) { handle('updateRectBounds', args); },
     updateGeoJSON(...args) { handle('updateGeoJSON', args); },

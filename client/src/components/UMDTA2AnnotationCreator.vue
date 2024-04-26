@@ -1,20 +1,19 @@
 <script lang="ts">
 import {
-  computed, defineComponent, ref, Ref, watch, PropType, onMounted,
+  computed, defineComponent, watch, onMounted,
 } from '@vue/composition-api';
 
 import TooltipBtn from 'vue-media-annotator/components/TooltipButton.vue';
 import StackedVirtualSidebarContainer from 'dive-common/components/StackedVirtualSidebarContainer.vue';
-import { useGirderRest } from 'platform/web-girder/plugins/girder';
 import {
   useCameraStore,
   useHandler,
   useSelectedTrackId,
   useTime,
 } from 'vue-media-annotator/provides';
-import { usePrompt } from 'dive-common/vue-utilities/prompt-service';
 import { clientSettings } from 'dive-common/store/settings';
 import { cloneDeep } from 'lodash';
+import { AnnotationId } from 'vue-media-annotator/BaseAnnotation';
 
 
 export default defineComponent({
@@ -32,13 +31,11 @@ export default defineComponent({
     },
   },
 
-  setup(props, { emit }) {
+  setup() {
     const selectedTrackIdRef = useSelectedTrackId();
 
-    const { prompt } = usePrompt();
     const { frame, maxSegment } = useTime();
     const handler = useHandler();
-    const restClient = useGirderRest();
     const cameraStore = useCameraStore();
 
     const firstTrack = cameraStore.getAnyPossibleTrack(0);
@@ -72,7 +69,6 @@ export default defineComponent({
 
     const initialize = async () => {
       handler.setMaxSegment(99999);
-      const user = await restClient.fetchUser();
     };
     onMounted(() => initialize());
 
@@ -140,43 +136,59 @@ export default defineComponent({
       return null;
     });
 
-    const reOrderTracks = () => {
+    const reOrderTracks = (newTrackId: AnnotationId) => {
       const tracks = cameraStore.sortedTracks;
       const trackCopy = cloneDeep(tracks.value);
       trackCopy.sort((a, b) => a.begin - b.begin);
+      let updatedTrackId = -1;
       // Now we have a sorted list by the begin point instead of the trackId.
       // So we need to update the tracks so they have the proper begin/end times
+      const trackIds = cameraStore.sortedTracks.value.map((item) => item.id);
+      handler.trackSelect(null, false);
+      handler.removeTrack(trackIds, true);
       trackCopy.forEach((item, index) => {
-        const getTrack = cameraStore.getTrack(index);
-        if (getTrack) {
-          const updateBeginFeature = item.getFeature(item.begin);
-          if (updateBeginFeature[0]) {
-            getTrack.deleteFeature(getTrack.begin);
-            getTrack.setFeature(updateBeginFeature[0]);
-          }
-          const updateEndFeature = item.getFeature(item.end);
-          if (updateEndFeature[0]) {
-            getTrack.deleteFeature(getTrack.end);
-            getTrack.setFeature(updateEndFeature[0]);
-          }
+        // eslint-disable-next-line no-param-reassign
+        item.id = index;
+        if (item.id !== index && item.id === newTrackId) {
+          updatedTrackId = index;
         }
+        handler.addReplacementTrack(item);
       });
-      // Now tracks should be reordered with their proper numbers
+      if (newTrackId !== -1) {
+        handler.trackSelect(newTrackId, false);
+      }
+      return updatedTrackId;
     };
 
     const createTurn = () => {
       const trackId = handler.addFullFrameTrack('turn', 100);
       if (trackId !== null) {
         handler.trackSelect(trackId, false);
-        reOrderTracks();
+        const updatedTrackId = reOrderTracks(trackId);
+        if (updatedTrackId === -1) {
+          handler.trackSelectNext(1);
+        } else {
+          handler.trackSelect(updatedTrackId, false);
+        }
+        handler.save();
+      }
+    };
+    const deleteTurn = () => {
+      if (selectedTrackIdRef.value !== null) {
+        handler.removeTrack([selectedTrackIdRef.value], true);
+        reOrderTracks(selectedTrackIdRef.value);
+        handler.trackSelectNext(-1);
         handler.save();
       }
     };
     const setFrame = (pos: 'begin' | 'end') => {
       if (selectedTrackIdRef.value !== null) {
+        const baseId = selectedTrackIdRef.value;
         handler.updateFullFrame(selectedTrackIdRef.value, pos);
-        reOrderTracks();
-        handler.trackSelect(selectedTrackIdRef.value, false);
+        reOrderTracks(selectedTrackIdRef.value);
+        if (baseId) {
+          handler.trackSelect(baseId, false);
+        }
         handler.save();
       }
     };
@@ -193,6 +205,7 @@ export default defineComponent({
       seekEnd,
       playSegment,
       createTurn,
+      deleteTurn,
       setFrame,
     };
   },
@@ -257,16 +270,26 @@ export default defineComponent({
         >
           Create Turn
         </v-btn>
+        <v-btn
+          v-if="selectedTrackIdRef !== null"
+          color="primary"
+          class="mx-2"
+          @click="deleteTurn()"
+        >
+          Delete Turn
+          <v-icon>mdi-delete</v-icon>
+        </v-btn>
       </v-row>
       <v-row v-if="trackFrames">
         <v-col><div><span>Begin Frame:</span><span>{{ trackFrames.begin }}</span></div></v-col>
         <v-col><div><span>End Frame:</span><span>{{ trackFrames.end }}</span></div></v-col>
       </v-row>
-      <v-row v-if="selectedTrackIdRef !== null">
+      <v-row v-if="selectedTrackIdRef !== null && trackFrames">
         <v-col>
           <v-btn
             color="primary"
             class="mx-2"
+            :disabled="frame > trackFrames.end"
             @click="setFrame('begin')"
           >
             Set Begin Frame
@@ -276,6 +299,7 @@ export default defineComponent({
           <v-btn
             color="primary"
             class="mx-2"
+            :disabled="frame < trackFrames.begin"
             @click="setFrame('end')"
           >
             Set End Frame

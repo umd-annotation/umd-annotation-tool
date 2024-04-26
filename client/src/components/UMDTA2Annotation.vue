@@ -43,7 +43,7 @@ export default defineComponent({
     const selectedTrackIdRef = useSelectedTrackId();
 
     const { prompt } = usePrompt();
-    const { frame, maxSegment } = useTime();
+    const { frame } = useTime();
     const handler = useHandler();
     const restClient = useGirderRest();
     const cameraStore = useCameraStore();
@@ -58,7 +58,6 @@ export default defineComponent({
     const loadedAttributes = ref(false);
     const annotation: Ref<TA2Annotation | null> = ref({});
 
-    let framePlaying = -1;
     const seekBegin = () => {
       if (selectedTrackIdRef.value !== null) {
         const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
@@ -75,7 +74,6 @@ export default defineComponent({
       if (selectedTrackIdRef.value !== null) {
         const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
         handler.replayFromFrame(track.begin);
-        framePlaying = track.end;
       }
     };
 

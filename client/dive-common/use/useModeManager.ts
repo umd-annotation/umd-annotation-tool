@@ -786,6 +786,33 @@ export default function useModeManager({
     return null;
   }
 
+  function addReplacementTrack(track: Track) {
+    const trackStore = cameraStore.camMap.value.get(selectedCamera.value)?.trackStore;
+    if (trackStore) {
+      const newTrack = trackStore.add(
+        track.begin, track.getType()[0],
+        selectedTrackId.value || undefined,
+        track.id,
+      );
+      const { flick, frameSize } = aggregateController.value;
+      const newbounds: RectBounds = [0, 0, frameSize.value[0], frameSize.value[1]];
+      newTrack.setFeature({
+        frame: track.begin,
+        flick: flick.value,
+        bounds: newbounds,
+        keyframe: true,
+        interpolate: true,
+      });
+      newTrack.setFeature({
+        frame: track.end,
+        flick: flick.value,
+        bounds: newbounds,
+        keyframe: true,
+        interpolate: true,
+      });
+    }
+  }
+
   function updateFullFrame(trackId: AnnotationId, pos: 'begin' | 'end') {
     const track = cameraStore.getAnyTrack(trackId);
     if (track) {
@@ -793,15 +820,15 @@ export default function useModeManager({
       const newbounds: RectBounds = [0, 0, frameSize.value[0], frameSize.value[1]];
       if (track.features.length > 1) {
         let removeFrame = pos === 'begin' ? Infinity : -Infinity;
-        track.features.forEach((item, index) => {
+        track.features.forEach((item) => {
           if (pos === 'begin') {
-            removeFrame = Math.min(index, removeFrame);
+            removeFrame = Math.min(item.frame, removeFrame);
           }
           if (pos === 'end') {
-            removeFrame = Math.max(index, removeFrame);
+            removeFrame = Math.max(item.frame, removeFrame);
           }
         });
-        //track.deleteFeature(removeFrame);
+        track.deleteFeature(removeFrame);
       }
       selectTrack(trackId, true);
       handleUpdateRectBounds(frame.value, flick.value, newbounds);
@@ -829,6 +856,7 @@ export default function useModeManager({
     selectNextTrack,
     handler: {
       addFullFrameTrack,
+      addReplacementTrack,
       updateFullFrame,
       commitMerge: handleCommitMerge,
       groupAdd: handleAddGroup,

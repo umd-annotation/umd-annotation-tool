@@ -21,6 +21,7 @@ def login():
 
 def getFolderList(gc: girder_client.GirderClient, folderId, parentType = "folder"):
     folders = list(gc.listFolder(folderId, parentFolderType=parentType))
+    print(folders)
     return folders
 
 def get_processVideos(gc, folderId):
