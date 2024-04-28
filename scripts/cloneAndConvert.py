@@ -75,9 +75,21 @@ def download_and_process_json(gc: girder_client.GirderClient, itemId, name):
     trackJSON = convert_output_to_tracks(turns)
     if not os.path.exists(tracksDirectory):
         os.mkdir(tracksDirectory)
-    with open(os.path.join(tracksDirectory, name), 'w') as outfile:
+    trackJSONFilePath = os.path.join(tracksDirectory, name)
+    with open(trackJSONFilePath, 'w') as outfile:
         json.dump(trackJSON, outfile, ensure_ascii=False, indent=True)
         outfile.write('\n')
+    return trackJSONFilePath
+
+def clone_video_folder(gc: girder_client.GirderClient, datasetId, name, destId):
+    clonedFolder = gc.sendRestRequest('POST', f'dive_dataset?cloneId={datasetId}&parentFolderId={destId}&name={name}')
+    Folder().setMetadata
+    return clonedFolder["_id"]
+
+def upload_track_json(gc: girder_client.GirderClient, destFolderId, trackJsonFile):
+    gc.uploadFileToFolder(destFolderId, trackJsonFile)
+    gc.sendRestRequest('POST', f'dive_rpc/postprocess/{destFolderId}', data={'skipTranscoding': True, 'skipJobs': True})
+    gc.addMetadataToFolder(destFolderId, {"UMDAnnotation": "TA2"})
 
 
 @click.command(name="removeDups", help="Load in ")
@@ -90,7 +102,11 @@ def run_script():
     limit = 5
     for key in matching.keys():
         item = matching[key]
-        download_and_process_json(gc, item["jsonId"], f"{key}.json")
+        trackJSONFilePath = download_and_process_json(gc, item["jsonId"], f"{key}.json")
+        item["trackJSON"] = trackJSONFilePath
+        cloneId = clone_video_folder(gc, item["videoId"], CloneDestinationFolderId)
+        item["cloneId"] = cloneId
+        upload_track_json(gc, cloneId, trackJSONFilePath)
         count += 1
         if count > limit:
             break
