@@ -69,9 +69,11 @@ def get_matching_items(video_dict, item_dict):
 def download_and_process_json(gc: girder_client.GirderClient, itemId, name):
     if not os.path.exists(processingDirectory):
         os.mkdir(processingDirectory)
-    gc.downloadItem(itemId, os.path.join(processingDirectory, name), name=name)
+    gc.downloadItem(itemId, processingDirectory)
     # next we need to process the downloaded file and convert it into a track json
-    turns = process_outputjson(os.path.join(processingDirectory, name))
+    with open(f"{processingDirectory}/log_{name.replace('.json', '_converted.json')}", 'r') as f:
+        turns_output = json.load(f)
+    turns = process_outputjson(turns_output)
     trackJSON = convert_output_to_tracks(turns)
     if not os.path.exists(tracksDirectory):
         os.mkdir(tracksDirectory)
@@ -104,7 +106,7 @@ def run_script():
         item = matching[key]
         trackJSONFilePath = download_and_process_json(gc, item["jsonId"], f"{key}.json")
         item["trackJSON"] = trackJSONFilePath
-        cloneId = clone_video_folder(gc, item["videoId"], CloneDestinationFolderId)
+        cloneId = clone_video_folder(gc, item["videoId"], key, CloneDestinationFolderId)
         item["cloneId"] = cloneId
         upload_track_json(gc, cloneId, trackJSONFilePath)
         count += 1
