@@ -1,21 +1,33 @@
 <script lang="ts">
 import {
-  defineComponent, onMounted, PropType, ref, Ref, watch,
+  defineComponent,
+  onMounted,
+  PropType,
+  ref,
+  Ref,
+  watch,
 } from '@vue/composition-api';
 import { UMDAnnotationMode } from 'platform/web-girder/store/types';
 import { useSelectedTrackId } from 'vue-media-annotator/provides';
 
 export type NormsList =
-  | 'Admiration'
   | 'Apology'
   | 'Criticism'
-  | 'Finalizing Negotiating/Deal'
   | 'Greeting'
-  | 'Persuasion'
-  | 'Refusing a Request'
   | 'Request'
+  | 'Persuasion'
+  | 'Thanks'
   | 'Taking Leave'
-  | 'Thanks';
+  | 'Admiration'
+  | 'Finalizing Negotiation/Deal'
+  | 'Refusing a Request'
+  | 'Requesting Information'
+  | 'Granting a Request'
+  | 'Disagreement'
+  | 'Respond to Request for Information'
+  | 'Acknowledging Thanks'
+  | 'Interrupting'
+  | 'No Norm';
 
 export interface TA2NormStatus {
   status: 'adhered' | 'violated';
@@ -25,8 +37,8 @@ export interface TA2NormStatus {
 export interface TA2Annotation {
   ASRQuality?: number; //Quality number from 0-3
   MTQuality?: number; // Quality number from 0-3
-  AlertsQuality?: number; // Quality number from 0-4
-  RephrasingQuality?: number; // Quality number from 0-4
+  AlertsQuality?: number | null; // Quality number from 0-4
+  RephrasingQuality?: number | null; // Quality number from 0-4
   DelayedRemediation?: boolean;
   Norms?: Record<NormsList, TA2NormStatus>;
 }
@@ -90,7 +102,6 @@ export default defineComponent({
       type: String as PropType<UMDAnnotationMode>,
       default: 'review',
     },
-
   },
 
   setup(props, { emit }) {
@@ -111,80 +122,134 @@ export default defineComponent({
         stepper.value = 3;
       }
     });
-    const ASRQuality = ref(props.annotations.ASRQuality || 0);
-    const MTQuality = ref(props.annotations.MTQuality || 0);
-    const AlertsQuality = ref(props.annotations.AlertsQuality || 0);
-    const RephrasingQuality = ref(props.annotations.RephrasingQuality || 0);
-    const DelayedRemediation = ref(props.annotations.DelayedRemediation || false);
-    const Norms: Ref<Partial<Record<NormsList, TA2NormStatus>>> = ref(props.annotations.Norms || {});
-    const selectedNorms: Ref<NormsList[]> = ref(Object.keys(Norms.value) as NormsList[] || []);
+    const ASRQuality = ref(props.annotations.ASRQuality === undefined ? 0 : props.annotations.ASRQuality);
+    const MTQuality = ref(props.annotations.MTQuality === undefined ? 0 : props.annotations.MTQuality);
+    const AlertsQuality = ref(props.annotations.AlertsQuality === undefined ? 2 : props.annotations.AlertsQuality);
+    const RephrasingQuality = ref(props.annotations.RephrasingQuality === undefined ? 2 : props.annotations.RephrasingQuality);
+    const noAlerts = ref(props.annotations.AlertsQuality === null);
+    const noRemediation = ref(props.annotations.RephrasingQuality === null);
+    const DelayedRemediation = ref(
+      props.annotations.DelayedRemediation || false,
+    );
+    const Norms: Ref<Partial<Record<NormsList, TA2NormStatus>>> = ref(
+      props.annotations.Norms || {},
+    );
+    const selectedNorms: Ref<NormsList[]> = ref(
+      (Object.keys(Norms.value) as NormsList[]) || [],
+    );
     const helpDialog = ref(false);
-    const helpDialogText: Ref<{title: string; list: string[]}> = ref(helpDialogTextBase.ASRQuality);
+    const helpDialogText: Ref<{ title: string; list: string[] }> = ref(
+      helpDialogTextBase.ASRQuality,
+    );
     const baseNorms = ref([
-      'Admiration',
+      'No Norm',
       'Apology',
       'Criticism',
-      'Finalizing Negotiating/Deal',
       'Greeting',
-      'Persuasion',
-      'Refusing a Request',
       'Request',
-      'Taking Leave',
+      'Persuasion',
       'Thanks',
+      'Taking Leave',
+      'Admiration',
+      'Finalizing Negotiation/Deal',
+      'Refusing a Request',
+      'Requesting Information',
+      'Granting a Request',
+      'Disagreement',
+      'Respond to Request for Information',
+      'Acknowledging Thanks',
+      'Interrupting',
     ]);
-    watch(() => props.annotations, () => {
-      stepper.value = 1;
-      if (props.mode === 'TA2Annotation_Norms') {
-        stepper.value = 2;
-      }
-      if (props.mode === 'TA2Annotation_Remediation') {
-        stepper.value = 3;
-      }
-      ASRQuality.value = props.annotations.ASRQuality || 0;
-      MTQuality.value = props.annotations.MTQuality || 0;
-      AlertsQuality.value = props.annotations.AlertsQuality || 0;
-      RephrasingQuality.value = props.annotations.RephrasingQuality || 0;
+    const disableNext = ref(false);
+    const disableReason = ref('');
+    watch(
+      () => props.annotations,
+      () => {
+        stepper.value = 1;
+        if (props.mode === 'TA2Annotation_Norms') {
+          stepper.value = 2;
+        }
+        if (props.mode === 'TA2Annotation_Remediation') {
+          stepper.value = 3;
+        }
+        ASRQuality.value = props.annotations.ASRQuality || 0;
+        MTQuality.value = props.annotations.MTQuality || 0;
+        AlertsQuality.value = props.annotations.AlertsQuality === undefined ? 2 : props.annotations.AlertsQuality;
+        noAlerts.value = props.annotations.AlertsQuality === null;
+        noRemediation.value = props.annotations.RephrasingQuality === null;
+        RephrasingQuality.value = props.annotations.RephrasingQuality === undefined ? 2 : props.annotations.RephrasingQuality;
 
-      DelayedRemediation.value = props.annotations.DelayedRemediation || false;
-      Norms.value = props.annotations.Norms || {};
-      selectedNorms.value = Object.keys(Norms.value) as NormsList[];
-    });
+        DelayedRemediation.value = props.annotations.DelayedRemediation || false;
+        Norms.value = props.annotations.Norms || {};
+        selectedNorms.value = Object.keys(Norms.value) as NormsList[];
+      },
+    );
     watch(selectedNorms, () => {
       const addNorms: Partial<Record<NormsList, TA2NormStatus>> = {};
+      disableNext.value = false;
+      disableReason.value = '';
+      if (selectedNorms.value.includes('No Norm')) {
+        Norms.value = { 'No Norm': { status: 'violated', remediation: 0 } };
+        if (selectedNorms.value.length > 1) {
+          disableNext.value = true;
+          disableReason.value = "You have selected 'No Norms' and other values, please either select 'No Norms' only or remove it from the list";
+        }
+        return;
+      }
       selectedNorms.value.forEach((norm) => {
         if (!addNorms[norm]) {
           addNorms[norm] = {
-            status: (props.annotations.Norms && props.annotations.Norms[norm].status) || 'adhered',
-            remediation: (props.annotations.Norms && props.annotations.Norms[norm].remediation) || 0,
+            status:
+              (props.annotations.Norms
+                && props.annotations.Norms[norm].status)
+              || 'adhered',
+            remediation:
+              (props.annotations.Norms
+                && props.annotations.Norms[norm].remediation)
+              || 0,
           };
         }
       });
       Norms.value = addNorms;
     });
-    const advanceStep = (currentStep: 'ASRMTQuality' | 'Norms' | 'AlertRephrasing') => {
-      const annotationUpdate: TA2Annotation = { };
+    const advanceStep = (
+      currentStep: 'ASRMTQuality' | 'Norms' | 'AlertRephrasing',
+    ) => {
+      const annotationUpdate: TA2Annotation = {};
       if (currentStep === 'ASRMTQuality') {
         annotationUpdate.ASRQuality = ASRQuality.value;
         annotationUpdate.MTQuality = MTQuality.value;
       } else if (currentStep === 'Norms') {
-        annotationUpdate.Norms = Norms.value as Record<NormsList, TA2NormStatus>;
+        annotationUpdate.Norms = Norms.value as Record<
+          NormsList,
+          TA2NormStatus
+        >;
       } else if (currentStep === 'AlertRephrasing') {
-        annotationUpdate.AlertsQuality = AlertsQuality.value;
-        annotationUpdate.DelayedRemediation = DelayedRemediation.value;
-        annotationUpdate.RephrasingQuality = RephrasingQuality.value;
+        annotationUpdate.AlertsQuality = noAlerts.value ? null : AlertsQuality.value;
+        annotationUpdate.DelayedRemediation = noRemediation.value ? false : DelayedRemediation.value;
+        annotationUpdate.RephrasingQuality = noRemediation.value ? null : RephrasingQuality.value;
       }
       emit('save', annotationUpdate);
-      if (currentStep !== 'AlertRephrasing' && props.mode === 'TA2Annotation_All') {
+      if (
+        currentStep !== 'AlertRephrasing'
+        && props.mode === 'TA2Annotation_All'
+      ) {
         stepper.value += 1;
       } else {
         emit('next-turn');
       }
     };
 
-    const updateNorm = (norm: NormsList, field: 'status' | 'remediation', value: 'adhered' | 'violated' | number) => {
+    const updateNorm = (
+      norm: NormsList,
+      field: 'status' | 'remediation',
+      value: 'adhered' | 'violated' | number,
+    ) => {
       if (field === 'status') {
         if (Norms.value && Norms.value[norm] !== undefined) {
-          (Norms.value[norm] as TA2NormStatus).status = value as 'adhered' | 'violated';
+          (Norms.value[norm] as TA2NormStatus).status = value as
+            | 'adhered'
+            | 'violated';
         }
       }
       if (field === 'remediation') {
@@ -193,7 +258,9 @@ export default defineComponent({
         }
       }
     };
-    const openHelpDialog = (key: 'ASRQuality' | 'MTQuality' | 'AlertsQuality' | 'RephrashingQuality') => {
+    const openHelpDialog = (
+      key: 'ASRQuality' | 'MTQuality' | 'AlertsQuality' | 'RephrashingQuality',
+    ) => {
       helpDialogText.value = helpDialogTextBase[key];
       helpDialog.value = true;
     };
@@ -209,6 +276,8 @@ export default defineComponent({
       selectedNorms,
       AlertsQuality,
       RephrasingQuality,
+      noAlerts,
+      noRemediation,
       DelayedRemediation,
       selectedTrackIdRef,
       advanceStep,
@@ -216,6 +285,8 @@ export default defineComponent({
       openHelpDialog,
       helpDialog,
       helpDialogText,
+      disableNext,
+      disableReason,
     };
   },
 });
@@ -225,7 +296,7 @@ export default defineComponent({
 <template>
   <v-stepper
     v-model="stepper"
-    style="width:100%"
+    style="width: 100%"
     non-linear
   >
     <v-stepper-header v-if="mode === 'TA2Annotation_All'">
@@ -260,7 +331,11 @@ export default defineComponent({
     <v-stepper-items>
       <v-stepper-content step="1">
         <v-card
-          :title=" mode === 'TA2Annotation_ASRMTQuality' ? 'ASR/Translation Quality' : 'TranslationQuality'"
+          :title="
+            mode === 'TA2Annotation_ASRMTQuality'
+              ? 'ASR/Translation Quality'
+              : 'TranslationQuality'
+          "
           flat
         >
           <v-row
@@ -285,9 +360,7 @@ export default defineComponent({
                   />
                 </v-col>
                 <v-col cols="1">
-                  <v-icon
-                    @click="openHelpDialog('ASRQuality')"
-                  >
+                  <v-icon @click="openHelpDialog('ASRQuality')">
                     mdi-help
                   </v-icon>
                 </v-col>
@@ -329,7 +402,9 @@ export default defineComponent({
               class="mb-2"
               @click="advanceStep('ASRMTQuality')"
             >
-              {{ mode === 'TA2Annotation_All' ? 'Next Step' : 'Save + Next Turn' }}
+              {{
+                mode === "TA2Annotation_All" ? "Next Step" : "Save + Next Turn"
+              }}
             </v-btn>
           </v-row>
         </v-card>
@@ -352,9 +427,9 @@ export default defineComponent({
               class="mx-5"
             />
           </v-row>
-          <v-list v-if="Norms">
+          <v-list v-if="Norms && Object.keys(Norms).filter((item) => item !== 'No Norm').length > 0">
             <v-list-item
-              v-for="(item,key) in Norms"
+              v-for="(item, key) in Norms"
               :key="`${key}_track_${selectedTrackIdRef}_${item.status}`"
             >
               <v-row dense>
@@ -391,14 +466,20 @@ export default defineComponent({
               </v-row>
             </v-list-item>
           </v-list>
+          <v-row v-if="disableNext" class="mx-2">
+            <v-alert type="error">{{ disableReason }}</v-alert>
+          </v-row>
           <v-row class="mx-2">
             <v-spacer />
             <v-btn
               color="primary"
+              :disabled="disableNext"
               class="mb-2"
               @click="advanceStep('Norms')"
             >
-              {{ mode === 'TA2Annotation_All' ? 'Next Step' : 'Save + Next Turn' }}
+              {{
+                mode === "TA2Annotation_All" ? "Next Step" : "Save + Next Turn"
+              }}
             </v-btn>
           </v-row>
         </v-card>
@@ -421,6 +502,7 @@ export default defineComponent({
                 <v-col>
                   <v-slider
                     v-model="AlertsQuality"
+                    :disabled="noAlerts"
                     min="0"
                     max="4"
                     step="1"
@@ -430,9 +512,7 @@ export default defineComponent({
                   />
                 </v-col>
                 <v-col cols="1">
-                  <v-icon
-                    @click="openHelpDialog('AlertsQuality')"
-                  >
+                  <v-icon @click="openHelpDialog('AlertsQuality')">
                     mdi-help
                   </v-icon>
                 </v-col>
@@ -451,6 +531,7 @@ export default defineComponent({
                 <v-col>
                   <v-slider
                     v-model="RephrasingQuality"
+                    :disabled="noRemediation"
                     min="0"
                     max="4"
                     step="1"
@@ -460,9 +541,7 @@ export default defineComponent({
                   />
                 </v-col>
                 <v-col cols="1">
-                  <v-icon
-                    @click="openHelpDialog('RephrashingQuality')"
-                  >
+                  <v-icon @click="openHelpDialog('RephrashingQuality')">
                     mdi-help
                   </v-icon>
                 </v-col>
@@ -473,7 +552,20 @@ export default defineComponent({
             <v-col>
               <v-switch
                 v-model="DelayedRemediation"
+                :disabled="noRemediation"
                 label="Delayed Remediation"
+              />
+            </v-col>
+            <v-col>
+              <v-switch
+                v-model="noAlerts"
+                label="No Alerts"
+              />
+            </v-col>
+            <v-col>
+              <v-switch
+                v-model="noRemediation"
+                label="No Remediation"
               />
             </v-col>
           </v-row>

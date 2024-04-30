@@ -737,7 +737,7 @@ export default defineComponent({
         editing: editingMode.value,
         type: annotation.styleType[0],
         confidence: 1,
-        text: `Segment ${annotation.track.id}`,
+        text: props.mode && props.mode.includes('TA2Annotation') ? `Turn ${annotation.track.id + 1}` : `Segment ${annotation.track.id}`,
         x: 100,
         y: 55,
       },
