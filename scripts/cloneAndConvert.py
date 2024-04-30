@@ -25,8 +25,8 @@ normMap = {
 }
 
 JSONLSourceFolderId = "6627ef547193244a6e33353d"
-VideoSourceFolderId = "6602d4a4cb9585b0c24b794f"
-CloneDestinationFolderId = ""
+VideoSourceFolderIds = ["6602d4a4cb9585b0c24b794f", "65e72cd2cb9585b0c24b3ac1"]
+CloneDestinationFolderId = "661e8fceaee0d357e2455d47"
 
 apiURL = "annotation.umd.edu"
 
@@ -46,15 +46,26 @@ def getItemList(gc: girder_client.GirderClient, folderId):
     items = list(gc.listItem(folderId))
     return items
 
-def get_processVideos(gc, folderId):
-    videoList = getFolderList(gc, VideoSourceFolderId)
+def get_processVideos(gc):
+    video_dict = {}
+    for VideoSourceFolderId in VideoSourceFolderIds:
+        videoList = getFolderList(gc, VideoSourceFolderId)
+        for item in videoList:
+            if "THIRD-PERSON.mp4" in item["name"] and 'annotate' in item["meta"].keys():
+                updated_name = item["name"].replace("Video ", "").replace("_THIRD-PERSON.mp4", "")
+                video_dict[updated_name] = item["_id"]
+    return video_dict
+
+def get_existingVideos(gc, folderId):
+    videoList = getFolderList(gc, folderId)
     video_dict = {}
     for item in videoList:
-        if "THIRD-PERSON.mp4" in item["name"] and 'annotate' in item["meta"].keys():
+        if 'annotate' in item["meta"].keys():
             updated_name = item["name"].replace("Video ", "").replace("_THIRD-PERSON.mp4", "")
             video_dict[updated_name] = item["_id"]
 
     return video_dict
+
 
 def get_processJSONItems(gc: girder_client.GirderClient, folderId):
     items = list(getItemList(gc, folderId))
@@ -77,21 +88,20 @@ def download_and_process_json(gc: girder_client.GirderClient, itemId, name):
         os.mkdir(processingDirectory)
     gc.downloadItem(itemId, processingDirectory)
     # next we need to process the downloaded file and convert it into a track json
-    with open(f"{processingDirectory}/log_{name.replace('.json', '_converted.json')}", 'r') as f:
+    with open(f"{processingDirectory}/log_{name.replace('.json', '_converted.json')}", 'r', encoding='utf8') as f:
         turns_output = json.load(f)
     turns = process_outputjson(turns_output)
     trackJSON = convert_output_to_tracks(turns)
     if not os.path.exists(tracksDirectory):
         os.mkdir(tracksDirectory)
     trackJSONFilePath = os.path.join(tracksDirectory, name)
-    with open(trackJSONFilePath, 'w') as outfile:
+    with open(trackJSONFilePath, 'w', encoding='utf8') as outfile:
         json.dump(trackJSON, outfile, ensure_ascii=False, indent=True)
         outfile.write('\n')
     return trackJSONFilePath
 
 def clone_video_folder(gc: girder_client.GirderClient, datasetId, name, destId):
     clonedFolder = gc.sendRestRequest('POST', f'dive_dataset?cloneId={datasetId}&parentFolderId={destId}&name={name}')
-    Folder().setMetadata
     return clonedFolder["_id"]
 
 def upload_track_json(gc: girder_client.GirderClient, destFolderId, trackJsonFile):
@@ -103,12 +113,17 @@ def upload_track_json(gc: girder_client.GirderClient, destFolderId, trackJsonFil
 @click.command(name="removeDups", help="Load in ")
 def run_script():
     gc = login()
-    video_map = get_processVideos(gc, VideoSourceFolderId)
+    video_map = get_processVideos(gc)
+    existing_videos = get_existingVideos(gc, CloneDestinationFolderId)
     item_map = get_processJSONItems(gc, JSONLSourceFolderId)
     matching = get_matching_items(video_map, item_map)
     count = 0
-    limit = 5
+    limit = 9999
+    print(existing_videos)
     for key in matching.keys():
+        if key in existing_videos.keys():
+            print(f'Skipping video: {key} it already exists')
+            continue
         item = matching[key]
         trackJSONFilePath = download_and_process_json(gc, item["jsonId"], f"{key}.json")
         item["trackJSON"] = trackJSONFilePath
@@ -207,7 +222,6 @@ def process_outputjson(output):
         # norm occurence, can be multiple ones
         if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('type', False) == 'norm_occurrence':
             turn = create_or_get_turn(turns, item['message']['start_seconds'], item['message']['end_seconds'], item['time_seconds'])
-            print(f"NORMS EXISTENCE: {turn.get('norms', None)}")
             if turn.get('norms', None) is None:
                 turn['norms'] = []
             turn['norms'].append({
@@ -258,7 +272,6 @@ def convert_output_to_tracks(output, width=1920, height=1080, framerate=30, offs
         start_frame = offset_frames + (framerate * item['startTime']) - beginning_offset
         if index == 0:
             beginning_offset = offset_frames
-        print(f'{index+1} < {len(output)}')
         if (index + 1) < len(output):
 
             current_endtime = offset_frames + (framerate * item['endTime'])
@@ -267,7 +280,6 @@ def convert_output_to_tracks(output, width=1920, height=1080, framerate=30, offs
             next_end_global = output[index + 1]['endglobal']
             time_length = next_end_global - current_start_global
             # split the difference
-            print(f' {current_endtime} -- {next_start_time}' )
             end_frame = start_frame + (framerate * time_length)
         else:
             end_frame = offset_frames + (framerate * item['endTime'])
@@ -342,6 +354,7 @@ def convert_output_to_tracks(output, width=1920, height=1080, framerate=30, offs
             track['attributes']['emotions'] = emotions
         if item.get('valence', False):
             track['attributes']['valence'] = item['valence']
+        if item.get('arousal', False):
             track['attributes']['arousal'] = item['arousal']
         if item.get('norms', False):
             track['attributes']['norms'] = item['norms']
