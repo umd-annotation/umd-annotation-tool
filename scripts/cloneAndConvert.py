@@ -3,6 +3,7 @@ import json
 import click
 import requests
 import os
+from fuzzywuzzy import process
 
 normMap = {
     '101': "Apology",
@@ -75,21 +76,42 @@ def get_processJSONItems(gc: girder_client.GirderClient, folderId):
         item_dict[update_name] = item["_id"]
     return item_dict
 
+def find_top_matches(input_string, listB):
+    matches = process.extract(input_string, listB, limit=5)
+    return matches
+
+
 def get_matching_items(video_dict, item_dict):
     matching = {}
+    unmatching = []
     for key in item_dict.keys():
         if video_dict.get(key, False):
             matching[key] = {"videoId": video_dict[key], "jsonId": item_dict[key]}
+        else:
+            top_matches = find_top_matches(key, video_dict.keys())
+            potentials = []
+            matched = False
+            for item in top_matches:
+                if item[1] >= 95 and not matched:
+                    matched = True
+                    matching[key] = {"videoId": video_dict.get(item[0]), "jsonId": item_dict[key],}
+                potentials.append({'videoName': item[0], 'percentMatch': item[1], "videoId": video_dict.get(item[0], False)})
+            unmatching.append({"unmatchedJSONName": key, "unmatchedJSONId": item_dict[key], "potentialVideoMatches": potentials, "foundMatch": matched})
 
-    return matching
+    return matching, unmatching
 
 def download_and_process_json(gc: girder_client.GirderClient, itemId, name):
     if not os.path.exists(processingDirectory):
         os.mkdir(processingDirectory)
     gc.downloadItem(itemId, processingDirectory)
     # next we need to process the downloaded file and convert it into a track json
-    with open(f"{processingDirectory}/log_{name.replace('.json', '_converted.json')}", 'r', encoding='utf8') as f:
-        turns_output = json.load(f)
+    try: 
+        with open(f"{processingDirectory}/log_{name.replace('.json', '_converted.json')}", 'r', encoding='utf8') as f:
+            turns_output = json.load(f)
+    except:
+        with open(f"{processingDirectory}/log_{name.replace('.json', '_converted.json')}", 'r', encoding='latin-1') as f:
+            turns_output = json.load(f)
+
     turns = process_outputjson(turns_output)
     trackJSON = convert_output_to_tracks(turns)
     if not os.path.exists(tracksDirectory):
@@ -116,7 +138,12 @@ def run_script():
     video_map = get_processVideos(gc)
     existing_videos = get_existingVideos(gc, CloneDestinationFolderId)
     item_map = get_processJSONItems(gc, JSONLSourceFolderId)
-    matching = get_matching_items(video_map, item_map)
+    matching, unmatching = get_matching_items(video_map, item_map)
+    # write the unmatched items to unmatching.json
+    with open('unmatching.json', 'w', encoding='utf8') as outfile:
+        json.dump(unmatching, outfile, ensure_ascii=False, indent=True)
+        outfile.write('\n')
+
     count = 0
     limit = 9999
     print(existing_videos)
