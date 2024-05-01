@@ -796,6 +796,9 @@ export default function useModeManager({
       );
       const { flick, frameSize } = aggregateController.value;
       const newbounds: RectBounds = [0, 0, frameSize.value[0], frameSize.value[1]];
+      Object.entries(track.attributes).forEach(([key, val]) => {
+        newTrack.setAttribute(key, val);
+      });
       newTrack.setFeature({
         frame: track.begin,
         flick: flick.value,

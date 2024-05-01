@@ -1,6 +1,6 @@
 <script lang="ts">
 import {
-  computed, defineComponent, watch, onMounted,
+  computed, defineComponent, watch, onMounted, ref, Ref,
 } from '@vue/composition-api';
 
 import TooltipBtn from 'vue-media-annotator/components/TooltipButton.vue';
@@ -33,12 +33,24 @@ export default defineComponent({
 
   setup() {
     const selectedTrackIdRef = useSelectedTrackId();
+    const speakerList = ref(['FLE', 'SME']);
 
     const { frame, maxSegment } = useTime();
     const handler = useHandler();
     const cameraStore = useCameraStore();
 
+
+    const speaker: Ref<'FLE' | 'SME' | null> = ref(null);
+
     const firstTrack = cameraStore.getAnyPossibleTrack(0);
+
+    const firstSpeaker = () => {
+      if (firstTrack && firstTrack.attributes) {
+        speaker.value = firstTrack.attributes.speaker as 'FLE' | 'SME' | null;
+      }
+    };
+    firstSpeaker();
+
     clientSettings.trackSettings.newTrackSettings.modeSettings.Track.interpolate = true;
     if (firstTrack) {
       handler.trackSelect(0, false);
@@ -136,6 +148,27 @@ export default defineComponent({
       return null;
     });
 
+    watch(selectedTrackIdRef, () => {
+      if (selectedTrackIdRef.value !== null) {
+        const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
+        if (track) {
+          if (track.attributes && track.attributes.speaker) {
+            speaker.value = track.attributes.speaker as 'FLE' | 'SME';
+          } else {
+            speaker.value = null;
+          }
+        }
+      }
+    });
+
+    const updateSpeaker = (data: 'FLE' | 'SME' | null) => {
+      if (selectedTrackIdRef.value !== null) {
+        const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
+        track.setAttribute('speaker', data);
+        speaker.value = data;
+        handler.save();
+      }
+    };
     const reOrderTracks = (newTrackId: AnnotationId) => {
       const tracks = cameraStore.sortedTracks;
       const trackCopy = cloneDeep(tracks.value);
@@ -200,6 +233,8 @@ export default defineComponent({
       frame,
       trackFrames,
       outsideSegment,
+      speaker,
+      speakerList,
       changeTrack,
       seekBegin,
       seekEnd,
@@ -207,6 +242,7 @@ export default defineComponent({
       createTurn,
       deleteTurn,
       setFrame,
+      updateSpeaker,
     };
   },
 });
@@ -305,6 +341,20 @@ export default defineComponent({
             Set End Frame
           </v-btn>
         </v-col>
+      </v-row>
+      <v-row
+        v-if="selectedTrackIdRef !== null"
+        class="py-1"
+      >
+        <v-select
+          :value="speaker"
+          class="pl-8"
+          width="200px"
+          label="Speaker"
+          :items="speakerList"
+          @change="updateSpeaker($event)"
+        />
+        <v-spacer />
       </v-row>
     </div>
   </v-container>
