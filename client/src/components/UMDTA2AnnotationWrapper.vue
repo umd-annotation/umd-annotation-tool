@@ -21,6 +21,10 @@ export default defineComponent({
     mode: {
       default: 'review',
     },
+    name: {
+      type: String,
+      default: undefined,
+    },
   },
   setup() {
     return {

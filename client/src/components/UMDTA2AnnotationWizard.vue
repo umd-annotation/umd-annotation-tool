@@ -29,6 +29,26 @@ export type NormsList =
   | 'Interrupting'
   | 'No Norm';
 
+export const NormListMapping = [
+  { named: 'No Norm', id: 100, groups: ['LC1', 'LC2', 'LC3'] },
+  { named: 'Apology', id: 101, groups: ['LC1', 'LC2', 'LC3'] },
+  { named: 'Criticism', id: 102, groups: ['LC1', 'LC2'] },
+  { named: 'Greeting', id: 103, groups: ['LC1', 'LC2', 'LC3'] },
+  { named: 'Request', id: 104, groups: ['LC1'] },
+  { named: 'Persuasion', id: 105, groups: ['LC1'] },
+  { named: 'Thanks', id: 106, groups: ['LC1', 'LC2', 'LC3'] },
+  { named: 'Taking Leave', id: 107, groups: ['LC1'] },
+  { named: 'Admiration', id: 108, groups: ['LC1', 'LC2', 'LC3'] },
+  { named: 'Finalizing Negotiation/Deal', id: 109, groups: ['LC1', 'LC2'] },
+  { named: 'Refusing a Request', id: 110, groups: ['LC1', 'LC2'] },
+  { named: 'Requesting Information', id: 111, groups: ['LC2', 'LC3'] },
+  { named: 'Granting a Request', id: 112, groups: ['LC2', 'LC3'] },
+  { named: 'Disagreement', id: 113, groups: ['LC2', 'LC3'] },
+  { named: 'Respond to Request for Information', id: 114, groups: ['LC3'] },
+  { named: 'Acknowledging Thanks', id: 115, groups: ['LC3'] },
+  { named: 'Interrupting', id: 116, groups: ['LC3'] },
+];
+
 export interface TA2NormStatus {
   status: 'adhered' | 'violated';
   remediation: number; //0 -unecessary, 1 recommended, 2 necessary
@@ -46,8 +66,9 @@ export interface TA2Annotation {
 const helpDialogTextBase = {
   ASRQuality: {
     title: 'Evaluating the ASR Quality',
+    start: 0,
     list: [
-      'Very low quality, inadequate; overall gist of message and details may be very difficult to comprehend without relying on contextual clues.',
+      'Very low quality, inadequate; overall gist of message and details may be very difficult to comprehend without relying on contextual clues or impossible to comprehend',
       'Tending toward low quality, but minimally adequate; overall gist of message and most details is comprehensible with some difficulty',
       'Tending toward high quality, adequate; some inaccurate (ASR)/non-native (MT)/missing (interpretation) elements but mainly comprehensible',
       'Very high quality; equivalent to professional transcription (ASR)/ interpretation (MT and ceiling condition interpretation).',
@@ -55,6 +76,7 @@ const helpDialogTextBase = {
   },
   MTQuality: {
     title: 'Evaluating the Translation Quality',
+    start: 0,
     list: [
       'Very low quality, inadequate; overall gist of message and details may be very difficult to comprehend without relying on contextual clues.',
       'Tending toward low quality, but minimally adequate; overall gist of message and most details is comprehensible with some difficulty',
@@ -64,22 +86,20 @@ const helpDialogTextBase = {
   },
   AlertsQuality: {
     title: 'Evaluating the Alerts Quality',
+    start: -1,
     list: [
-      'Alerts have a siginficant negative impact to the dialog by distracting the speaker or are categorically inaccurate',
-      'Alerts have a slight negative impact by distracting the speaker or are slightly inaccurate.',
-      'Alerts are benign/basically have no impact',
-      'Alerts help slightly, lead to a slightly more culturally appropriate utterance.',
-      'Alerts have a significant positive impact on the dialog by generating accruate alerts that lead to significantly improved cultural appropriatenesss of the utterance.',
+      'Alert is inaccurate and/or vague.',
+      'Alert is partially inaccurate and/or somewhat vague.',
+      'Alert is accurate and specific.',
     ],
   },
   RephrashingQuality: {
     title: 'Evaluating the Rephrasing Quality',
+    start: -1,
     list: [
-      'Rephrasing has a significant negative impact to the dialog, resulting in little improvement in the cultural appropriateness of the utterance, introduces new or additional norm violations, or distorts the intended message unacceptably.',
-      'Rephrasing has a slightly negative impact.',
-      'Rephrasing is benign / basically has no impact.',
-      'Rephrasing helps slightly',
-      'Rephrasing has a significant positive impact on the dialog by making the utterance culturally appropriate, while staying loyal to the original meaning.',
+      'Rephrasing introduces additional norm violations, and/or distorts the intended message unacceptably.',
+      'Rephrasing does not make utterance more appropriate culturally or distorts the intended message slightly.',
+      'Rephrasing is loyal to the original meaning and results in a significantly more culturally appropriate utterance.',
     ],
   },
 };
@@ -102,6 +122,11 @@ export default defineComponent({
       type: String as PropType<UMDAnnotationMode>,
       default: 'review',
     },
+    LC: {
+      type: String as PropType<'LC1' | 'LC2' | 'LC3' | 'LC4' | 'LC5' | 'LC6'>,
+      default: 'LC1',
+    },
+
   },
 
   setup(props, { emit }) {
@@ -114,33 +139,6 @@ export default defineComponent({
       'Remediation Qaulity',
     ]);
     const stepper = ref(1);
-    onMounted(() => {
-      if (props.mode === 'TA2Annotation_Norms') {
-        stepper.value = 2;
-      }
-      if (props.mode === 'TA2Annotation_Remediation') {
-        stepper.value = 3;
-      }
-    });
-    const ASRQuality = ref(props.annotations.ASRQuality === undefined ? 0 : props.annotations.ASRQuality);
-    const MTQuality = ref(props.annotations.MTQuality === undefined ? 0 : props.annotations.MTQuality);
-    const AlertsQuality = ref(props.annotations.AlertsQuality === undefined ? 2 : props.annotations.AlertsQuality);
-    const RephrasingQuality = ref(props.annotations.RephrasingQuality === undefined ? 2 : props.annotations.RephrasingQuality);
-    const noAlerts = ref(props.annotations.AlertsQuality === null);
-    const noRemediation = ref(props.annotations.RephrasingQuality === null);
-    const DelayedRemediation = ref(
-      props.annotations.DelayedRemediation || false,
-    );
-    const Norms: Ref<Partial<Record<NormsList, TA2NormStatus>>> = ref(
-      props.annotations.Norms || {},
-    );
-    const selectedNorms: Ref<NormsList[]> = ref(
-      (Object.keys(Norms.value) as NormsList[]) || [],
-    );
-    const helpDialog = ref(false);
-    const helpDialogText: Ref<{ title: string; list: string[] }> = ref(
-      helpDialogTextBase.ASRQuality,
-    );
     const baseNorms = ref([
       'No Norm',
       'Apology',
@@ -160,6 +158,40 @@ export default defineComponent({
       'Acknowledging Thanks',
       'Interrupting',
     ]);
+    const calculateBaseNorms = () => {
+      const filtered = NormListMapping.filter((item) => (item.groups.includes(props.LC || 'LC1')));
+      baseNorms.value = filtered.map((item) => item.named);
+    };
+
+    onMounted(() => {
+      if (props.mode === 'TA2Annotation_Norms') {
+        stepper.value = 2;
+      }
+      if (props.mode === 'TA2Annotation_Remediation') {
+        stepper.value = 3;
+      }
+      calculateBaseNorms();
+    });
+    const ASRQuality = ref(props.annotations.ASRQuality === undefined ? 0 : props.annotations.ASRQuality);
+    const MTQuality = ref(props.annotations.MTQuality === undefined ? 0 : props.annotations.MTQuality);
+    const AlertsQuality = ref(props.annotations.AlertsQuality === undefined ? 0 : props.annotations.AlertsQuality);
+    const RephrasingQuality = ref(props.annotations.RephrasingQuality === undefined ? 0 : props.annotations.RephrasingQuality);
+    const noAlerts = ref(props.annotations.AlertsQuality === null);
+    const noRemediation = ref(props.annotations.RephrasingQuality === null);
+    const DelayedRemediation = ref(
+      props.annotations.DelayedRemediation || false,
+    );
+    const Norms: Ref<Partial<Record<NormsList, TA2NormStatus>>> = ref(
+      props.annotations.Norms || {},
+    );
+    const selectedNorms: Ref<NormsList[]> = ref(
+      (Object.keys(Norms.value) as NormsList[]) || [],
+    );
+    const helpDialog = ref(false);
+    const helpDialogText: Ref<{ title: string; list: string[]; start: number }> = ref(
+      helpDialogTextBase.ASRQuality,
+    );
+
     const disableNext = ref(false);
     const disableReason = ref('');
     watch(
@@ -174,10 +206,10 @@ export default defineComponent({
         }
         ASRQuality.value = props.annotations.ASRQuality || 0;
         MTQuality.value = props.annotations.MTQuality || 0;
-        AlertsQuality.value = props.annotations.AlertsQuality === undefined ? 2 : props.annotations.AlertsQuality;
+        AlertsQuality.value = props.annotations.AlertsQuality === undefined ? 0 : props.annotations.AlertsQuality;
         noAlerts.value = props.annotations.AlertsQuality === null;
         noRemediation.value = props.annotations.RephrasingQuality === null;
-        RephrasingQuality.value = props.annotations.RephrasingQuality === undefined ? 2 : props.annotations.RephrasingQuality;
+        RephrasingQuality.value = props.annotations.RephrasingQuality === undefined ? 0 : props.annotations.RephrasingQuality;
 
         DelayedRemediation.value = props.annotations.DelayedRemediation || false;
         Norms.value = props.annotations.Norms || {};
@@ -466,8 +498,13 @@ export default defineComponent({
               </v-row>
             </v-list-item>
           </v-list>
-          <v-row v-if="disableNext" class="mx-2">
-            <v-alert type="error">{{ disableReason }}</v-alert>
+          <v-row
+            v-if="disableNext"
+            class="mx-2"
+          >
+            <v-alert type="error">
+              {{ disableReason }}
+            </v-alert>
           </v-row>
           <v-row class="mx-2">
             <v-spacer />
@@ -503,10 +540,10 @@ export default defineComponent({
                   <v-slider
                     v-model="AlertsQuality"
                     :disabled="noAlerts"
-                    min="0"
-                    max="4"
+                    min="-1"
+                    max="1"
                     step="1"
-                    :tick-labels="['0', '1', '2', '3', '4']"
+                    :tick-labels="['-1', '0', '1']"
                     dense
                     persistent-hint
                   />
@@ -532,10 +569,10 @@ export default defineComponent({
                   <v-slider
                     v-model="RephrasingQuality"
                     :disabled="noRemediation"
-                    min="0"
-                    max="4"
+                    min="-1"
+                    max="1"
                     step="1"
-                    :tick-labels="['0', '1', '2', '3', '4']"
+                    :tick-labels="['-1', '0', '1']"
                     dense
                     persistent-hint
                   />
@@ -589,7 +626,7 @@ export default defineComponent({
       <v-card>
         <v-card-title>{{ helpDialogText.title }} </v-card-title>
         <v-card-text class="help-text">
-          <ol start="0">
+          <ol :start="helpDialogText.start">
             <li
               v-for="(item, index) in helpDialogText.list"
               :key="`helpitem_${index}`"

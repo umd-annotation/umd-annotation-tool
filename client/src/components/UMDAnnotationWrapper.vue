@@ -31,6 +31,10 @@ export default defineComponent({
       type: String as PropType<UMDAnnotationMode>,
       default: 'review',
     },
+    name: {
+      type: String,
+      default: undefined,
+    },
   },
   setup() {
     return {
@@ -61,6 +65,7 @@ export default defineComponent({
   <UMDTA2Annotation
     v-else-if="mode.includes('TA2Annotation')"
     :mode="mode"
+    :name="name"
   />
 </template>
 

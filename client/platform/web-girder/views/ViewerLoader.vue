@@ -218,12 +218,15 @@ export default defineComponent({
       </template>
     </template>
     <template #right-sidebar>
-      <SidebarContext :mode="mode">
+      <SidebarContext
+        :mode="mode"
+      >
         <template #default="{ name, subCategory }">
           <component
             :is="name"
             :sub-category="subCategory"
             :mode="mode"
+            :name="viewerRef.datasetName"
             @update:revision="routeRevision"
           />
         </template>
