@@ -12,6 +12,10 @@ export default defineComponent({
       type: String,
       default: undefined,
     },
+    name: {
+      type: String,
+      default: undefined,
+    },
   },
   setup(props) {
     const options = computed(() => Object.entries(context.componentMap).map(([value, entry]) => ({

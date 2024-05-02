@@ -37,13 +37,17 @@ export default defineComponent({
       type: String as PropType<UMDAnnotationMode>,
       default: 'TA2Annotation_ASRMTQuality',
     },
+    name: {
+      type: String,
+      default: undefined,
+    },
   },
 
   setup(props, { emit }) {
     const selectedTrackIdRef = useSelectedTrackId();
 
     const { prompt } = usePrompt();
-    const { frame, maxSegment } = useTime();
+    const { frame } = useTime();
     const handler = useHandler();
     const restClient = useGirderRest();
     const cameraStore = useCameraStore();
@@ -58,7 +62,23 @@ export default defineComponent({
     const loadedAttributes = ref(false);
     const annotation: Ref<TA2Annotation | null> = ref({});
 
-    let framePlaying = -1;
+    const LCName = computed(() => {
+      if (props.name) {
+        if (props.name.includes('LC1')) {
+          return 'LC1';
+        }
+        if (props.name.includes('LC2')) {
+          return 'LC2';
+        }
+        if (props.name.includes('LC2')) {
+          return 'LC1';
+        }
+        if (props.name.includes('LC3')) {
+          return 'LC3';
+        }
+      }
+      return 'LC1';
+    });
     const seekBegin = () => {
       if (selectedTrackIdRef.value !== null) {
         const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
@@ -75,7 +95,6 @@ export default defineComponent({
       if (selectedTrackIdRef.value !== null) {
         const track = cameraStore.getAnyTrack(selectedTrackIdRef.value);
         handler.replayFromFrame(track.begin);
-        framePlaying = track.end;
       }
     };
 
@@ -295,6 +314,7 @@ export default defineComponent({
       activePanel,
       //refs
       annotation,
+      LCName,
     };
   },
 });
@@ -364,7 +384,9 @@ export default defineComponent({
         <UMDTA2AnnotationWizard
           :annotations="annotation"
           :outside-segment="outsideSegment"
+          :l-c="LCName"
           :mode="mode"
+          :name="name"
           @save="submit($event)"
           @next-turn="changeTrack(1)"
         />
