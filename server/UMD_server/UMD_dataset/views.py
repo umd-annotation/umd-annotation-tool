@@ -56,15 +56,17 @@ class UMD_Dataset(Resource):
         self.route("POST", ("mark_changepoint_complete",), self.mark_changepoint_complete)
         self.route("POST", ("filter", ":folder"), self.create_filter_folder)
 
-    def recursive_folder_list(self, folder, totalFolders):
+    def recursive_folder_list(self, folder, totalFolders, ta2Folders):
         subFolders = Folder().childFolders(folder, 'folder', user=self.getCurrentUser())
         subFolders = sorted(subFolders, key=lambda d: d['created'])
         for data in subFolders:
-            if data['meta'].get('annotate', False) == True:
+            if data['meta'].get('UMDAnnotation', False) == 'TA2':
+                ta2Folders.append(data)
+            elif data['meta'].get('annotate', False) == True:
                 totalFolders.append(data)
             else:
-                self.recursive_folder_list(data, totalFolders)
-        return totalFolders
+                self.recursive_folder_list(data, totalFolders, ta2Folders)
+        return totalFolders, ta2Folders
 
     @access.public(scope=TokenScope.DATA_READ, cookie=True)
     @autoDescribeRoute(
@@ -81,7 +83,8 @@ class UMD_Dataset(Resource):
         folder,
     ):
         totalFolders = []
-        totalFolders = self.recursive_folder_list(folder, totalFolders)
+        ta2Folders = []
+        totalFolders, ta2Folders = self.recursive_folder_list(folder, totalFolders, ta2Folders)
         totalFolders = sorted(totalFolders, key=lambda d: d['created'])
         replacedHostname = getApiUrl().replace('/api/v1', '/#').replace('http', 'https')
         gen = UMD_export.generate_links_tab(replacedHostname, totalFolders)
@@ -92,7 +95,7 @@ class UMD_Dataset(Resource):
     @autoDescribeRoute(
         Description("Export information in tablular form").jsonParam(
             "folderIds",
-            "List of track types to filter by",
+            "List of folders to filter by",
             paramType="query",
             required=True,
             default=[],
@@ -127,25 +130,38 @@ class UMD_Dataset(Resource):
                 destName="folder",
             )
             .param(
-            "applyFilter",
-            "Apply Filter file if it exists.",
-            paramType="query",
-            dataType="boolean",
-            default=False,
-        )
+                "applyFilter",
+                "Apply Filter file if it exists.",
+                paramType="query",
+                dataType="boolean",
+                default=False,
+            )
+            .param(
+                "ta2Only",
+                "Export TA2 Only",
+                paramType="query",
+                dataType="boolean",
+                default=False,
+            )
 
     )
     def export_resursive_tabular(
         self,
         folder,
         applyFilter,
+        ta2Only
     ):
         totalFolders = []
-        totalFolders = self.recursive_folder_list(folder, totalFolders)
+        ta2Folders = []
+        totalFolders, ta2Folders = self.recursive_folder_list(folder, totalFolders, ta2Folders)
         totalFolders = sorted(totalFolders, key=lambda d: d['created'])
+        ta2Folders = sorted(ta2Folders, key=lambda d: d['created'])
         totalFolderIds = []
+        totalTA2FolderIds = []
         for item in totalFolders:
             totalFolderIds.append(str(item['_id']))
+        for item in ta2Folders:
+            totalTA2FolderIds.append(str(item['_id']))
         user = self.getCurrentUser()
         users = list(User().find())
         userMap = mapUserIds(users)
@@ -166,8 +182,12 @@ class UMD_Dataset(Resource):
                         file_generator = File().download(file, headers=False)()
                         file_string = b"".join(list(file_generator))
                         filterMap = UMD_export.create_filter_mapping(file_string)
-        gen = UMD_export.convert_to_zips(totalFolderIds, userMap, user, filterMap)
-        zip_name = "batch_export.zip"
+        if not ta2Only:
+            gen = UMD_export.convert_to_zips(totalFolderIds, userMap, user, filterMap)
+            zip_name = "batch_export.zip"
+        elif ta2Only:
+            gen = UMD_export.convert_to_zips_TA2(totalTA2FolderIds, userMap, user)
+            zip_name = "batch_export.zip"
         setContentDisposition(zip_name, mime='application/zip')
         return gen
 

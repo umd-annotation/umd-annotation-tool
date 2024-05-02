@@ -38,11 +38,14 @@ export default defineComponent({
       window.location.assign(link);
     };
 
-    const exportAnnotations = (filtered = false) => {
+    const exportAnnotations = (filtered = false, ta2Annotations = false) => {
       const idbase = locationStore.location && (locationStore.location as RootlessLocationType)._id;
       let url = `UMD_dataset/recursive_export/${idbase}`;
       if (filtered) {
         url = `${url}?applyFilter=true`;
+      }
+      if (ta2Annotations) {
+        url = `${url}?ta2Only=true`;
       }
       const link = getUri({ url });
       window.location.assign(link);
@@ -150,6 +153,30 @@ export default defineComponent({
               mdi-file-delimited
             </v-icon>
             Export Annotations Filtered
+            <v-icon
+              right
+              color="accent"
+            >
+              mdi-filter
+            </v-icon>
+          </v-btn>
+        </v-card-actions>
+        <v-card-actions>
+          <v-btn
+            v-if="locationStore &&
+              locationStore.location && locationStore.location._modelType === 'folder'"
+            class="ma-0"
+            text
+            small
+            @click="exportAnnotations(false, true)"
+          >
+            <v-icon
+              left
+              color="accent"
+            >
+              mdi-file-delimited
+            </v-icon>
+            Export Annotations TA2
             <v-icon
               right
               color="accent"
