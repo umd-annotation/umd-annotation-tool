@@ -202,15 +202,14 @@ def run_script():
             item = clng_videos[key]
             cloneId = clone_video_folder(gc, item, key, CloneDestinationFolderId)
             gc.addMetadataToFolder(cloneId, {"UMDAnnotation": "TA2"})
+            trackJSON = {"tracks": {}, "groups": {}, "version": 2}
+            with open('emptyTracks.json', 'w', encoding='utf8') as outfile:
+                json.dump(trackJSON, outfile, ensure_ascii=False, indent=True)
+            gc.uploadFileToFolder(CloneDestinationFolderId, 'emptyTracks.json')
+            gc.sendRestRequest('POST', f'dive_rpc/postprocess/{CloneDestinationFolderId}', data={'skipTranscoding': True, 'skipJobs': True})
             completed_videos.append({'name': key, 'id': cloneId, 'CLNG': True})
 
     generate_CSV(completed_videos, f'https://{apiURL}')
-    
-    
-
-
-
-
 
 def create_or_get_turn(turns, start_time, end_time, time_seconds):
     

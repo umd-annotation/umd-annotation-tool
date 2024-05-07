@@ -282,7 +282,7 @@ export default defineComponent({
         </v-icon>
       </v-btn>
       <v-btn
-        v-if="isTA2Folder(item) && !item.name.includes('CLNG')"
+        v-if="isTA2Folder(item) && item.name.includes('CLNG')"
         class="ml-2"
         x-small
         color="primary"

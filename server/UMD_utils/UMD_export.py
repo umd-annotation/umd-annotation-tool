@@ -21,7 +21,7 @@ normMap = {
     "Thanks": 106,
     "Taking Leave": 107,
     "Admiration": 108,
-    "Finalizing Negotiation/Deal": 109,
+    "Finalizing Negotiating/Deal": 109,
     "Refusing a Request": 110,
     "Requesting Information": 111,
     "Granting a Request": 112,
@@ -338,7 +338,13 @@ def export_ta2_annotation(folders, userMap, user):
                 attributes = t['attributes']
                 userDataFound = {}
                 dataFound = False
+                system_normMap = {}
                 for key in attributes.keys():
+                    if 'norms' == key:
+                        norm_list = attributes[key]
+                        for item in norm_list:
+                            if item.get('norm', False):
+                                system_normMap[item['norm']] = item['status']
                     if '_ASRQuality' in key:
                         login = key.replace('_ASRQuality', '')
                         mapped = login
@@ -360,12 +366,29 @@ def export_ta2_annotation(folders, userMap, user):
                             userDataFound[mapped] = {}
                         userDataFound[mapped]['alert_quality'] = attributes[key]
                         dataFound = True
+                    if '_DelayedRemediation' in key:
+                        login = key.replace('_DelayedRemediation', '')
+                        mapped = login
+                        if mapped not in userDataFound.keys():
+                            userDataFound[mapped] = {}
+                        if (attributes[key]):
+                            userDataFound[mapped]['delayed_remediation'] = 'yes'
+                        else:
+                            userDataFound[mapped]['delayed_remediation'] = 'no'
+                        dataFound = True
                     if '_RephrasingQuality' in key:
                         login = key.replace('_RephrasingQuality', '')
                         mapped = login
                         if mapped not in userDataFound.keys():
                             userDataFound[mapped] = {}
                         userDataFound[mapped]['rephrase_quality'] = attributes[key]
+                        dataFound = True
+                    if '_TA2Norms' in key:
+                        login = key.replace('_TA2Norms', '')
+                        mapped = login
+                        if mapped not in userDataFound.keys():
+                            userDataFound[mapped] = {}
+                        userDataFound[mapped]['norms'] = attributes[key]
                         dataFound = True
                 if dataFound:
                     if 'translation' in attributes.keys():
@@ -376,6 +399,19 @@ def export_ta2_annotation(folders, userMap, user):
                 for key in userDataFound.keys():                        
                     userId = userMap[key]['uid']
                     userGirderId = userMap[key]['id']
+                    norm_list = []
+                    status_list = []
+                    alertremed_list = []
+                    if 'norms' in userDataFound[key].keys():
+                        norms = userDataFound[key]['norms']
+                        for norm_key in norms.keys():
+                            norm_id = normMap[norm_key]
+                            status = norms[norm_key].get('status', 'violated')
+                            remediation = norms[norm_key].get('remediation', 0)
+                            norm_list.append(str(norm_id))
+                            status_list.append(str(status))
+                            alertremed_list.append(str(remediation))
+
                     columns = [
                         userId,
                         session_id,
@@ -383,14 +419,14 @@ def export_ta2_annotation(folders, userMap, user):
                         speaker,
                         userDataFound[key].get('asr_quality', 'None'),
                         userDataFound[key].get('mt_quality', 'None'),
-                        'norm not implemented',
-                        'status not implemented',
-                        "alertremed_decision not implemented",
+                        ','.join(norm_list),
+                        ','.join(status_list),
+                        ','.join(alertremed_list),
                         "alertremed_output not implemented",
                         "alertremed_evaluation not implemented",
                         userDataFound[key].get('alert_quality', 'None'),
                         userDataFound[key].get('rephrase_quality', 'None'),
-                        "sme_delayed_remediation not implemented"
+                        userDataFound[key].get('delayed_remediation','No'),
                     ]
                     writer.writerow(columns)
     yield csvFile.getvalue()
