@@ -1,12 +1,11 @@
 <script lang="ts">
 import {
   computed,
-  defineComponent, ref,
+  defineComponent, ref, PropType,
 } from '@vue/composition-api';
 import {
   getUri,
 } from 'platform/web-girder/api';
-import { PropType } from 'vue';
 
 import { useStore, RootlessLocationType } from '../store/types';
 import FilterImport from './FilterImport.vue';
