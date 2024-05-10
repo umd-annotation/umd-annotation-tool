@@ -95,7 +95,7 @@ matrix:
       - '**/*.md'
     - name: Text
       sources:
-      - '**/*.txt|!wordlist.txt'
+      - '**/*.txt|!wordlist.txt|!requirements.txt'
       ignores:
       - 'requirements.txt'
       expect_match: false
