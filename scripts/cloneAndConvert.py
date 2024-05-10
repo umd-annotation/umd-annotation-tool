@@ -10,7 +10,7 @@ from fuzzywuzzy import process
 ADD_CLNG_VIDEOS = True # will add the CLNG labelled videos with TURN creation links
 JSONLSourceFolderId = "6627ef547193244a6e33353d" # the GirderId of the folder that contains the source JSONL files
 VideoSourceFolderIds = ["6602d4a4cb9585b0c24b794f", "65e72cd2cb9585b0c24b3ac1"] # folders to search for matching Video files
-CloneDestinationFolderId = "661e8fceaee0d357e2455d47" # destination girder folder ID for the cloned videos
+CloneDestinationFolderId = "663a51a00e61a67154749750" # destination girder folder ID for the cloned videos
 
 apiURL = "annotation.umd.edu"
 
@@ -205,8 +205,8 @@ def run_script():
             trackJSON = {"tracks": {}, "groups": {}, "version": 2}
             with open('emptyTracks.json', 'w', encoding='utf8') as outfile:
                 json.dump(trackJSON, outfile, ensure_ascii=False, indent=True)
-            gc.uploadFileToFolder(CloneDestinationFolderId, 'emptyTracks.json')
-            gc.sendRestRequest('POST', f'dive_rpc/postprocess/{CloneDestinationFolderId}', data={'skipTranscoding': True, 'skipJobs': True})
+            gc.uploadFileToFolder(cloneId, 'emptyTracks.json')
+            gc.sendRestRequest('POST', f'dive_rpc/postprocess/{cloneId}', data={'skipTranscoding': True, 'skipJobs': True})
             completed_videos.append({'name': key, 'id': cloneId, 'CLNG': True})
 
     generate_CSV(completed_videos, f'https://{apiURL}')

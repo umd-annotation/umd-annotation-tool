@@ -299,11 +299,8 @@ def export_ta2_annotation(folders, userMap, user):
             "turn_speaker",
             "asr_quality",
             "mt_quality",
-            "norm",
-            "status",
-            "alertremed_decision",
-            "alertremed_output",
-            "alertremed_evaluation",
+            "system_norms",
+            "user_norms",
             "alert_quality",
             "rephrase_quality",
             "sme_delayed_remediation",
@@ -339,9 +336,11 @@ def export_ta2_annotation(folders, userMap, user):
                 userDataFound = {}
                 dataFound = False
                 system_normMap = {}
+                system_norms = {}
                 for key in attributes.keys():
                     if 'norms' == key:
                         norm_list = attributes[key]
+                        system_norms = attributes[key]
                         for item in norm_list:
                             if item.get('norm', False):
                                 system_normMap[item['norm']] = item['status']
@@ -399,6 +398,7 @@ def export_ta2_annotation(folders, userMap, user):
                 for key in userDataFound.keys():                        
                     userId = userMap[key]['uid']
                     userGirderId = userMap[key]['id']
+                    norms = {}
                     norm_list = []
                     status_list = []
                     alertremed_list = []
@@ -419,14 +419,11 @@ def export_ta2_annotation(folders, userMap, user):
                         speaker,
                         userDataFound[key].get('asr_quality', 'None'),
                         userDataFound[key].get('mt_quality', 'None'),
-                        ','.join(norm_list),
-                        ','.join(status_list),
-                        ','.join(alertremed_list),
-                        "alertremed_output not implemented",
-                        "alertremed_evaluation not implemented",
+                        norms,
+                        system_norms,
                         userDataFound[key].get('alert_quality', 'None'),
                         userDataFound[key].get('rephrase_quality', 'None'),
-                        userDataFound[key].get('delayed_remediation','No'),
+                        userDataFound[key].get('delayed_remediation', 'No'),
                     ]
                     writer.writerow(columns)
     yield csvFile.getvalue()

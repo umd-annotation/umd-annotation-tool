@@ -156,11 +156,12 @@ export default defineComponent({
               <div class="pa-2">
                 <export-menu
                   v-bind="{ buttonOptions, menuOptions }"
+                  :selected-dataset-ids="locationInputs"
                 />
                 <Clone
                   v-if="false"
                   v-bind="{ buttonOptions, menuOptions }"
-                  :dataset-id="locationInputs.length === 1 ? locationInputs[0] : null"
+                  :dataset-id="locationInputs ? locationInputs : undefined"
                 />
                 <run-training-menu
                   v-if="false"

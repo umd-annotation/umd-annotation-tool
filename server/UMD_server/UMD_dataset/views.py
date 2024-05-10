@@ -101,16 +101,30 @@ class UMD_Dataset(Resource):
             default=[],
             requireArray=True,
         )
+        .param(
+            "ta2Only",
+            "Export TA2 Only",
+            paramType="query",
+            dataType="boolean",
+            default=False,
+        )
+
     )
     def export_tabular(
         self,
         folderIds,
+        ta2Only
     ):
         user = self.getCurrentUser()
         users = list(User().find())
         userMap = mapUserIds(users)
 
-        gen = UMD_export.convert_to_zips(folderIds, userMap, user)
+        if not ta2Only:
+            gen = UMD_export.convert_to_zips(folderIds, userMap, user, None)
+            zip_name = "batch_export.zip"
+        elif ta2Only:
+            gen = UMD_export.convert_to_zips_TA2(folderIds, userMap, user)
+            zip_name = "batch_export.zip"
         if len(folderIds) > 1:
             zip_name = "batch_export.zip"
         else:
