@@ -6,6 +6,7 @@ import {
 import {
   getUri,
 } from 'platform/web-girder/api';
+import { PropType } from 'vue';
 
 import { useStore, RootlessLocationType } from '../store/types';
 import FilterImport from './FilterImport.vue';
@@ -24,8 +25,12 @@ export default defineComponent({
       type: Object,
       default: () => ({}),
     },
+    selectedDatasetIds: {
+      type: Array as PropType<string[]>,
+      default: () => [],
+    },
   },
-  setup() {
+  setup(props) {
     const store = useStore();
     const locationStore = store.state.Location;
     const menuOpen = ref(false);
@@ -38,11 +43,24 @@ export default defineComponent({
       window.location.assign(link);
     };
 
-    const exportAnnotations = (filtered = false) => {
+    const exportAnnotations = (filtered = false, ta2Annotations = false) => {
       const idbase = locationStore.location && (locationStore.location as RootlessLocationType)._id;
       let url = `UMD_dataset/recursive_export/${idbase}`;
+      if (props.selectedDatasetIds.length) {
+        url = 'UMD_dataset/export';
+        url = `${url}/?folderIds=${JSON.stringify(props.selectedDatasetIds)}`;
+        if (ta2Annotations) {
+          url = `${url}&ta2Only=true`;
+        }
+        const link = getUri({ url });
+        window.location.assign(link);
+        return;
+      }
       if (filtered) {
         url = `${url}?applyFilter=true`;
+      }
+      if (ta2Annotations) {
+        url = `${url}?ta2Only=true`;
       }
       const link = getUri({ url });
       window.location.assign(link);
@@ -64,7 +82,7 @@ export default defineComponent({
     :close-on-content-click="false"
     :nudge-width="120"
     v-bind="menuOptions"
-    max-width="280"
+    max-width="350"
   >
     <template #activator="{ on: menuOn }">
       <v-tooltip bottom>
@@ -98,7 +116,7 @@ export default defineComponent({
         <v-card-title>
           Export options
         </v-card-title>
-        <v-card-actions>
+        <v-card-actions v-if="!selectedDatasetIds.length">
           <v-btn
             v-if="locationStore &&
               locationStore.location && locationStore.location._modelType === 'folder'"
@@ -113,10 +131,10 @@ export default defineComponent({
             >
               mdi-file-delimited
             </v-icon>
-            Export Links
+            Export Folder Links
           </v-btn>
         </v-card-actions>
-        <v-card-actions>
+        <v-card-actions v-if="!selectedDatasetIds.length">
           <v-btn
             v-if="locationStore &&
               locationStore.location && locationStore.location._modelType === 'folder'"
@@ -131,10 +149,28 @@ export default defineComponent({
             >
               mdi-file-delimited
             </v-icon>
-            Export Annotations
+            Export Folder UMD Annotations
           </v-btn>
         </v-card-actions>
-        <v-card-actions>
+        <v-card-actions v-if="selectedDatasetIds.length">
+          <v-btn
+            v-if="locationStore &&
+              locationStore.location && locationStore.location._modelType === 'folder'"
+            class="ma-0"
+            text
+            small
+            @click="exportAnnotations()"
+          >
+            <v-icon
+              left
+              color="accent"
+            >
+              mdi-file-delimited
+            </v-icon>
+            Export Selected Annotations
+          </v-btn>
+        </v-card-actions>
+        <v-card-actions v-if="!selectedDatasetIds.length">
           <v-btn
             v-if="locationStore &&
               locationStore.location && locationStore.location._modelType === 'folder'"
@@ -158,7 +194,55 @@ export default defineComponent({
             </v-icon>
           </v-btn>
         </v-card-actions>
-        <v-card-actions>
+        <v-card-actions v-if="!selectedDatasetIds.length">
+          <v-btn
+            v-if="locationStore &&
+              locationStore.location && locationStore.location._modelType === 'folder'"
+            class="ma-0"
+            text
+            small
+            @click="exportAnnotations(false, true)"
+          >
+            <v-icon
+              left
+              color="accent"
+            >
+              mdi-file-delimited
+            </v-icon>
+            Export Folder Annotations TA2
+            <v-icon
+              right
+              color="accent"
+            >
+              mdi-filter
+            </v-icon>
+          </v-btn>
+        </v-card-actions>
+        <v-card-actions v-if="selectedDatasetIds.length">
+          <v-btn
+            v-if="locationStore &&
+              locationStore.location && locationStore.location._modelType === 'folder'"
+            class="ma-0"
+            text
+            small
+            @click="exportAnnotations(false, true)"
+          >
+            <v-icon
+              left
+              color="accent"
+            >
+              mdi-file-delimited
+            </v-icon>
+            Export Selected Annotations TA2
+            <v-icon
+              right
+              color="accent"
+            >
+              mdi-filter
+            </v-icon>
+          </v-btn>
+        </v-card-actions>
+        <v-card-actions v-if="!selectedDatasetIds.length">
           <filter-import :id="id" />
         </v-card-actions>
       </v-card>

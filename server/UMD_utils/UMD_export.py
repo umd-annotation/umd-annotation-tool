@@ -21,10 +21,17 @@ normMap = {
     "Thanks": 106,
     "Taking Leave": 107,
     "Admiration": 108,
-    "Finalizing Negotiation/Deal": 109,
+    "Finalizing Negotiating/Deal": 109,
     "Refusing a Request": 110,
+    "Requesting Information": 111,
+    "Granting a Request": 112,
+    "Disagreement": 113,
+    "Respond to Request for Information": 114,
+    "Acknowledging Thanks": 115,
+    "Interrupting": 116,
     "None": 'none',
 }
+
 
 normValuesViolate = ['violate', 'violated']
 normValuesAdhere = ['adhere', 'adhered']
@@ -36,6 +43,7 @@ NormAdhereViolate = 'adhere_violate'
 normNone = 'EMPTY_NA'
 
 TrackAttributeExists = ['_Arousal', '_Valence', '_Norms', '_Emotions']
+TA2AttributeExists = ['_ASRQuality', '_MTQuality', '_AlertsQuality', '_RephrasingQuality', '_DelayedRemedation', 'TA2Norms']
 FrameAttributeExists = ['_Impact', '_RemediationComment']
 
 removed_elements = ['Video ', '.mp4', '-TIGHT', '-MID', '-WIDE']
@@ -63,21 +71,32 @@ def bin_value(value):
 def bin_changepoint(value):
     return math.floor((value - 1) / 1000) + 1
 
-def annotations_exists(tracks):
-    for t in tracks:
-        if 'features' in t.keys():
-            features = t['features']
-            attributes = t['attributes']
-            for key in attributes.keys():
-                if any(check in key for check in TrackAttributeExists):
-                    return True
-            for feature in features:
-                if 'attributes' in feature.keys():
-                    frameAttributes = feature['attributes']
-                    for frameAttribute in frameAttributes.keys():
-                        if any(check in frameAttribute for check in FrameAttributeExists):
-                            return True
-    return False
+def annotations_exists(tracks, annotationType='UMD'):
+    if annotationType == 'UMD':
+        for t in tracks:
+            if 'features' in t.keys():
+                features = t['features']
+                attributes = t['attributes']
+                for key in attributes.keys():
+                    if any(check in key for check in TrackAttributeExists):
+                        return True
+                for feature in features:
+                    if 'attributes' in feature.keys():
+                        frameAttributes = feature['attributes']
+                        for frameAttribute in frameAttributes.keys():
+                            if any(check in frameAttribute for check in FrameAttributeExists):
+                                return True
+        return False
+    elif annotationType == 'UMDTA2':
+        for t in tracks:
+            if 'features' in t.keys():
+                features = t['features']
+                attributes = t['attributes']
+                for key in attributes.keys():
+                    if any(check in key for check in TA2AttributeExists):
+                        return True
+        return False
+
 
 
 def export_changepoint_tab(folders, userMap, user, filterMap):
@@ -263,6 +282,150 @@ def export_norms_tab(folders, userMap, user, filterMap):
                             writer.writerow(columns)
 
                         
+    yield csvFile.getvalue()
+    csvFile.seek(0)
+    csvFile.truncate(0)
+    yield csvFile.getvalue()
+
+
+def export_ta2_annotation(folders, userMap, user):
+    csvFile = io.StringIO()
+    writer = csv.writer(csvFile, delimiter='\t')
+    writer.writerow(
+        [
+            "user_id",
+            "session_id",
+            "turn_id",
+            "turn_speaker",
+            "asr_quality",
+            "mt_quality",
+            "system_norms",
+            "user_norms",
+            "alert_quality",
+            "rephrase_quality",
+            "sme_delayed_remediation",
+        ]
+    )
+    for folderId in folders:
+        folder = Folder().load(folderId, level=AccessType.READ, user=user)
+        videoname = process_video_name(folder['name'])
+        name = videoname
+        splits = name.split('_')
+        session_id = name
+        language = ''
+        condition = ''
+        scenario = ''
+        fle_id = ''
+        recording_date = ''
+        if len(splits) > 5:
+            language = splits[0]
+            condition = splits[1]
+            scenario = splits[2]
+            fle_id = splits[3]
+            sme_id = splits[4]
+            recording_date = splits[5]
+            session_id = f'{language}_{condition}_{scenario}_{fle_id}_{sme_id}_{recording_date}'
+
+
+        fps = folder['meta']['fps']
+        tracks = crud_annotation.TrackItem().list(folder)
+
+        for t in tracks:
+            if 'attributes' in t.keys():
+                attributes = t['attributes']
+                userDataFound = {}
+                dataFound = False
+                system_normMap = {}
+                system_norms = {}
+                for key in attributes.keys():
+                    if 'norms' == key:
+                        norm_list = attributes[key]
+                        system_norms = attributes[key]
+                        for item in norm_list:
+                            if item.get('norm', False):
+                                system_normMap[item['norm']] = item['status']
+                    if '_ASRQuality' in key:
+                        login = key.replace('_ASRQuality', '')
+                        mapped = login
+                        if mapped not in userDataFound.keys():
+                            userDataFound[mapped] = {}
+                        userDataFound[mapped]['asr_quality'] = attributes[key]
+                        dataFound = True
+                    if '_MTQuality' in key:
+                        login = key.replace('_MTQuality', '')
+                        mapped = login
+                        if mapped not in userDataFound.keys():
+                            userDataFound[mapped] = {}
+                        userDataFound[mapped]['mt_quality'] = attributes[key]
+                        dataFound = True
+                    if '_AlertsQuality' in key:
+                        login = key.replace('_AlertsQuality', '')
+                        mapped = login
+                        if mapped not in userDataFound.keys():
+                            userDataFound[mapped] = {}
+                        userDataFound[mapped]['alert_quality'] = attributes[key]
+                        dataFound = True
+                    if '_DelayedRemediation' in key:
+                        login = key.replace('_DelayedRemediation', '')
+                        mapped = login
+                        if mapped not in userDataFound.keys():
+                            userDataFound[mapped] = {}
+                        if (attributes[key]):
+                            userDataFound[mapped]['delayed_remediation'] = 'yes'
+                        else:
+                            userDataFound[mapped]['delayed_remediation'] = 'no'
+                        dataFound = True
+                    if '_RephrasingQuality' in key:
+                        login = key.replace('_RephrasingQuality', '')
+                        mapped = login
+                        if mapped not in userDataFound.keys():
+                            userDataFound[mapped] = {}
+                        userDataFound[mapped]['rephrase_quality'] = attributes[key]
+                        dataFound = True
+                    if '_TA2Norms' in key:
+                        login = key.replace('_TA2Norms', '')
+                        mapped = login
+                        if mapped not in userDataFound.keys():
+                            userDataFound[mapped] = {}
+                        userDataFound[mapped]['norms'] = attributes[key]
+                        dataFound = True
+                if dataFound:
+                    if 'translation' in attributes.keys():
+                        turn = t['id'] + 1
+                    if 'speaker' in attributes.keys():
+                        speaker = attributes['speaker']
+
+                for key in userDataFound.keys():                        
+                    userId = userMap[key]['uid']
+                    userGirderId = userMap[key]['id']
+                    norms = {}
+                    norm_list = []
+                    status_list = []
+                    alertremed_list = []
+                    if 'norms' in userDataFound[key].keys():
+                        norms = userDataFound[key]['norms']
+                        for norm_key in norms.keys():
+                            norm_id = normMap[norm_key]
+                            status = norms[norm_key].get('status', 'violated')
+                            remediation = norms[norm_key].get('remediation', 0)
+                            norm_list.append(str(norm_id))
+                            status_list.append(str(status))
+                            alertremed_list.append(str(remediation))
+
+                    columns = [
+                        userId,
+                        session_id,
+                        turn,
+                        speaker,
+                        userDataFound[key].get('asr_quality', 'None'),
+                        userDataFound[key].get('mt_quality', 'None'),
+                        norms,
+                        system_norms,
+                        userDataFound[key].get('alert_quality', 'None'),
+                        userDataFound[key].get('rephrase_quality', 'None'),
+                        userDataFound[key].get('delayed_remediation', 'No'),
+                    ]
+                    writer.writerow(columns)
     yield csvFile.getvalue()
     csvFile.seek(0)
     csvFile.truncate(0)
@@ -637,6 +800,9 @@ def generate_tab(folders, userMap, user, type, filterMap=None):
         if type == 'userMap':
             for data in export_user_map(userMap):
                 yield data
+        if type == 'TA2Annotation':
+            for data in export_ta2_annotation(folders, userMap, user):
+                yield data
     return downloadGenerator
 
 def convert_to_zips(folders, userMap, user, filterMap):
@@ -680,6 +846,21 @@ def convert_to_zips(folders, userMap, user, filterMap):
         yield z.footer()
 
     return stream
+
+def convert_to_zips_TA2(folders, userMap, user,):
+    def stream():
+        z = ziputil.ZipGenerator()            
+        zip_path = './'
+        userMap_file = generate_tab(folders, userMap, user, 'userMap')
+        for data in z.addFile(userMap_file, Path(f'{zip_path}/userMap.tab')):
+            yield data
+        ta2_file = generate_tab(folders, userMap, user, 'TA2Annotation')
+        for data in z.addFile(ta2_file, Path(f'{zip_path}/TA2.tab')):
+            yield data
+        yield z.footer()
+
+    return stream
+
 
 def generate_links_tab(url, folders):
     def downloadGenerator():

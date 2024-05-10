@@ -2,8 +2,20 @@ import girder_client
 import json
 import click
 import requests
+import csv
 import os
 from fuzzywuzzy import process
+
+
+ADD_CLNG_VIDEOS = True # will add the CLNG labelled videos with TURN creation links
+JSONLSourceFolderId = "6627ef547193244a6e33353d" # the GirderId of the folder that contains the source JSONL files
+VideoSourceFolderIds = ["6602d4a4cb9585b0c24b794f", "65e72cd2cb9585b0c24b3ac1"] # folders to search for matching Video files
+CloneDestinationFolderId = "663a51a00e61a67154749750" # destination girder folder ID for the cloned videos
+
+apiURL = "annotation.umd.edu"
+
+processingDirectory = './jsonProcessing'
+tracksDirectory = './tracks'
 
 normMap = {
     '101': "Apology",
@@ -25,14 +37,7 @@ normMap = {
     "none": "None",
 }
 
-JSONLSourceFolderId = "6627ef547193244a6e33353d"
-VideoSourceFolderIds = ["6602d4a4cb9585b0c24b794f", "65e72cd2cb9585b0c24b3ac1"]
-CloneDestinationFolderId = "661e8fceaee0d357e2455d47"
 
-apiURL = "annotation.umd.edu"
-
-processingDirectory = './jsonProcessing'
-tracksDirectory = './tracks'
 def login():
     gc = girder_client.GirderClient(apiURL, port=443, apiRoot='girder/api/v1' )
     gc.authenticate(interactive=True)
@@ -132,10 +137,41 @@ def upload_track_json(gc: girder_client.GirderClient, destFolderId, trackJsonFil
     gc.addMetadataToFolder(destFolderId, {"UMDAnnotation": "TA2"})
 
 
-@click.command(name="removeDups", help="Load in ")
+
+def extract_CLNG_videos(video_dict):
+    unAnnotatedVideos = {}
+    for key in video_dict.keys():
+        if 'CLNG' in key:
+            unAnnotatedVideos[key] = video_dict[key]
+    return unAnnotatedVideos
+
+
+# Function to generate row for each object
+def generate_row(obj, base_url):
+    row = [obj["name"]]
+    row.append(f"{base_url}/#/viewer/{obj['id']}?mode=TA2Annotation_ASRMTQuality")
+    row.append(f"{base_url}/#/viewer/{obj['id']}?mode=TA2Annotation_Norms")
+    row.append(f"{base_url}/#/viewer/{obj['id']}?mode=TA2Annotation_Remediation")
+    if obj.get("CLNG", False):
+        row.append(f"{base_url}/#/viewer/{obj['id']}?mode=TA2Annotation_Creation")
+    return row
+
+def generate_CSV(objects, base_url):
+    # Writing to CSV
+    with open('TA2Annotations.csv', 'w', newline='') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        # Writing header
+        csvwriter.writerow(['NAME', 'TA2 Annotation Quality', 'TA2 Norms', 'TA2 Remediation', 'TA2 Turn Creation'])
+        # Writing data rows
+        for obj in objects:
+            csvwriter.writerow(generate_row(obj, base_url))
+
+
+@click.command(name="cloneAndConvert", help="Load in ")
 def run_script():
     gc = login()
     video_map = get_processVideos(gc)
+    clng_videos = extract_CLNG_videos(video_map)
     existing_videos = get_existingVideos(gc, CloneDestinationFolderId)
     item_map = get_processJSONItems(gc, JSONLSourceFolderId)
     matching, unmatching = get_matching_items(video_map, item_map)
@@ -146,7 +182,7 @@ def run_script():
 
     count = 0
     limit = 9999
-    print(existing_videos)
+    completed_videos = []
     for key in matching.keys():
         if key in existing_videos.keys():
             print(f'Skipping video: {key} it already exists')
@@ -157,16 +193,23 @@ def run_script():
         cloneId = clone_video_folder(gc, item["videoId"], key, CloneDestinationFolderId)
         item["cloneId"] = cloneId
         upload_track_json(gc, cloneId, trackJSONFilePath)
+        completed_videos.append({'name': key, 'id': cloneId})
         count += 1
         if count > limit:
             break
+    if ADD_CLNG_VIDEOS:
+        for key in clng_videos.keys():
+            item = clng_videos[key]
+            cloneId = clone_video_folder(gc, item, key, CloneDestinationFolderId)
+            gc.addMetadataToFolder(cloneId, {"UMDAnnotation": "TA2"})
+            trackJSON = {"tracks": {}, "groups": {}, "version": 2}
+            with open('emptyTracks.json', 'w', encoding='utf8') as outfile:
+                json.dump(trackJSON, outfile, ensure_ascii=False, indent=True)
+            gc.uploadFileToFolder(cloneId, 'emptyTracks.json')
+            gc.sendRestRequest('POST', f'dive_rpc/postprocess/{cloneId}', data={'skipTranscoding': True, 'skipJobs': True})
+            completed_videos.append({'name': key, 'id': cloneId, 'CLNG': True})
 
-
-    
-
-
-
-
+    generate_CSV(completed_videos, f'https://{apiURL}')
 
 def create_or_get_turn(turns, start_time, end_time, time_seconds):
     
