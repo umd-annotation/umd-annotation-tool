@@ -92,7 +92,7 @@ matrix:
   - '**/*.md'
 - name: Text
   sources:
-  - '**/*.txt|!wordlist.txt'
+  - '**/*.txt|!wordlist.txt|!**/requirements.txt'
   ignores:
   expect_match: false
   dictionary:
