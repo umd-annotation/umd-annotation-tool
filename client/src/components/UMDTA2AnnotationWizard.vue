@@ -217,7 +217,9 @@ export default defineComponent({
       },
     );
     watch(selectedNorms, () => {
-      const addNorms: Partial<Record<NormsList, TA2NormStatus>> = {};
+      const addNorms: Partial<Record<NormsList, TA2NormStatus>> = Norms.value;
+      console.log('selectedNorms updated');
+      console.log(selectedNorms.value);
       disableNext.value = false;
       disableReason.value = '';
       if (selectedNorms.value.includes('No Norm')) {
@@ -228,18 +230,25 @@ export default defineComponent({
         }
         return;
       }
+      console.log(props.annotations);
       selectedNorms.value.forEach((norm) => {
         if (!addNorms[norm]) {
           addNorms[norm] = {
             status:
-              (props.annotations.Norms
-                && props.annotations.Norms[norm].status)
+              (props?.annotations.Norms
+                && props?.annotations.Norms[norm]?.status)
               || 'adhered',
             remediation:
-              (props.annotations.Norms
-                && props.annotations.Norms[norm].remediation)
+              (props?.annotations.Norms
+                && props?.annotations.Norms[norm]?.remediation)
               || 0,
           };
+        }
+      });
+      Object.keys(addNorms).forEach((key) => {
+        const norm = key as NormsList;
+        if (!selectedNorms.value.includes(norm) && addNorms[norm]) {
+          delete addNorms[norm];
         }
       });
       Norms.value = addNorms;

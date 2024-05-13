@@ -30,6 +30,7 @@ normMap = {
     "Acknowledging Thanks": 115,
     "Interrupting": 116,
     "None": 'none',
+    "No Norm": 'none',
 }
 
 
@@ -144,8 +145,8 @@ def export_changepoint_tab(folders, userMap, user, filterMap):
                                 userDataFound[mapped]['Comment'] = str(attributes[key])
                                 userDataFound[mapped]['Timestamp'] = (1 / fps) * (feature['frame'] - minus_frames)
                 for key in userDataFound.keys():
-                    userId = userMap[key]['uid']
-                    userGirderId = userMap[key]['id']
+                    userId = userMap.get(key, {"uid": "unknown"})['uid']
+                    userGirderId = userMap.get(key, {"id": "unknown"})['id']
                     if not record_user_annotations(changepoint_filterMap, folderId, userGirderId):
                         continue
                     columns = [
@@ -191,7 +192,7 @@ def export_remediation_tab(folders, userMap, user):
                                 userDataFound[mapped]['Timestamp'] = (1 / fps) * (feature['frame'] - minus_frames)
 
                 for key in userDataFound.keys():
-                    userId = userMap[key]['uid']
+                    userId = userMap.get(key, {"uid": "unknown"})['uid']
                     columns = [
                         userId,
                         videoname,
@@ -244,8 +245,8 @@ def export_norms_tab(folders, userMap, user, filterMap):
                 for key in userDataFound.keys():
                     for normKey in userDataFound[key].keys():
                         value = userDataFound[key][normKey]
-                        userId = userMap[key]['uid']
-                        userGirderId = userMap[key]['id']
+                        userId = userMap.get(key, {"uid": "unknown"})['uid']
+                        userGirderId = userMap.get(key, {"id": "unknown"})['id']
                         if not record_user_annotations(norms_filterMap, folderId, userGirderId):
                             continue
                         if value in normValuesAdhere:
@@ -396,8 +397,8 @@ def export_ta2_annotation(folders, userMap, user):
                         speaker = attributes['speaker']
 
                 for key in userDataFound.keys():                        
-                    userId = userMap[key]['uid']
-                    userGirderId = userMap[key]['id']
+                    userId = userMap.get(key, {"uid": "unknown"})['uid']
+                    userGirderId = userMap.get(key, {"id": "unknown"})['id']
                     norms = {}
                     norm_list = []
                     status_list = []
@@ -406,7 +407,7 @@ def export_ta2_annotation(folders, userMap, user):
                         norms = userDataFound[key]['norms']
                         for norm_key in norms.keys():
                             norm_id = normMap[norm_key]
-                            status = norms[norm_key].get('status', 'violated')
+                            status = norms[norm_key].get('status', 'none')
                             remediation = norms[norm_key].get('remediation', 0)
                             norm_list.append(str(norm_id))
                             status_list.append(str(status))
@@ -475,8 +476,8 @@ def export_valence_tab(folders, userMap, user, filterMap):
                         userDataFound[mapped]['arousal_continuous'] = attributes[key]
                         userDataFound[mapped]['arousal_binned'] = bin_value(attributes[key])
                 for key in userDataFound.keys():                        
-                    userId = userMap[key]['uid']
-                    userGirderId = userMap[key]['id']
+                    userId = userMap.get(key, {"uid": "unknown"})['uid']
+                    userGirderId = userMap.get(key, {"id": "unknown"})['id']
                     if not record_user_annotations(VAE_filterMap, folderId, userGirderId):
                         continue
                     columns = [
@@ -586,8 +587,8 @@ def export_emotions_tab(folders, userMap, user, filterMap):
                             userDataFound[mapped] = {}
                         userDataFound[mapped]['MultiSpeaker'] = attributes[key]
                 for key in userDataFound.keys():
-                    userId = userMap[key]['uid']
-                    userGirderId = userMap[key]['id']
+                    userId = userMap.get(key, {"uid": "unknown"})['uid']
+                    userGirderId = userMap.get(key, {"id": "unknown"})['id']
                     if not record_user_annotations(emotions_filterMap, folderId, userGirderId):
                         continue
                     multiSpeaker = userDataFound[key]['MultiSpeaker']
