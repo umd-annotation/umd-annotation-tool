@@ -218,8 +218,6 @@ export default defineComponent({
     );
     watch(selectedNorms, () => {
       const addNorms: Partial<Record<NormsList, TA2NormStatus>> = Norms.value;
-      console.log('selectedNorms updated');
-      console.log(selectedNorms.value);
       disableNext.value = false;
       disableReason.value = '';
       if (selectedNorms.value.includes('No Norm')) {
@@ -230,7 +228,6 @@ export default defineComponent({
         }
         return;
       }
-      console.log(props.annotations);
       selectedNorms.value.forEach((norm) => {
         if (!addNorms[norm]) {
           addNorms[norm] = {
