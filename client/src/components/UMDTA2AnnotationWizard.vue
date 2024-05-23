@@ -7,6 +7,7 @@ import {
   Ref,
   watch,
 } from '@vue/composition-api';
+import { cloneDeep } from 'lodash';
 import { UMDAnnotationMode } from 'platform/web-girder/store/types';
 import { useSelectedTrackId } from 'vue-media-annotator/provides';
 
@@ -283,18 +284,20 @@ export default defineComponent({
       field: 'status' | 'remediation',
       value: 'adhered' | 'violated' | number,
     ) => {
+      const cloneNorms = cloneDeep(Norms.value);
       if (field === 'status') {
-        if (Norms.value && Norms.value[norm] !== undefined) {
-          (Norms.value[norm] as TA2NormStatus).status = value as
+        if (cloneNorms && cloneNorms[norm] !== undefined) {
+          (cloneNorms[norm] as TA2NormStatus).status = value as
             | 'adhered'
             | 'violated';
         }
       }
       if (field === 'remediation') {
-        if (Norms.value[norm]) {
-          (Norms.value[norm] as TA2NormStatus).remediation = value as number;
+        if (cloneNorms[norm]) {
+          (cloneNorms[norm] as TA2NormStatus).remediation = value as number;
         }
       }
+      Norms.value = cloneNorms;
     };
     const openHelpDialog = (
       key: 'ASRQuality' | 'MTQuality' | 'AlertsQuality' | 'RephrashingQuality',
@@ -468,7 +471,7 @@ export default defineComponent({
           <v-list v-if="Norms && Object.keys(Norms).filter((item) => item !== 'No Norm').length > 0">
             <v-list-item
               v-for="(item, key) in Norms"
-              :key="`${key}_track_${selectedTrackIdRef}_${item.status}`"
+              :key="`${key}_track_${selectedTrackIdRef}`"
             >
               <v-row dense>
                 <v-col>
@@ -489,7 +492,7 @@ export default defineComponent({
                   <v-select
                     v-if="item && item.remediation !== undefined"
                     :disabled="item && item.status === 'adhered'"
-                    label="status"
+                    label="remediation"
                     item-text="title"
                     item-value="value"
                     :items="[
