@@ -21,6 +21,7 @@ normMap = {
     "Thanks": 106,
     "Taking Leave": 107,
     "Admiration": 108,
+    "Finalizing Negotiation/Deal": 109,
     "Finalizing Negotiating/Deal": 109,
     "Refusing a Request": 110,
     "Requesting Information": 111,
@@ -287,6 +288,29 @@ def export_norms_tab(folders, userMap, user, filterMap):
     csvFile.seek(0)
     csvFile.truncate(0)
     yield csvFile.getvalue()
+
+def handle_norms_export(session_id, user_norms, system_norms):
+    alertremed_decision = ''
+    alertremed_evaluation = ''
+    if 'OP2-SRI' in session_id:
+        if len(user_norms)  == 0:
+            alertremed_decision = 'Alert or remeidation no needed'
+        if len(system_norms) == 0:
+            alertremed_evaluation = 'Correct'
+        if len(system_norms) != 0:
+            for norm in system_norms.keys():
+                if system_norms[norm]['remediation'] == 0:
+                    alertremed_evaluation = 'Correct'
+                if system_norms[norm]['status'] == 'violated' and system_norms[norm]['remediation'] == 1:
+                    alertremed_evaluation = 'False Alarm'
+    else:
+        if len(user_norms) != 0:
+            for item in user_norms.keys():
+                if user_norms[item]['status'] == 'adhered':
+                    alertremed_decision = 'Alert or remeidation no needed'
+        if len(system_norms) != 0:
+            alertremed_evaluation = 'Correct'
+
 
 
 def export_ta2_annotation(folders, userMap, user):

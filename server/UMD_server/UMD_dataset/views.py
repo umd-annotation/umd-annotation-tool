@@ -4,6 +4,7 @@ from dive_server import crud_annotation
 from dive_utils import setContentDisposition
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
+from girder.exceptions import RestException
 from girder.api.rest import Resource, getApiUrl
 from girder.constants import AccessType, TokenScope
 from girder.models.folder import Folder
@@ -118,20 +119,23 @@ class UMD_Dataset(Resource):
         user = self.getCurrentUser()
         users = list(User().find())
         userMap = mapUserIds(users)
+        try:
+            if not ta2Only:
+                gen = UMD_export.convert_to_zips(folderIds, userMap, user, None)
+                zip_name = "batch_export.zip"
+            elif ta2Only:
+                gen = UMD_export.convert_to_zips_TA2(folderIds, userMap, user)
+                zip_name = "batch_export.zip"
+            if len(folderIds) > 1:
+                zip_name = "batch_export.zip"
+            else:
+                folder = Folder().load(folderIds[0], level=AccessType.READ, user=user)
+                zip_name = f'{folder["name"].replace(".mp4","")}.zip'
+            setContentDisposition(zip_name, mime='application/zip')
+            return gen
+        except Exception as e:
+            raise RestException(f'Error in exporting data: {e}') from e
 
-        if not ta2Only:
-            gen = UMD_export.convert_to_zips(folderIds, userMap, user, None)
-            zip_name = "batch_export.zip"
-        elif ta2Only:
-            gen = UMD_export.convert_to_zips_TA2(folderIds, userMap, user)
-            zip_name = "batch_export.zip"
-        if len(folderIds) > 1:
-            zip_name = "batch_export.zip"
-        else:
-            folder = Folder().load(folderIds[0], level=AccessType.READ, user=user)
-            zip_name = f'{folder["name"].replace(".mp4","")}.zip'
-        setContentDisposition(zip_name, mime='application/zip')
-        return gen
 
     @access.public(scope=TokenScope.DATA_READ, cookie=True)
     @autoDescribeRoute(
@@ -196,14 +200,19 @@ class UMD_Dataset(Resource):
                         file_generator = File().download(file, headers=False)()
                         file_string = b"".join(list(file_generator))
                         filterMap = UMD_export.create_filter_mapping(file_string)
-        if not ta2Only:
-            gen = UMD_export.convert_to_zips(totalFolderIds, userMap, user, filterMap)
-            zip_name = "batch_export.zip"
-        elif ta2Only:
-            gen = UMD_export.convert_to_zips_TA2(totalTA2FolderIds, userMap, user)
-            zip_name = "batch_export.zip"
-        setContentDisposition(zip_name, mime='application/zip')
-        return gen
+        try:
+            if not ta2Only:
+                gen = UMD_export.convert_to_zips(totalFolderIds, userMap, user, filterMap)
+                zip_name = "batch_export.zip"
+            elif ta2Only:
+                gen = UMD_export.convert_to_zips_TA2(totalTA2FolderIds, userMap, user)
+                zip_name = "batch_export.zip"
+            setContentDisposition(zip_name, mime='application/zip')
+            return gen
+        except Exception as e:
+            raise RestException(f'Error in exporting data: {e}') from e
+
+    
 
     def generate_segment_task(self, folder, user):
         token = Token().createToken(user=user, days=2)
