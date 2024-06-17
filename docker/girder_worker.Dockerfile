@@ -20,7 +20,8 @@ ENV PATH="/opt/UMD/local/venv/bin:$PATH"
 
 RUN cd /opt && \
     git clone https://github.com/Kitware/dive && \
-    cd /opt/dive/server
+    cd /opt/dive/server && \
+    git reset --hard 225abd16dd0715ccd67871dbc20c6c2d07ae7451
 
 WORKDIR /opt/dive/server
 # Remove the unwanted plugins from the pyproject.toml file
