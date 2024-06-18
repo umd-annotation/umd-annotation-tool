@@ -50,6 +50,12 @@ FrameAttributeExists = ['_Impact', '_RemediationComment']
 
 removed_elements = ['Video ', '.mp4', '-TIGHT', '-MID', '-WIDE']
 
+def get_system_norm(key, norms):
+    for item in norms:
+        if item.get('norm', False) == key:
+            return item
+    return None
+
 def process_video_name(name):
     for remove in removed_elements:
         name = name.replace(remove, '')
@@ -324,8 +330,9 @@ def export_ta2_annotation(folders, userMap, user):
             "turn_speaker",
             "asr_quality",
             "mt_quality",
-            "system_norms",
-            "user_norms",
+            "alertremed_decision",
+            "alertremed_output",
+            "alertremed_evaluation",
             "alert_quality",
             "rephrase_quality",
             "sme_delayed_remediation",
@@ -362,7 +369,13 @@ def export_ta2_annotation(folders, userMap, user):
                 dataFound = False
                 system_normMap = {}
                 system_norms = {}
+                alerts = []
+                rephrase = []
                 for key in attributes.keys():
+                    if 'alerts' == key:
+                        alerts = attributes[key]
+                    if 'rephrase' == key:
+                        rephrase = attributes[key]
                     if 'norms' == key:
                         norm_list = attributes[key]
                         system_norms = attributes[key]
@@ -427,6 +440,9 @@ def export_ta2_annotation(folders, userMap, user):
                     norm_list = []
                     status_list = []
                     alertremed_list = []
+                    alertremed_decision = []
+                    alertremed_output = []
+                    alertremed_evaluation = []
                     if 'norms' in userDataFound[key].keys():
                         norms = userDataFound[key]['norms']
                         for norm_key in norms.keys():
@@ -436,7 +452,33 @@ def export_ta2_annotation(folders, userMap, user):
                             norm_list.append(str(norm_id))
                             status_list.append(str(status))
                             alertremed_list.append(str(remediation))
+                            alertremed_decision_value = 0
+                            if status == 'violated':
+                                alertremed_decision_value = remediation
+                            alertremed_decision.append({
+                                norm_key: alertremed_decision_value
+                            })
+                            alertremed_output_value = 0
+                            has_system_norm = get_system_norm(norm_key, system_norms)
+                            if has_system_norm:
+                                if len(alerts) > 0 or len(rephrase) > 0:
+                                    alertremed_output_value = 1
+                                    for alert in alerts:
+                                        if alert.get('delayed', False):
+                                            alertremed_output_value = 2
+                            alertremed_output.append({
+                                norm_key: alertremed_output_value
+                            })
+                            alertremed_evaluation_value = -1
+                            if alertremed_decision_value == 0 and alertremed_output_value >= 1:
+                                alertremed_evaluation_value = -1
+                            if alertremed_decision_value >= 1 and alertremed_output_value == 0:
+                                alertremed_decision_value = 0
+                            if (alertremed_decision_value == 0 and alertremed_output_value == 0) or (alertremed_decision_value >= 1 and alertremed_output_value == 1):
+                                alertremed_decision_value = 1
 
+                            alertremed_evaluation.append({norm_key: alertremed_evaluation_value})
+                        
                     columns = [
                         userId,
                         session_id,
@@ -444,8 +486,9 @@ def export_ta2_annotation(folders, userMap, user):
                         speaker,
                         userDataFound[key].get('asr_quality', 'None'),
                         userDataFound[key].get('mt_quality', 'None'),
-                        norms,
-                        system_norms,
+                        alertremed_decision,
+                        alertremed_output,
+                        alertremed_evaluation,
                         userDataFound[key].get('alert_quality', 'None'),
                         userDataFound[key].get('rephrase_quality', 'None'),
                         userDataFound[key].get('delayed_remediation', 'No'),
