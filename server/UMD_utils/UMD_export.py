@@ -456,6 +456,7 @@ def export_ta2_annotation(folders, userMap, user):
                             if status == 'violated':
                                 alertremed_decision_value = remediation
                             alertremed_decision.append({
+                                "code": normMap[norm_key],
                                 norm_key: alertremed_decision_value
                             })
                             alertremed_output_value = 0
@@ -467,6 +468,7 @@ def export_ta2_annotation(folders, userMap, user):
                                         if alert.get('delayed', False):
                                             alertremed_output_value = 2
                             alertremed_output.append({
+                                "code": normMap[norm_key],
                                 norm_key: alertremed_output_value
                             })
                             alertremed_evaluation_value = -1
@@ -477,7 +479,10 @@ def export_ta2_annotation(folders, userMap, user):
                             if (alertremed_decision_value == 0 and alertremed_output_value == 0) or (alertremed_decision_value >= 1 and alertremed_output_value == 1):
                                 alertremed_decision_value = 1
 
-                            alertremed_evaluation.append({norm_key: alertremed_evaluation_value})
+                            alertremed_evaluation.append({
+                                "code": normMap[norm_key],
+                                norm_key: alertremed_evaluation_value
+                            })
                         
                     columns = [
                         userId,
@@ -491,7 +496,7 @@ def export_ta2_annotation(folders, userMap, user):
                         alertremed_evaluation,
                         userDataFound[key].get('alert_quality', 'None'),
                         userDataFound[key].get('rephrase_quality', 'None'),
-                        userDataFound[key].get('delayed_remediation', 'No'),
+                        userDataFound[key].get('delayed_remediation', 'no'),
                     ]
                     writer.writerow(columns)
     yield csvFile.getvalue()
