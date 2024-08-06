@@ -384,6 +384,7 @@ export default defineComponent({
         <UMDTA2AnnotationWizard
           :annotations="annotation"
           :outside-segment="outsideSegment"
+          :translation="translationData"
           :l-c="LCName"
           :mode="mode"
           :name="name"
