@@ -313,7 +313,7 @@ def handle_norms_export(session_id, user_norms, system_norms):
         if len(user_norms) != 0:
             for item in user_norms.keys():
                 if user_norms[item]['status'] == 'adhered':
-                    alertremed_decision = 'Alert or remeidation no needed'
+                    alertremed_decision = 'Alert or remediation not needed'
         if len(system_norms) != 0:
             alertremed_evaluation = 'Correct'
 
@@ -330,12 +330,15 @@ def export_ta2_annotation(folders, userMap, user):
             "turn_speaker",
             "asr_quality",
             "mt_quality",
+            "norm",
+            "status",
             "alertremed_decision",
             "alertremed_output",
             "alertremed_evaluation",
             "alert_quality",
             "rephrase_quality",
             "sme_delayed_remediation",
+            "norm/status/alertmed_decision/alertremed_output/alertremed_eval"
         ]
     )
     for folderId in folders:
@@ -438,27 +441,36 @@ def export_ta2_annotation(folders, userMap, user):
                     userGirderId = userMap.get(key, {"id": "unknown"})['id']
                     norms = {}
                     norm_list = []
+                    norm_name_list = []
                     status_list = []
+                    status_value_list = []
                     alertremed_list = []
-                    alertremed_decision = []
-                    alertremed_output = []
-                    alertremed_evaluation = []
+                    alertremed_decision_list = []
+                    alertremed_output_list = []
+                    alertremed_evaluation_list = []
                     if 'norms' in userDataFound[key].keys():
                         norms = userDataFound[key]['norms']
                         for norm_key in norms.keys():
                             norm_id = normMap[norm_key]
-                            status = norms[norm_key].get('status', 'none')
+                            if norm_id == 'none':
+                                norm_id = ''
+                            norm_name_list.append(norm_key)
+                            status = norms[norm_key].get('status', '')
                             remediation = norms[norm_key].get('remediation', 0)
                             norm_list.append(str(norm_id))
                             status_list.append(str(status))
+                            if (str(status) in normValuesAdhere):
+                                status_value_list.append(1)
+                            elif (str(status) in normValuesViolate):
+                                status_value_list.append(0)
+                            else:
+                                status_value_list.append('')
+
                             alertremed_list.append(str(remediation))
                             alertremed_decision_value = 0
-                            if status == 'violated':
+                            if status in normValuesViolate:
                                 alertremed_decision_value = remediation
-                            alertremed_decision.append({
-                                "code": normMap[norm_key],
-                                norm_key: alertremed_decision_value
-                            })
+                            alertremed_decision_list.append(alertremed_decision_value)
                             alertremed_output_value = 0
                             has_system_norm = get_system_norm(norm_key, system_norms)
                             if has_system_norm:
@@ -467,38 +479,44 @@ def export_ta2_annotation(folders, userMap, user):
                                     for alert in alerts:
                                         if alert.get('delayed', False):
                                             alertremed_output_value = 2
-                            alertremed_output.append({
-                                "code": normMap[norm_key],
-                                norm_key: alertremed_output_value
-                            })
+                            alertremed_output_list.append(alertremed_output_value)
                             alertremed_evaluation_value = -1
                             if alertremed_decision_value == 0 and alertremed_output_value >= 1:
                                 alertremed_evaluation_value = -1
-                            if alertremed_decision_value >= 1 and alertremed_output_value == 0:
-                                alertremed_decision_value = 0
-                            if (alertremed_decision_value == 0 and alertremed_output_value == 0) or (alertremed_decision_value >= 1 and alertremed_output_value == 1):
-                                alertremed_decision_value = 1
+                            elif alertremed_decision_value >= 1 and alertremed_output_value == 0:
+                                alertremed_evaluation_value = 0
+                            elif (alertremed_decision_value == 0 and alertremed_output_value == 0) or (alertremed_decision_value >= 1 and alertremed_output_value == 1):
+                                alertremed_evaluation_value = 1
 
-                            alertremed_evaluation.append({
-                                "code": normMap[norm_key],
-                                norm_key: alertremed_evaluation_value
-                            })
+                            alertremed_evaluation_list.append(alertremed_evaluation_value)
                         
-                    columns = [
-                        userId,
-                        session_id,
-                        turn,
-                        speaker,
-                        userDataFound[key].get('asr_quality', 'None'),
-                        userDataFound[key].get('mt_quality', 'None'),
-                        alertremed_decision,
-                        alertremed_output,
-                        alertremed_evaluation,
-                        userDataFound[key].get('alert_quality', 'None'),
-                        userDataFound[key].get('rephrase_quality', 'None'),
-                        userDataFound[key].get('delayed_remediation', 'no'),
-                    ]
-                    writer.writerow(columns)
+                    for index in range(0, len(norm_list)):
+                        norm_id = norm_list[index]
+                        norm_name = norm_name_list[index]
+                        status_value = status_value_list[index]
+                        status = status_list[index]
+                        alertremed_decision = alertremed_decision_list[index]
+                        alertremed_output = alertremed_output_list[index]
+                        alertremed_evaluation = alertremed_evaluation_list[index]
+                        columns = [
+                            userId,
+                            session_id,
+                            turn,
+                            speaker,
+                            userDataFound[key].get('asr_quality', ''),
+                            userDataFound[key].get('mt_quality', ''),
+                            norm_id,
+                            status_value,
+                            alertremed_decision,
+                            alertremed_output,
+                            alertremed_evaluation,
+                            userDataFound[key].get('alert_quality', ''),
+                            userDataFound[key].get('rephrase_quality', ''),
+                            userDataFound[key].get('delayed_remediation', 'no'),
+                            f"{norm_name}/{status}/{alertremed_decision}/{alertremed_output}/{alertremed_evaluation}"
+                        ]
+
+                        writer.writerow(columns)
     yield csvFile.getvalue()
     csvFile.seek(0)
     csvFile.truncate(0)
