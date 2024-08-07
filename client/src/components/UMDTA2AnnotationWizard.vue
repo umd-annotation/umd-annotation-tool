@@ -10,6 +10,7 @@ import {
 import { cloneDeep } from 'lodash';
 import { UMDAnnotationMode } from 'platform/web-girder/store/types';
 import { useSelectedTrackId } from 'vue-media-annotator/provides';
+import { TA2Translation } from './UMDTA2Translation.vue';
 
 export type NormsList =
   | 'Apology'
@@ -127,7 +128,10 @@ export default defineComponent({
       type: String as PropType<'LC1' | 'LC2' | 'LC3' | 'LC4' | 'LC5' | 'LC6'>,
       default: 'LC1',
     },
-
+    translation: {
+      type: Object as PropType<TA2Translation>,
+      required: false,
+    },
   },
 
   setup(props, { emit }) {
@@ -137,7 +141,7 @@ export default defineComponent({
     const steps = ref([
       'ASR/Translation Quality',
       'Norm Adherence/Violation',
-      'Remediation Qaulity',
+      'Remediation Quality',
     ]);
     const stepper = ref(1);
     const baseNorms = ref([
@@ -177,8 +181,8 @@ export default defineComponent({
     const MTQuality = ref(props.annotations.MTQuality === undefined ? 0 : props.annotations.MTQuality);
     const AlertsQuality = ref(props.annotations.AlertsQuality === undefined ? 0 : props.annotations.AlertsQuality);
     const RephrasingQuality = ref(props.annotations.RephrasingQuality === undefined ? 0 : props.annotations.RephrasingQuality);
-    const noAlerts = ref(props.annotations.AlertsQuality === null);
-    const noRemediation = ref(props.annotations.RephrasingQuality === null);
+    const noAlerts = ref(!props.translation?.alerts?.length ? true : props.annotations.AlertsQuality === null);
+    const noRemediation = ref(!props.translation?.rephrase?.length ? true : props.annotations.RephrasingQuality === null);
     const DelayedRemediation = ref(
       props.annotations.DelayedRemediation || false,
     );
@@ -208,8 +212,8 @@ export default defineComponent({
         ASRQuality.value = props.annotations.ASRQuality || 0;
         MTQuality.value = props.annotations.MTQuality || 0;
         AlertsQuality.value = props.annotations.AlertsQuality === undefined ? 0 : props.annotations.AlertsQuality;
-        noAlerts.value = props.annotations.AlertsQuality === null;
-        noRemediation.value = props.annotations.RephrasingQuality === null;
+        noAlerts.value = !props.translation?.alerts?.length ? true : props.annotations.AlertsQuality === null;
+        noRemediation.value = !props.translation?.rephrase?.length ? true : props.annotations.RephrasingQuality === null;
         RephrasingQuality.value = props.annotations.RephrasingQuality === undefined ? 0 : props.annotations.RephrasingQuality;
 
         DelayedRemediation.value = props.annotations.DelayedRemediation || false;
