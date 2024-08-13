@@ -9,7 +9,7 @@ Having Python installed and using this folder run `pip install -r requirements.t
 
 ## Process Overview
 
-The TA2 Annotations rely on JSONL files from Hololens and other containers that record data about translations and events that occur during a scenario.  These include things like alerts, remediations and automatic speech recognition as well as translation.
+The TA2 Annotations rely on JSONL files from Hololens and other containers that record data about translations and events that occur during a scenario.  These include things like alerts, remediation and automatic speech recognition as well as translation.
 
 These JSONL files need to be converted into a TrackJSON file so that the Annotation Web application can interpret the data and display it to annotators.
 
