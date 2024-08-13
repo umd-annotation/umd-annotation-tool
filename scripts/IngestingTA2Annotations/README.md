@@ -43,7 +43,7 @@ The Basic Process is as follows:
 6. **Processing and Cloning** - Now that the data is all gathered and we have matches as well as CLNG videos the program starts making the clones and copying the data over.
     1. If a video that is matched and it already exists in the CloneDestinationFolderId it will skip over the rest of this function.
     2. If not existing it will download and process the JSONProcessed file.  This processing is converting the Turns from the JSONL file to a TrackJSON that can be used to display the data.
-    3. The system then creates a clone of the source video in the CloneDesntinationFolderId followed up by uploading the newly created TrackJSON to the cloned dataset.
+    3. The system then creates a clone of the source video in the CloneDestinationFolderId followed up by uploading the newly created TrackJSON to the cloned dataset.
     4. If **ADD_CLNG_VIDEOS** is true the system will then check to see if the file exists and if it doesn’t it will clone the source video file to the destination folder.
        During this process all completed videos are kept track of
 7. **Generate Completed CSV** - At the end of processing all the matches and cloned videos the system will generate a CSV that contains the name of the completed videos and a link to the Dataset that can be used to organize annotations.  These include links to each annotation type (ASRMT_Quality, Norms, Remediation)
