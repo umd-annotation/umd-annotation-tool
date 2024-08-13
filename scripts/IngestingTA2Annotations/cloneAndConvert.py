@@ -173,8 +173,8 @@ def run_script():
     video_map = get_processVideos(gc)
     clng_videos = extract_CLNG_videos(video_map)
     existing_videos = get_existingVideos(gc, CloneDestinationFolderId)
-    item_map = get_processJSONItems(gc, JSONLSourceFolderId)
-    matching, unmatching = get_matching_items(video_map, item_map)
+    processed_map = get_processJSONItems(gc, JSONLSourceFolderId)
+    matching, unmatching = get_matching_items(video_map, processed_map)
     # write the unmatched items to unmatching.json
     with open('unmatching.json', 'w', encoding='utf8') as outfile:
         json.dump(unmatching, outfile, ensure_ascii=False, indent=True)
@@ -185,6 +185,7 @@ def run_script():
     completed_videos = []
     for key in matching.keys():
         if key in existing_videos.keys():
+            completed_videos.append({'name': key, 'id': existing_videos[key]})
             print(f'Skipping video: {key} it already exists')
             continue
         item = matching[key]
@@ -199,6 +200,10 @@ def run_script():
             break
     if ADD_CLNG_VIDEOS:
         for key in clng_videos.keys():
+            if key in existing_videos.keys():
+                completed_videos.append({'name': key, 'id': existing_videos[key], 'CLNG': True})
+                print(f'Skipping video: {key} it already exists')
+                continue
             item = clng_videos[key]
             cloneId = clone_video_folder(gc, item, key, CloneDestinationFolderId)
             gc.addMetadataToFolder(cloneId, {"UMDAnnotation": "TA2"})
