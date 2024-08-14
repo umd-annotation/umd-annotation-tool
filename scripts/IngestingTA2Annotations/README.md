@@ -15,7 +15,7 @@ These JSONL files need to be converted into a TrackJSON file so that the Annotat
 
 The Basic Process is as follows:
 
-1. Process the existing JSONL files by removing base64 encodings and converting the time data into 'turns' and storing them in a Processed JSON file.  This is done by running the **JSONLConverter.py** script.  After upload these files to a collection on the Annotation Web Application so they can be used in the future to create a TrackJSON file.
+1. Process the existing JSONL files by removing base64 encodings and converting the time data into 'turns' and storing them in a Processed JSON file.  This is done by running the **convertFolder.py** script.  After upload these files to a collection on the Annotation Web Application so they can be used in the future to create a TrackJSON file.
 2. Load the Videos that are the sources for the JSONL files into a collection on the Annotation Web Application.  These when imported some S3 should automatically be converted to Video Dataset in the system for annotation.
 3. Create a Destination Folder where the processed JSON file and the Video will be combined into a final Dataset that can be used for Annotation.
 4. Set up all inputs to the **cloneAndConvert.py** script.  These include the source folders for the videos, the source folders for the JSON Processed files and the destination folder for the Cloned datasets.
@@ -38,7 +38,7 @@ The Basic Process is as follows:
 2. **Get Source Videos** - It gets processed Videos.  This is searching through all the folders in **VideoSourceFolderIds** for dive datasets that have ‘_THIRD-PERSON.mp4’ in them.  It can returns all of the matching video files.
 3. **Group CLNG Videos** - It then takes all of the files from Step 2 and extracts out the videos that have **‘CLNG’** in them so they can be added separately.
 4. **Get Existing Videos** - It gets the existing videos from the **CloneDestinationFolderId** and stores them to make sure we don’t overwrite any existing video files.
-5. **Gather Processed JSON Files** - It then gets the processed JSON files from **JSONLSourceFolderId**. These are all files that are preprocessed using the JSONLConverter.py script to remove base64 elements from the JSONL file as well as convert the information into a more turn based JSON file.
+5. **Gather Processed JSON Files** - It then gets the processed JSON files from **JSONLSourceFolderId**. These are all files that are preprocessed using the convertFolder.py script to remove base64 elements from the JSONL file as well as convert the information into a more turn based JSON file.
 6. **Generate Matches** - Takes the processedJSONL files and using the name attempts to match them with a video from the **VideoSourceFolderIds**.  This Will attempt to match, if a match can’t be found it will log it to a unmatching.json file that lists the unmatched JSON file name with the top 5 closest named videos that match it.  This helps if there is a spelling mistake or some kind of other error preventing the matching.
 6. **Processing and Cloning** - Now that the data is all gathered and we have matches as well as CLNG videos the program starts making the clones and copying the data over.
     1. If a video that is matched and it already exists in the CloneDestinationFolderId it will skip over the rest of this function.

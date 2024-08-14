@@ -9,8 +9,8 @@ from fuzzywuzzy import process
 
 ADD_CLNG_VIDEOS = True # will add the CLNG labelled videos with TURN creation links
 JSONLSourceFolderId = "6627ef547193244a6e33353d" # the GirderId of the folder that contains the source JSONL files
-VideoSourceFolderIds = ["6602d4a4cb9585b0c24b794f", "65e72cd2cb9585b0c24b3ac1"] # folders to search for matching Video files
-CloneDestinationFolderId = "663a51a00e61a67154749750" # destination girder folder ID for the cloned videos
+VideoSourceFolderIds = ["6602d4a4cb9585b0c24b794f", "65e72cd2cb9585b0c24b3ac1", "667c58b582915211ce417b78"] # folders to search for matching Video files
+CloneDestinationFolderId = "661e8fceaee0d357e2455d47" # destination girder folder ID for the cloned videos
 
 apiURL = "annotation.umd.edu"
 
@@ -239,6 +239,12 @@ def process_outputjson(output):
     translations = []
     ptt_turns = []
     for item in output:
+        start_seconds = item['message'].get('start_seconds', False)
+        if not start_seconds:
+            start_seconds = item['message'].get('start_time')
+        end_seconds = item['message'].get('end_seconds', False)
+        if not end_seconds:
+            end_seconds = item['message'].get('end_time')
         if item.get('queue', False) == 'AUDIO_SELF' and item.get('message', {}).get('status', False) in ['ptt-pressed', 'ptt-released']:
             ptt_turns.append({
                 "status": item.get('message', {}).get('status', False),
@@ -246,12 +252,12 @@ def process_outputjson(output):
             })
         # we have a turn with ASR information
         if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('asr_type', False) == 'TURN' and item.get('message', {}).get('type', False) == 'asr_result':
-            turn = create_or_get_turn(turns, item['message']['start_seconds'], item['message']['end_seconds'], item['time_seconds'])
+            turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
             turn['ASRText'] = item['message']['asr_text']
             turn['speaker'] = item['message']['speaker']
         # translation information
         if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('asr_type', False) == 'TURN' and item.get('message', {}).get('type', False) == 'translation':
-            turn = create_or_get_turn(turns, item['message']['start_seconds'], item['message']['end_seconds'], item['time_seconds'])
+            turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
             turn['translation'] = {
                 'source_language': item['message']['source_language'],
                 'target_language': item['message']['target_language'],
@@ -260,7 +266,7 @@ def process_outputjson(output):
             }
         # translation of possible Rephrasing
         if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('asr_type', False) == 'TEXT' and item.get('message', {}).get('type', False) == 'translation':
-            turn = create_or_get_turn(turns, item['message']['start_seconds'], item['message']['end_seconds'], item['time_seconds'])
+            turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
             if turn.get('rephrase_translation', None) is None:
                 turn['rephrase_translation'] = []
             turn['rephrase_translation'].append({
@@ -272,11 +278,11 @@ def process_outputjson(output):
             })
         # storing emotions for future use
         if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('asr_type', False) == 'TURN' and item.get('message', {}).get('type', False) == 'sri_emotions':
-            turn = create_or_get_turn(turns, item['message']['start_seconds'], item['message']['end_seconds'], item['time_seconds'])
+            turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
             turn['emotions'] = item['message']['emotions']
         # intent and rudeness
         if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('type', False) == 'intent_and_rudeness':
-            turn = create_or_get_turn(turns, item['message']['start_seconds'], item['message']['end_seconds'], item['time_seconds'])
+            turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
             turn['intent_and_rudeness'] = {
                 "class1": item['message']['class1'],
                 "class_probability1": item['message']['class_probability1'],
@@ -287,7 +293,7 @@ def process_outputjson(output):
             }
         # paraphrasing results
         if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('type', False) == 'paraphrase_result':
-            turn = create_or_get_turn(turns, item['message']['start_seconds'], item['message']['end_seconds'], item['time_seconds'])
+            turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
             paraphrase = {}
             paraphrase['speaker'] = item['message']['speaker']
             paraphrase['text'] = item['message']['text']
@@ -296,21 +302,29 @@ def process_outputjson(output):
             turn['paraphrase'] = paraphrase
         # norm occurence, can be multiple ones
         if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('type', False) == 'norm_occurrence':
-            turn = create_or_get_turn(turns, item['message']['start_seconds'], item['message']['end_seconds'], item['time_seconds'])
+            turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
             if turn.get('norms', None) is None:
                 turn['norms'] = []
-            turn['norms'].append({
-                'norm': item['message']['norm'],
-                'status': item['message']['status'],
-            })
+            norm = item['message'].get('norm', False);
+            if not norm:
+                normId = item['message'].get('name', False)
+                if normId:
+                    norm = normMap.get(normId)
+            if norm:
+                turn['norms'].append({
+                    'norm': norm,
+                    'status': item['message']['status'],
+                })
+            else:
+                print('Skipping norm, no norm found')
         if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('type', False) == 'valence':
-            turn = create_or_get_turn(turns, item['message']['start_seconds'], item['message']['end_seconds'], item['time_seconds'])
+            turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
             turn['valence'] = item['message']['level']
         if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('type', False) == 'arousal':
-            turn = create_or_get_turn(turns, item['message']['start_seconds'], item['message']['end_seconds'], item['time_seconds'])
+            turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
             turn['arousal'] = item['message']['level']
         if item.get('queue', False) == 'ACTION' and item.get('message', {}).get('type', False) == 'hololens' and (item.get('message', {}).get('prefix', False) == 'alert' or item.get('message', {}).get('prefix', False) == 'late') :
-            turn = create_or_get_turn(turns, item['message']['start_seconds'], item['message']['end_seconds'], item['time_seconds'])
+            turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
             if turn.get('actions', None) is None:
                 turn['actions'] = []
             message = item['message']['display'].replace('<i>', '').replace('</i>', '')
@@ -320,7 +334,7 @@ def process_outputjson(output):
                     'delayed': item.get('message', {}).get('prefix', False) == 'late'
                 })
         if item.get('queue', False) == 'ACTION' and item.get('message', {}).get('type', False) == 'hololens' and (item.get('message', {}).get('remediation', False) == 'Auto' or 'Added:' in item.get('message', {}).get('display', '')):
-            turn = create_or_get_turn(turns, item['message']['start_seconds'], item['message']['end_seconds'], item['time_seconds'])
+            turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
             if turn.get('rephrase', None) is None:
                 turn['rephrase'] = []
             if not any(d.get('display', False) == item['message']['display'] for d in turn['rephrase']):
