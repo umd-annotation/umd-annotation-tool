@@ -5,11 +5,12 @@ import requests
 import csv
 import os
 from fuzzywuzzy import process
+from bs4 import BeautifulSoup
 
 
 ADD_CLNG_VIDEOS = True # will add the CLNG labelled videos with TURN creation links
 JSONLSourceFolderId = "6627ef547193244a6e33353d" # the GirderId of the folder that contains the source JSONL files
-VideoSourceFolderIds = ["6602d4a4cb9585b0c24b794f", "65e72cd2cb9585b0c24b3ac1", "667c58b582915211ce417b78"] # folders to search for matching Video files
+VideoSourceFolderIds = ["667c58b582915211ce417b78"] # folders to search for matching Video files
 CloneDestinationFolderId = "661e8fceaee0d357e2455d47" # destination girder folder ID for the cloned videos
 
 apiURL = "annotation.umd.edu"
@@ -195,6 +196,7 @@ def run_script():
         item["cloneId"] = cloneId
         upload_track_json(gc, cloneId, trackJSONFilePath)
         completed_videos.append({'name': key, 'id': cloneId})
+        print(f"Completed: {key}")
         count += 1
         if count > limit:
             break
@@ -235,7 +237,6 @@ def create_or_get_turn(turns, start_time, end_time, time_seconds):
 
 def process_outputjson(output):
     turns = []
-    print('processing output file')
     translations = []
     ptt_turns = []
     for item in output:
@@ -315,8 +316,6 @@ def process_outputjson(output):
                     'norm': norm,
                     'status': item['message']['status'],
                 })
-            else:
-                print('Skipping norm, no norm found')
         if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('type', False) == 'valence':
             turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
             turn['valence'] = item['message']['level']
@@ -325,22 +324,79 @@ def process_outputjson(output):
             turn['arousal'] = item['message']['level']
         if item.get('queue', False) == 'ACTION' and item.get('message', {}).get('type', False) == 'hololens' and (item.get('message', {}).get('prefix', False) == 'alert' or item.get('message', {}).get('prefix', False) == 'late') :
             turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
-            if turn.get('actions', None) is None:
-                turn['actions'] = []
             message = item['message']['display'].replace('<i>', '').replace('</i>', '')
             if not any(d.get('display', False) == message for d in turn['actions']):
+                if turn.get('actions', None) is None:
+                    turn['actions'] = []
                 turn['actions'].append({
                     'display': message,
                     'delayed': item.get('message', {}).get('prefix', False) == 'late'
                 })
+        if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('type', False) == 'ccu_to_v2v' and item.get('message', {}).get('alert', False):
+            turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
+            message = item['message']['alert']['text']
+            soup = BeautifulSoup(message, "html.parser")
+            if turn.get('actions', None) is None:
+                turn['actions'] = []
+            turn['actions'].append({
+                'display': soup.get_text(),
+            })
+
+
+
         if item.get('queue', False) == 'ACTION' and item.get('message', {}).get('type', False) == 'hololens' and (item.get('message', {}).get('remediation', False) == 'Auto' or 'Added:' in item.get('message', {}).get('display', '')):
             turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
-            if turn.get('rephrase', None) is None:
-                turn['rephrase'] = []
             if not any(d.get('display', False) == item['message']['display'] for d in turn['rephrase']):
+                if turn.get('rephrase', None) is None:
+                    turn['rephrase'] = []
                 turn['rephrase'].append({
                     'display': item['message']['display'],
                 })
+
+        if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('remediation_text', {}).get('displayTokens', False):
+            turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
+            display_list = item.get('message', {}).get('remediation_text', {}).get('displayTokens', [])
+            for text_item in display_list:
+                if text_item.get('text', False):
+                    message = text_item.get('text', '')
+                    soup = BeautifulSoup(message, "html.parser")
+                    stripped_text = soup.get_text().strip()
+                    if len(stripped_text) > 0:
+                        if "Rephrased:" in stripped_text:
+                            print('FOUND REPHRASE')
+                            already_in_list = False
+                            for rephrase in turn.get('rephrase', {}):
+                                if stripped_text in rephrase['display']:
+                                    already_in_list = True
+                                    break
+                            if not already_in_list:
+                                if turn.get('rephrase', None) is None:
+                                    turn['rephrase'] = []
+                                turn['rephrase'].append({
+                                    "display": stripped_text
+                                })
+                        else:
+                            already_in_list = False
+                            for actions in turn.get('actions', []):
+                                if stripped_text in actions['display']:
+                                    already_in_list = True
+                                    break
+                            if not already_in_list and stripped_text != 'Taboo violation':
+                                if turn.get('actions', None) is None:
+                                    turn['actions'] = []
+                                turn['actions'].append({
+                                    'display': stripped_text,
+                                })
+
+        if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('type', False) == 'taboo_result' and len(item.get('message', {}).get('taboo_reason', "")) > 0:
+            turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
+            message = item['message']['taboo_reason']
+            print(F"FOUND TABOO IN FILE")
+            if turn.get('actions', None) is None:
+                turn['actions'] = []
+            turn['actions'].append({
+                'display': f"Taboo Violated Reason: {message}",
+            })
 
     output = []
     for item in turns:
