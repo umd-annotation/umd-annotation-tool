@@ -3,3 +3,4 @@ fuzzywuzzy==0.18.0
 girder_client==3.2.2
 pandas==2.2.2
 Requests==2.31.0
+beautifulsoup4
