@@ -364,7 +364,6 @@ def export_ta2_annotation(folders, userMap, user):
 
         fps = folder['meta']['fps']
         tracks = crud_annotation.TrackItem().list(folder)
-
         for t in tracks:
             if 'attributes' in t.keys():
                 attributes = t['attributes']
@@ -433,9 +432,11 @@ def export_ta2_annotation(folders, userMap, user):
                 if dataFound:
                     if 'translation' in attributes.keys():
                         turn = t['id'] + 1
+                    else:
+                        turn = t['id'] + 1
                     if 'speaker' in attributes.keys():
                         speaker = attributes['speaker']
-
+                print(userDataFound)
                 for key in userDataFound.keys():                        
                     userId = userMap.get(key, {"uid": "unknown"})['uid']
                     userGirderId = userMap.get(key, {"id": "unknown"})['id']
@@ -490,14 +491,42 @@ def export_ta2_annotation(folders, userMap, user):
 
                             alertremed_evaluation_list.append(alertremed_evaluation_value)
                         
-                    for index in range(0, len(norm_list)):
-                        norm_id = norm_list[index]
-                        norm_name = norm_name_list[index]
-                        status_value = status_value_list[index]
-                        status = status_list[index]
-                        alertremed_decision = alertremed_decision_list[index]
-                        alertremed_output = alertremed_output_list[index]
-                        alertremed_evaluation = alertremed_evaluation_list[index]
+                    if len(norm_list):
+                        for index in range(0, len(norm_list)):
+                            norm_id = norm_list[index]
+                            norm_name = norm_name_list[index]
+                            status_value = status_value_list[index]
+                            status = status_list[index]
+                            alertremed_decision = alertremed_decision_list[index]
+                            alertremed_output = alertremed_output_list[index]
+                            alertremed_evaluation = alertremed_evaluation_list[index]
+                            columns = [
+                                userId,
+                                session_id,
+                                turn,
+                                speaker,
+                                userDataFound[key].get('asr_quality', ''),
+                                userDataFound[key].get('mt_quality', ''),
+                                norm_id,
+                                status_value,
+                                alertremed_decision,
+                                alertremed_output,
+                                alertremed_evaluation,
+                                userDataFound[key].get('alert_quality', ''),
+                                userDataFound[key].get('rephrase_quality', ''),
+                                userDataFound[key].get('delayed_remediation', 'no'),
+                                f"{norm_name}/{status}/{alertremed_decision}/{alertremed_output}/{alertremed_evaluation}"
+                            ]
+
+                            writer.writerow(columns)
+                    else:
+                        norm_id = None
+                        norm_name = None
+                        status_value = None
+                        status = None
+                        alertremed_decision = None
+                        alertremed_output = None
+                        alertremed_evaluation = None
                         columns = [
                             userId,
                             session_id,
@@ -517,6 +546,8 @@ def export_ta2_annotation(folders, userMap, user):
                         ]
 
                         writer.writerow(columns)
+
+
     yield csvFile.getvalue()
     csvFile.seek(0)
     csvFile.truncate(0)
@@ -892,6 +923,7 @@ def generate_tab(folders, userMap, user, type, filterMap=None):
             for data in export_user_map(userMap):
                 yield data
         if type == 'TA2Annotation':
+            print('Exporintg TA2 Annotation')
             for data in export_ta2_annotation(folders, userMap, user):
                 yield data
     return downloadGenerator
