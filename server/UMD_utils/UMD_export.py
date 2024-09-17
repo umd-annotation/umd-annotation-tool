@@ -490,7 +490,7 @@ def export_ta2_annotation(folders, userMap, user):
                                 alertremed_evaluation_value = 1
 
                             alertremed_evaluation_list.append(alertremed_evaluation_value)
-                        
+                    
                     if len(norm_list):
                         for index in range(0, len(norm_list)):
                             norm_id = norm_list[index]
@@ -500,12 +500,17 @@ def export_ta2_annotation(folders, userMap, user):
                             alertremed_decision = alertremed_decision_list[index]
                             alertremed_output = alertremed_output_list[index]
                             alertremed_evaluation = alertremed_evaluation_list[index]
+                            if 'FLE' in speaker:
+                                alertremed_evaluation  = ''
+                            asrQuality = userDataFound[key].get('asr_quality', '')
+                            if 'CLNG' in videoname:
+                                asrQuality = ''
                             columns = [
                                 userId,
                                 session_id,
                                 turn,
                                 speaker,
-                                userDataFound[key].get('asr_quality', ''),
+                                asrQuality,
                                 userDataFound[key].get('mt_quality', ''),
                                 norm_id,
                                 status_value,
@@ -527,12 +532,17 @@ def export_ta2_annotation(folders, userMap, user):
                         alertremed_decision = None
                         alertremed_output = None
                         alertremed_evaluation = None
+                        asrQuality = userDataFound[key].get('asr_quality', '')
+                        if 'CLNG' in videoname:
+                            asrQuality = ''
+                        if 'FLE' in speaker:
+                            alertremed_evaluation  = ''
                         columns = [
                             userId,
                             session_id,
                             turn,
                             speaker,
-                            userDataFound[key].get('asr_quality', ''),
+                            asrQuality,
                             userDataFound[key].get('mt_quality', ''),
                             norm_id,
                             status_value,
