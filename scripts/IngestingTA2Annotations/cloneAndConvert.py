@@ -8,10 +8,12 @@ from fuzzywuzzy import process
 from bs4 import BeautifulSoup
 
 
-ADD_CLNG_VIDEOS = True # will add the CLNG labelled videos with TURN creation links
-JSONLSourceFolderId = "6627ef547193244a6e33353d" # the GirderId of the folder that contains the source JSONL files
-VideoSourceFolderIds = ["667c58b582915211ce417b78"] # folders to search for matching Video files
-CloneDestinationFolderId = "661e8fceaee0d357e2455d47" # destination girder folder ID for the cloned videos
+UPDATE_EXISTING_MESSAGES = True  # Updates existing messages with any new data while preserving older annotations
+NEW_DISPLAY_DATA = True  # Adds the new Final, Buttons, Remediation Decision ('Auto', 'Interactive', 'Passivie')
+ADD_CLNG_VIDEOS = True  # will add the CLNG labelled videos with TURN creation links
+JSONLSourceFolderId = "6627ef547193244a6e33353d"  # the GirderId of the folder that contains the source JSONL files
+VideoSourceFolderIds = ["667c58b582915211ce417b78"]  # folders to search for matching Video files
+CloneDestinationFolderId = "661e8fceaee0d357e2455d47"  # destination girder folder ID for the cloned videos
 
 apiURL = "annotation.umd.edu"
 
@@ -167,57 +169,6 @@ def generate_CSV(objects, base_url):
         for obj in objects:
             csvwriter.writerow(generate_row(obj, base_url))
 
-
-@click.command(name="cloneAndConvert", help="Load in ")
-def run_script():
-    gc = login()
-    video_map = get_processVideos(gc)
-    clng_videos = extract_CLNG_videos(video_map)
-    existing_videos = get_existingVideos(gc, CloneDestinationFolderId)
-    processed_map = get_processJSONItems(gc, JSONLSourceFolderId)
-    matching, unmatching = get_matching_items(video_map, processed_map)
-    # write the unmatched items to unmatching.json
-    with open('unmatching.json', 'w', encoding='utf8') as outfile:
-        json.dump(unmatching, outfile, ensure_ascii=False, indent=True)
-        outfile.write('\n')
-
-    count = 0
-    limit = 9999
-    completed_videos = []
-    for key in matching.keys():
-        if key in existing_videos.keys():
-            completed_videos.append({'name': key, 'id': existing_videos[key]})
-            print(f'Skipping video: {key} it already exists')
-            continue
-        item = matching[key]
-        trackJSONFilePath = download_and_process_json(gc, item["jsonId"], f"{key}.json")
-        item["trackJSON"] = trackJSONFilePath
-        cloneId = clone_video_folder(gc, item["videoId"], key, CloneDestinationFolderId)
-        item["cloneId"] = cloneId
-        upload_track_json(gc, cloneId, trackJSONFilePath)
-        completed_videos.append({'name': key, 'id': cloneId})
-        print(f"Completed: {key}")
-        count += 1
-        if count > limit:
-            break
-    if ADD_CLNG_VIDEOS:
-        for key in clng_videos.keys():
-            if key in existing_videos.keys():
-                completed_videos.append({'name': key, 'id': existing_videos[key], 'CLNG': True})
-                print(f'Skipping video: {key} it already exists')
-                continue
-            item = clng_videos[key]
-            cloneId = clone_video_folder(gc, item, key, CloneDestinationFolderId)
-            gc.addMetadataToFolder(cloneId, {"UMDAnnotation": "TA2"})
-            trackJSON = {"tracks": {}, "groups": {}, "version": 2}
-            with open('emptyTracks.json', 'w', encoding='utf8') as outfile:
-                json.dump(trackJSON, outfile, ensure_ascii=False, indent=True)
-            gc.uploadFileToFolder(cloneId, 'emptyTracks.json')
-            gc.sendRestRequest('POST', f'dive_rpc/postprocess/{cloneId}', data={'skipTranscoding': True, 'skipJobs': True})
-            completed_videos.append({'name': key, 'id': cloneId, 'CLNG': True})
-
-    generate_CSV(completed_videos, f'https://{apiURL}')
-
 def create_or_get_turn(turns, start_time, end_time, time_seconds):
     
     for item in turns:
@@ -341,6 +292,17 @@ def process_outputjson(output):
             turn['actions'].append({
                 'display': soup.get_text(),
             })
+        if NEW_DISPLAY_DATA and item.get('message', {}).get('is_final', False) and item.get('message', {}).get('text', False):
+            turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
+            text = item.get('message', {}).get('text', False)
+            if turn.get('actions', None) is None:
+                turn['actions'] = []
+            turn['actions'].append({
+                'display': f'Final user Utterance: {text}',
+            })
+
+
+            
 
 
 
@@ -363,7 +325,6 @@ def process_outputjson(output):
                     stripped_text = soup.get_text().strip()
                     if len(stripped_text) > 0:
                         if "Rephrased:" in stripped_text:
-                            print('FOUND REPHRASE')
                             already_in_list = False
                             for rephrase in turn.get('rephrase', {}):
                                 if stripped_text in rephrase['display']:
@@ -387,11 +348,30 @@ def process_outputjson(output):
                                 turn['actions'].append({
                                     'display': stripped_text,
                                 })
+            if NEW_DISPLAY_DATA:
+                button_list = item.get('message', {}).get('remediation_text', {}).get('buttons', [])
+                for item in button_list:
+                    text = item.get('text', False)
+                    soup = BeautifulSoup(text, "html.parser")
+                    if text:
+                        if turn.get('actions', None) is None:
+                            turn['actions'] = []
+                        turn['actions'].append({
+                            'display': f'Button: {soup.get_text()}',
+                        })
+                remediation_decision = item.get('message', {}).get('remediation', False)
+                if remediation_decision:
+                    if turn.get('actions', None) is None:
+                        turn['actions'] = []
+                    turn['actions'].append({
+                        'display': f'Remediation Decision: {remediation_decision}',
+                    })
+
+
 
         if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('type', False) == 'taboo_result' and len(item.get('message', {}).get('taboo_reason', "")) > 0:
             turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
             message = item['message']['taboo_reason']
-            print(F"FOUND TABOO IN FILE")
             if turn.get('actions', None) is None:
                 turn['actions'] = []
             turn['actions'].append({
@@ -513,6 +493,99 @@ def convert_output_to_tracks(output, width=1920, height=1080, framerate=30, offs
     trackJSON = {"tracks": tracks, "groups": {}, "version": 2}
 
     return trackJSON
+
+def replace_exising_alerts(gc: girder_client.GirderClient, existing_id, newTrackFilePath):
+    downloaded_tracks = gc.get(f'dive_annotation/track?sort=id&sortdir=1&folderId={existing_id}')
+    # convert into trackJson file
+    temp_track_map = {}
+    for item in downloaded_tracks:
+        temp_track_map[item['id']] = item
+    existing_track_data = {
+        'tracks':  temp_track_map,
+        'groups': {},
+        'version': 2,
+    }
+    # now we want to load up the newTrack data
+    with open(newTrackFilePath, 'r', encoding='utf8') as f:
+        new_track_file = json.load(f)
+    existing_tracks = existing_track_data['tracks']
+    new_tracks = new_track_file['tracks']
+    if len(new_tracks.keys()) != len(existing_tracks.keys()):
+        print('ERROR: Existing tracks and New Track Turns are different')
+        return
+    keys = existing_tracks.keys()
+    # now a trackId basis we update the track['attributes']['alerts'] to the new data
+    for key in new_tracks:
+        track = new_tracks[key]
+        if track.get('attributes', {}).get('alerts'):
+            existing_tracks[track['id']]['attributes']['alerts'] = track['attributes']['alerts']
+    # now we can place the updated file in a location
+    if not os.path.exists('./updated_tracks'):
+        os.mkdir('./updated_tracks')
+    updatedTrackPath = f'{os.path.basename(newTrackFilePath).replace(".json","_updatedAlerts.json")}'
+    existing_track_data['tracks'] = existing_tracks
+    with open(f'./updated_tracks/{updatedTrackPath}', 'w', encoding='utf8') as outfile:
+        json.dump(existing_track_data, outfile, ensure_ascii=False, indent=True)
+    upload_track_json(gc, existing_id, f'./updated_tracks/{updatedTrackPath}')
+
+
+@click.command(name="cloneAndConvert", help="Load in ")
+def run_script():
+    gc = login()
+    video_map = get_processVideos(gc)
+    clng_videos = extract_CLNG_videos(video_map)
+    existing_videos = get_existingVideos(gc, CloneDestinationFolderId)
+    processed_map = get_processJSONItems(gc, JSONLSourceFolderId)
+    matching, unmatching = get_matching_items(video_map, processed_map)
+    # write the unmatched items to unmatching.json
+    with open('unmatching.json', 'w', encoding='utf8') as outfile:
+        json.dump(unmatching, outfile, ensure_ascii=False, indent=True)
+        outfile.write('\n')
+
+    count = 0
+    limit = 9999
+    completed_videos = []
+    for key in matching.keys():
+        if key in existing_videos.keys():
+            completed_videos.append({'name': key, 'id': existing_videos[key]})
+            if UPDATE_EXISTING_MESSAGES:
+                item = matching[key]
+                trackJSONFilePath = download_and_process_json(gc, item["jsonId"], f"{key}.json")
+                item["trackJSON"] = trackJSONFilePath
+                print(f'Updating Messages for video: {key}')
+                replace_exising_alerts(gc, existing_videos[key], trackJSONFilePath)
+                continue
+            else:
+                print(f'Skipping video: {key} it already exists')
+            continue
+        item = matching[key]
+        trackJSONFilePath = download_and_process_json(gc, item["jsonId"], f"{key}.json")
+        item["trackJSON"] = trackJSONFilePath
+        cloneId = clone_video_folder(gc, item["videoId"], key, CloneDestinationFolderId)
+        item["cloneId"] = cloneId
+        upload_track_json(gc, cloneId, trackJSONFilePath)
+        completed_videos.append({'name': key, 'id': cloneId})
+        print(f"Completed: {key}")
+        count += 1
+        if count > limit:
+            break
+    if ADD_CLNG_VIDEOS:
+        for key in clng_videos.keys():
+            if key in existing_videos.keys():
+                completed_videos.append({'name': key, 'id': existing_videos[key], 'CLNG': True})
+                print(f'Skipping video: {key} it already exists')
+                continue
+            item = clng_videos[key]
+            cloneId = clone_video_folder(gc, item, key, CloneDestinationFolderId)
+            gc.addMetadataToFolder(cloneId, {"UMDAnnotation": "TA2"})
+            trackJSON = {"tracks": {}, "groups": {}, "version": 2}
+            with open('emptyTracks.json', 'w', encoding='utf8') as outfile:
+                json.dump(trackJSON, outfile, ensure_ascii=False, indent=True)
+            gc.uploadFileToFolder(cloneId, 'emptyTracks.json')
+            gc.sendRestRequest('POST', f'dive_rpc/postprocess/{cloneId}', data={'skipTranscoding': True, 'skipJobs': True})
+            completed_videos.append({'name': key, 'id': cloneId, 'CLNG': True})
+
+    generate_CSV(completed_videos, f'https://{apiURL}')
 
 if __name__ == '__main__':
     run_script()
