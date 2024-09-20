@@ -501,10 +501,12 @@ def export_ta2_annotation(folders, userMap, user):
                             alertremed_output = alertremed_output_list[index]
                             alertremed_evaluation = alertremed_evaluation_list[index]
                             if 'FLE' in speaker:
-                                alertremed_evaluation  = ''
+                                alertremed_evaluation = ''
                             asrQuality = userDataFound[key].get('asr_quality', '')
                             if 'CLNG' in videoname:
                                 asrQuality = ''
+                            if norm_name == '' or norm_name == 'No Norm':
+                                status_value = ''
                             columns = [
                                 userId,
                                 session_id,
@@ -536,7 +538,9 @@ def export_ta2_annotation(folders, userMap, user):
                         if 'CLNG' in videoname:
                             asrQuality = ''
                         if 'FLE' in speaker:
-                            alertremed_evaluation  = ''
+                            alertremed_evaluation = ''
+                        if norm_name == '' or norm_name == 'No Norm':
+                            status_value = ''
                         columns = [
                             userId,
                             session_id,
