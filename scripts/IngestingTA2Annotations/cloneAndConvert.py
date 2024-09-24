@@ -170,7 +170,6 @@ def generate_CSV(objects, base_url):
             csvwriter.writerow(generate_row(obj, base_url))
 
 def create_or_get_turn(turns, start_time, end_time, time_seconds):
-    
     for item in turns:
         if item['startTime'] == start_time and item['endTime'] == end_time:
             item['startglobal'] = min(time_seconds, item['startglobal'])
@@ -183,6 +182,7 @@ def create_or_get_turn(turns, start_time, end_time, time_seconds):
         'endglobal': time_seconds,
     }
     turns.append(turn)
+
     return turn
 
 
@@ -190,6 +190,7 @@ def process_outputjson(output):
     turns = []
     translations = []
     ptt_turns = []
+    outside_turn_alerts = {}
     for item in output:
         start_seconds = item['message'].get('start_seconds', False)
         if not start_seconds:
@@ -318,12 +319,12 @@ def process_outputjson(output):
         if NEW_DISPLAY_DATA and item.get('queue', False) == 'RESULT' and item.get('message', {}).get('alert', {}).get('text', False):
             turn_num = item.get('message', {}).get('turn', False)
             if turn_num is not False:
+                if outside_turn_alerts.get(turn_num-1, False) is False:
+                    outside_turn_alerts[turn_num-1] = []
                 turn = turns[turn_num-1]
                 message = item['message']['alert'].get('text')
                 soup = BeautifulSoup(message, "html.parser")
-                if turn.get('actions', None) is None:
-                    turn['actions'] = []
-                turn['actions'].append({
+                outside_turn_alerts[turn_num-1].append({
                     'display': soup.get_text(),
                 })
 
@@ -392,9 +393,21 @@ def process_outputjson(output):
             })
 
     output = []
+    updated_turns = []
     for item in turns:
         if item.get('ASRText', None) is not None:
+            updated_turns.append(item)
+    updated_turns.sort(key=lambda x: (x['startTime'] is None, x['startTime']))
+
+    for turn in outside_turn_alerts.keys():
+        if updated_turns[turn].get('actions', None) is None:
+            updated_turns[turn]['actions'] = []
+        for display in outside_turn_alerts[turn]:
+            updated_turns[turn]['actions'].append(display)
+    for item in updated_turns:
+        if item.get('ASRText', None) is not None:
             output.append(item)
+
     # with open('ptt-status.json', 'w') as outfile:
     #     json.dump(ptt_turns, outfile, ensure_ascii=False, indent=True)
     #     outfile.write('\n')
