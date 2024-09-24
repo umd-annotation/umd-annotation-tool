@@ -315,6 +315,19 @@ def process_outputjson(output):
                     'display': item['message']['display'],
                 })
 
+        if NEW_DISPLAY_DATA and item.get('queue', False) == 'RESULT' and item.get('message', {}).get('alert', {}).get('text', False):
+            turn_num = item.get('message', {}).get('turn', False)
+            if turn_num is not False:
+                turn = turns[turn_num-1]
+                message = item['message']['alert'].get('text')
+                soup = BeautifulSoup(message, "html.parser")
+                if turn.get('actions', None) is None:
+                    turn['actions'] = []
+                turn['actions'].append({
+                    'display': soup.get_text(),
+                })
+
+
         if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('remediation_text', {}).get('displayTokens', False):
             turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
             display_list = item.get('message', {}).get('remediation_text', {}).get('displayTokens', [])
