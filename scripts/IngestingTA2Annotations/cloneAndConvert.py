@@ -185,13 +185,20 @@ def create_or_get_turn(turns, start_time, end_time, time_seconds):
 
     return turn
 
+selection_text_map = {
+    0: "CANCEL TRANSLATION",
+    1: "USE ORIGINAL",
+    2: "USE REPHRASE"
+}
 
 def process_outputjson(output):
     turns = []
     translations = []
     ptt_turns = []
     outside_turn_alerts = {}
+    user_feedback = []
     for item in output:
+        time_seconds = item.get('time_seconds', False)
         start_seconds = item['message'].get('start_seconds', False)
         if not start_seconds:
             start_seconds = item['message'].get('start_time')
@@ -203,6 +210,19 @@ def process_outputjson(output):
                 "status": item.get('message', {}).get('status', False),
                 "seconds": item.get('time_seconds')
             })
+        if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('type', False) == 'user_feedback':
+            if item.get('message', {}).get('selection', False) is not None:
+                selection_num = item['message']['selection']
+            if item.get('message', {}).get('selection_text', False) is not None:
+                selection_text = item['message']['selection_text']
+            if selection_text is None
+                selection_text =  selection_text_map[selection_num]
+            user_feedback.append({
+                "time": time_seconds,
+                "text": "selection_text"
+            })
+            
+
         # we have a turn with ASR information
         if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('asr_type', False) == 'TURN' and item.get('message', {}).get('type', False) == 'asr_result':
             turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
@@ -292,6 +312,7 @@ def process_outputjson(output):
                 turn['actions'] = []
             turn['actions'].append({
                 'display': soup.get_text(),
+                'timeGlobal': time_seconds,
             })
         if NEW_DISPLAY_DATA and item.get('message', {}).get('is_final', False) and item.get('message', {}).get('text', False):
             turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
@@ -300,10 +321,24 @@ def process_outputjson(output):
                 turn['actions'] = []
             turn['actions'].append({
                 'display': f'Final user Utterance: {text}',
+                'timeGlobal': time_seconds,
             })
-
-
-            
+        if NEW_DISPLAY_DATA and item.get('message', {}).get('is_final', False) and item.get('message', {}).get('remediation', False) == 'Auto':
+            turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
+            text = item.get('message', {}).get('text', False)
+            turn['rephrase_translation'] = []
+            target_language = ''
+            if item['message'].get('target_language', False):
+                target_language = item['message']['target_language']
+            if item['message'].get('target_language_code', False):
+                target_language = item['message']['target_language_code']
+            turn['rephrase_translation'].append({
+                'source_language': item['message']['text'],
+                'target_language': target_language,
+                'speaker': item['message']['speaker'],
+                'text': item['message']['translation'],
+                'sourceText': item['message']['text'],
+            })
 
 
 
@@ -314,6 +349,7 @@ def process_outputjson(output):
                     turn['rephrase'] = []
                 turn['rephrase'].append({
                     'display': item['message']['display'],
+                    'timeGlobal': time_seconds,
                 })
 
         if NEW_DISPLAY_DATA and item.get('queue', False) == 'RESULT' and item.get('message', {}).get('alert', {}).get('text', False):
@@ -326,6 +362,7 @@ def process_outputjson(output):
                 soup = BeautifulSoup(message, "html.parser")
                 outside_turn_alerts[turn_num-1].append({
                     'display': soup.get_text(),
+                    'timeGlobal': time_seconds,
                 })
 
 
@@ -372,6 +409,7 @@ def process_outputjson(output):
                             turn['actions'] = []
                         turn['actions'].append({
                             'display': f'Button: {soup.get_text()}',
+                            'timeGlobal': time_seconds,
                         })
                 remediation_decision = item.get('message', {}).get('remediation', False)
                 if remediation_decision:
@@ -379,6 +417,7 @@ def process_outputjson(output):
                         turn['actions'] = []
                     turn['actions'].append({
                         'display': f'Remediation Decision: {remediation_decision}',
+                        'timeGlobal': time_seconds,
                     })
 
 
@@ -390,6 +429,7 @@ def process_outputjson(output):
                 turn['actions'] = []
             turn['actions'].append({
                 'display': f"Taboo Violated Reason: {message}",
+                'timeGlobal': time_seconds,
             })
 
     output = []
