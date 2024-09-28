@@ -276,6 +276,14 @@ export default defineComponent({
         }
         // save the file
         handler.save();
+        if (selectedTrackIdRef.value + 1 >= cameraStore.sortedTracks.value.length) { // Done and we sohuld indicate to the user that they are finished
+          await prompt({
+            title: 'Completed',
+            text: 'You have completed Annotating this video and the last turn saved.',
+            positiveButton: 'Confirm',
+            confirm: false,
+          });
+        }
       }
     };
     const changeTrack = (direction: -1 | 1) => {

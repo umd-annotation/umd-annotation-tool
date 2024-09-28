@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 UPDATE_EXISTING_MESSAGES = True  # Updates existing messages with any new data while preserving older annotations
 NEW_DISPLAY_DATA = True  # Adds the new Final, Buttons, Remediation Decision ('Auto', 'Interactive', 'Passivie')
 ADD_CLNG_VIDEOS = True  # will add the CLNG labelled videos with TURN creation links
+ADVANCED_LOGGING = False # Turns on some additional logging about specific values in the system
 JSONLSourceFolderId = "6627ef547193244a6e33353d"  # the GirderId of the folder that contains the source JSONL files
 VideoSourceFolderIds = ["667c58b582915211ce417b78"]  # folders to search for matching Video files
 CloneDestinationFolderId = "661e8fceaee0d357e2455d47"  # destination girder folder ID for the cloned videos
@@ -121,6 +122,11 @@ def download_and_process_json(gc: girder_client.GirderClient, itemId, name):
             turns_output = json.load(f)
 
     turns = process_outputjson(turns_output)
+    turnsFileName = os.path.join(tracksDirectory, name).replace('.json', '_TURNS.json')
+    with open(turnsFileName, 'w', encoding='utf8') as outfile:
+        json.dump(turns, outfile, ensure_ascii=False, indent=True)
+        outfile.write('\n')
+
     trackJSON = convert_output_to_tracks(turns)
     if not os.path.exists(tracksDirectory):
         os.mkdir(tracksDirectory)
@@ -170,7 +176,6 @@ def generate_CSV(objects, base_url):
             csvwriter.writerow(generate_row(obj, base_url))
 
 def create_or_get_turn(turns, start_time, end_time, time_seconds):
-    
     for item in turns:
         if item['startTime'] == start_time and item['endTime'] == end_time:
             item['startglobal'] = min(time_seconds, item['startglobal'])
@@ -179,18 +184,27 @@ def create_or_get_turn(turns, start_time, end_time, time_seconds):
     turn = {
         'startTime': start_time,
         'endTime': end_time,
-        'startglobal':time_seconds,
+        'startglobal': time_seconds,
         'endglobal': time_seconds,
     }
     turns.append(turn)
+
     return turn
 
+selection_text_map = {
+    0: "CANCEL TRANSLATION",
+    1: "USE ORIGINAL",
+    2: "USE REPHRASE"
+}
 
 def process_outputjson(output):
     turns = []
     translations = []
     ptt_turns = []
+    outside_turn_alerts = {}
+    user_feedback = []
     for item in output:
+        time_seconds = item.get('time_seconds', False)
         start_seconds = item['message'].get('start_seconds', False)
         if not start_seconds:
             start_seconds = item['message'].get('start_time')
@@ -202,6 +216,19 @@ def process_outputjson(output):
                 "status": item.get('message', {}).get('status', False),
                 "seconds": item.get('time_seconds')
             })
+        if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('type', False) == 'user_feedback':
+            if item.get('message', {}).get('selection', False) is not None:
+                selection_num = item['message']['selection']
+            if item.get('message', {}).get('selection_text', False) is not None:
+                selection_text = item['message']['selection_text']
+            if selection_text is None:
+                selection_text = selection_text_map[selection_num]
+            user_feedback.append({
+                "time": time_seconds,
+                "text": selection_text
+            })
+            
+
         # we have a turn with ASR information
         if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('asr_type', False) == 'TURN' and item.get('message', {}).get('type', False) == 'asr_result':
             turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
@@ -217,7 +244,7 @@ def process_outputjson(output):
                 'text': item['message']['translation'],
             }
         # translation of possible Rephrasing
-        if item.get('queue', False) == 'RESULT' and item.get('message', {}).get('asr_type', False) == 'TEXT' and item.get('message', {}).get('type', False) == 'translation':
+        if NEW_DISPLAY_DATA is False and item.get('queue', False) == 'RESULT' and item.get('message', {}).get('asr_type', False) == 'TEXT' and item.get('message', {}).get('type', False) == 'translation':
             turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
             if turn.get('rephrase_translation', None) is None:
                 turn['rephrase_translation'] = []
@@ -291,6 +318,7 @@ def process_outputjson(output):
                 turn['actions'] = []
             turn['actions'].append({
                 'display': soup.get_text(),
+                'timeGlobal': time_seconds,
             })
         if NEW_DISPLAY_DATA and item.get('message', {}).get('is_final', False) and item.get('message', {}).get('text', False):
             turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
@@ -299,10 +327,24 @@ def process_outputjson(output):
                 turn['actions'] = []
             turn['actions'].append({
                 'display': f'Final user Utterance: {text}',
+                'timeGlobal': time_seconds,
             })
-
-
-            
+        if NEW_DISPLAY_DATA and item.get('message', {}).get('is_final', False) and item.get('message', {}).get('remediation', False) == 'Auto':
+            turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
+            text = item.get('message', {}).get('text', False)
+            turn['rephrase_translation'] = []
+            target_language = ''
+            if item['message'].get('target_language', False):
+                target_language = item['message']['target_language']
+            if item['message'].get('target_language_code', False):
+                target_language = item['message']['target_language_code']
+            turn['rephrase_translation'].append({
+                'source_language': item['message']['text'],
+                'target_language': target_language,
+                'speaker': item['message']['speaker'],
+                'text': item['message']['translation'],
+                'sourceText': item['message']['text'],
+            })
 
 
 
@@ -313,18 +355,20 @@ def process_outputjson(output):
                     turn['rephrase'] = []
                 turn['rephrase'].append({
                     'display': item['message']['display'],
+                    'timeGlobal': time_seconds,
                 })
 
         if NEW_DISPLAY_DATA and item.get('queue', False) == 'RESULT' and item.get('message', {}).get('alert', {}).get('text', False):
             turn_num = item.get('message', {}).get('turn', False)
             if turn_num is not False:
+                if outside_turn_alerts.get(turn_num-1, False) is False:
+                    outside_turn_alerts[turn_num-1] = []
                 turn = turns[turn_num-1]
                 message = item['message']['alert'].get('text')
                 soup = BeautifulSoup(message, "html.parser")
-                if turn.get('actions', None) is None:
-                    turn['actions'] = []
-                turn['actions'].append({
+                outside_turn_alerts[turn_num-1].append({
                     'display': soup.get_text(),
+                    'timeGlobal': time_seconds,
                 })
 
 
@@ -347,7 +391,9 @@ def process_outputjson(output):
                                 if turn.get('rephrase', None) is None:
                                     turn['rephrase'] = []
                                 turn['rephrase'].append({
-                                    "display": stripped_text
+                                    "display": stripped_text,
+                                    'timeGlobal': time_seconds,
+
                                 })
                         else:
                             already_in_list = False
@@ -360,6 +406,7 @@ def process_outputjson(output):
                                     turn['actions'] = []
                                 turn['actions'].append({
                                     'display': stripped_text,
+                                    'timeGlobal': time_seconds,
                                 })
             if NEW_DISPLAY_DATA:
                 button_list = item.get('message', {}).get('remediation_text', {}).get('buttons', [])
@@ -371,6 +418,7 @@ def process_outputjson(output):
                             turn['actions'] = []
                         turn['actions'].append({
                             'display': f'Button: {soup.get_text()}',
+                            'timeGlobal': time_seconds,
                         })
                 remediation_decision = item.get('message', {}).get('remediation', False)
                 if remediation_decision:
@@ -378,6 +426,7 @@ def process_outputjson(output):
                         turn['actions'] = []
                     turn['actions'].append({
                         'display': f'Remediation Decision: {remediation_decision}',
+                        'timeGlobal': time_seconds,
                     })
 
 
@@ -389,12 +438,44 @@ def process_outputjson(output):
                 turn['actions'] = []
             turn['actions'].append({
                 'display': f"Taboo Violated Reason: {message}",
+                'timeGlobal': time_seconds,
             })
 
     output = []
+    updated_turns = []
+    count = 1
     for item in turns:
         if item.get('ASRText', None) is not None:
+            updated_turns.append(item)
+            start_global = item['startglobal']
+            end_global = item['endglobal']
+            for feedback in user_feedback:
+                feedback_time = feedback['time']
+                if feedback_time > start_global and feedback_time <= end_global and feedback.get('added', False) is False:
+                    if ADVANCED_LOGGING:
+                        print(f'Adding UserFeedback: {feedback["text"]} to and time {feedback_time} turn: {count} between {start_global} - {end_global}')
+                    if item.get('actions', False) is False:
+                        item['actions'] = []
+                    item['actions'].append({
+                        'display': f"User Feedback: {feedback['text']}",
+                        'timeGlobal': feedback['time'],
+                    })
+                    feedback['added'] = True
+                if item.get('actions', False):
+                    item['actions'].sort(key=lambda x: (x['timeGlobal'] is None, x['timeGlobal']))
+            count += 1
+
+    updated_turns.sort(key=lambda x: (x['startTime'] is None, x['startTime']))
+
+    for turn in outside_turn_alerts.keys():
+        if updated_turns[turn].get('actions', None) is None:
+            updated_turns[turn]['actions'] = []
+        for display in outside_turn_alerts[turn]:
+            updated_turns[turn]['actions'].append(display)
+    for item in updated_turns:
+        if item.get('ASRText', None) is not None:
             output.append(item)
+
     # with open('ptt-status.json', 'w') as outfile:
     #     json.dump(ptt_turns, outfile, ensure_ascii=False, indent=True)
     #     outfile.write('\n')
@@ -477,9 +558,9 @@ def convert_output_to_tracks(output, width=1920, height=1080, framerate=30, offs
             track['attributes']['targetLanguage'] = targetLanguage
         if item.get('rephrase_translation', False):
             track['attributes']['rephrase_translation'] = []
-            for rehprase_translation in item['rephrase_translation']:
-                translation = rehprase_translation['text']
-                sourceText = rehprase_translation['sourceText']
+            for rephrase_translation in item['rephrase_translation']:
+                translation = rephrase_translation['text']
+                sourceText = rephrase_translation['sourceText']
                 if not any(d.get('translation') == translation for d in track['attributes']['rephrase_translation']):
                     track['attributes']['rephrase_translation'].append({
                         "translation": translation,
@@ -532,6 +613,8 @@ def replace_exising_alerts(gc: girder_client.GirderClient, existing_id, newTrack
         track = new_tracks[key]
         if track.get('attributes', {}).get('alerts'):
             existing_tracks[track['id']]['attributes']['alerts'] = track['attributes']['alerts']
+        if existing_tracks[track['id']].get('attributes', {}).get('rephrase_translation'):
+            existing_tracks[track['id']]['attributes']['rephrase_translation'] = track['attributes'].get('rephrase_translation', [])
     # now we can place the updated file in a location
     if not os.path.exists('./updated_tracks'):
         os.mkdir('./updated_tracks')
