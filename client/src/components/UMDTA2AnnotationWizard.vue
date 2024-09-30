@@ -32,10 +32,9 @@ export type NormsList =
   | 'No Norm'
   | 'Complaining'
   | 'Topic Closing'
-  | 'Giving Advice'
-  ;
+  | 'Giving Advice';
 
-  export const NormListMapping = [
+export const NormListMapping = [
   { named: 'No Norm', id: 100, groups: ['LC1', 'LC2', 'LC3', 'LC4'] },
   { named: 'Apology', id: 101, groups: ['LC1', 'LC2', 'LC3'] },
   { named: 'Criticism', id: 102, groups: ['LC1', 'LC2'] },
