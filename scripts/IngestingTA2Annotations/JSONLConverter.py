@@ -19,6 +19,9 @@ normMap = {
     '114': "Respond to Request for Information",
     '115': "Acknowledging Thanks",
     '116': "Interrupting",
+    '117': 'Complaining',
+    '118': 'Topic Closing',
+    '119': 'Giving Advice',
     "none": "None",
 }
 
