@@ -637,8 +637,7 @@ def replace_exising_alerts(gc: girder_client.GirderClient, existing_id, newTrack
     # now a trackId basis we update the track['attributes']['alerts'] to the new data
     for key in new_tracks:
         track = new_tracks[key]
-        if track.get('attributes', {}).get('alerts'):
-            existing_tracks[track['id']]['attributes']['alerts'] = track['attributes']['alerts']
+        existing_tracks[track['id']]['attributes']['alerts'] = track['attributes'].get('alerts', [])
         if existing_tracks[track['id']].get('attributes', {}).get('rephrase_translation'):
             existing_tracks[track['id']]['attributes']['rephrase_translation'] = track['attributes'].get('rephrase_translation', [])
         if existing_tracks[track['id']].get('attributes', {}).get('rephrase') or len(track['attributes'].get('rephrase', [])) > 0:

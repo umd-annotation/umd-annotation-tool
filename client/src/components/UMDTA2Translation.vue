@@ -55,7 +55,7 @@ export default defineComponent({
     <p>{{ data.ASRText }}</p>
     <h3>Translation</h3>
     <p>{{ data.translation }}</p>
-    <h3 v-if="data.alerts">
+    <h3 v-if="data.alerts && data.alerts.length">
       Alerts
     </h3>
     <p v-if="data.alerts">
