@@ -323,7 +323,8 @@ def process_outputjson(output):
                 'display': soup.get_text(),
                 'timeGlobal': time_seconds,
             })
-        if NEW_DISPLAY_DATA and item.get('message', {}).get('is_final', False) and item.get('message', {}).get('text', False):
+        # This was asked to be removed
+        if False and item.get('message', {}).get('is_final', False) and item.get('message', {}).get('text', False):
             turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
             text = item.get('message', {}).get('text', False)
             if turn.get('actions', None) is None:
@@ -332,6 +333,7 @@ def process_outputjson(output):
                 'display': f'Final user Utterance: {text}',
                 'timeGlobal': time_seconds,
             })
+        
         if NEW_DISPLAY_DATA and item.get('message', {}).get('is_final', False) and item.get('message', {}).get('remediation', False) == 'Auto':
             turn = create_or_get_turn(turns, start_seconds, end_seconds, item['time_seconds'])
             text = item.get('message', {}).get('text', False)
@@ -396,7 +398,19 @@ def process_outputjson(output):
                                 turn['rephrase'].append({
                                     "display": stripped_text,
                                     'timeGlobal': time_seconds,
-
+                                })
+                        elif "Added:" in stripped_text:
+                            already_in_list = False
+                            for rephrase in turn.get('rephrase', {}):
+                                if stripped_text in rephrase['display']:
+                                    already_in_list = True
+                                    break
+                            if not already_in_list:
+                                if turn.get('rephrase', None) is None:
+                                    turn['rephrase'] = []
+                                turn['rephrase'].append({
+                                    "display": stripped_text,
+                                    'timeGlobal': time_seconds,
                                 })
                         else:
                             already_in_list = False
@@ -477,6 +491,15 @@ def process_outputjson(output):
             updated_turns[turn]['actions'].append(display)
     for item in updated_turns:
         if item.get('ASRText', None) is not None:
+            if item.get('actions', None) is not None:
+                unique_list = []
+                unique_text = []
+                for action in item['actions']:
+                    if action['display'] not in unique_text:
+                        unique_text.append(action['display'])
+                        unique_list.append(action)
+                item['actions'] = unique_list
+
             output.append(item)
 
     # with open('ptt-status.json', 'w') as outfile:
@@ -618,6 +641,8 @@ def replace_exising_alerts(gc: girder_client.GirderClient, existing_id, newTrack
             existing_tracks[track['id']]['attributes']['alerts'] = track['attributes']['alerts']
         if existing_tracks[track['id']].get('attributes', {}).get('rephrase_translation'):
             existing_tracks[track['id']]['attributes']['rephrase_translation'] = track['attributes'].get('rephrase_translation', [])
+        if existing_tracks[track['id']].get('attributes', {}).get('rephrase') or len(track['attributes'].get('rephrase', [])) > 0:
+            existing_tracks[track['id']]['attributes']['rephrase'] = track['attributes'].get('rephrase', [])
     # now we can place the updated file in a location
     if not os.path.exists('./updated_tracks'):
         os.mkdir('./updated_tracks')

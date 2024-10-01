@@ -73,10 +73,10 @@ export default defineComponent({
         </div>
       </v-row>
     </p>
-    <h3 v-if="data.rephrase && data.rephrase.length">
+    <h3 v-if="data.rephrase && data.rephrase.length && !(data.rephrase_translation && data.rephrase_translation.length)">
       Rephrase
     </h3>
-    <p v-if="data.rephrase">
+    <p v-if="data.rephrase && data.rephrase.length && !(data.rephrase_translation && data.rephrase_translation.length)">
       <v-row
         v-for="(alert, index) in data.rephrase"
         :key="`rephrase_${index}`"
@@ -96,7 +96,29 @@ export default defineComponent({
       >
         <v-container class="mx-5">
           <v-row>
-            <div class="ml-2">
+            <div
+              v-if="data.rephrase && data.rephrase.length"
+              class="ml-2"
+            >
+              <div v-if="data.rephrase.length == 1">
+                <b class="mr-2">Rephrased:</b>{{ data.rephrase.map((item) => item.display)[0].replace('Rephrased:', '') }}
+              </div>
+              <div v-else>
+                <b class="mr-2">Rephrased:</b>
+                <ul>
+                  <li
+                    v-for="(item, subindex) in data.rephrase"
+                    :key="`rephrase_${subindex}`"
+                  >
+                    {{ item.display }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div
+              v-else
+              class="ml-2"
+            >
               <b class="mr-2">Source Text:</b>{{ rephrase.sourceText }}
             </div>
           </v-row>
