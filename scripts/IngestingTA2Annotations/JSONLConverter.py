@@ -78,7 +78,7 @@ def remove_base64_from_jsonl(input_file, output_file):
                                 data['message']['norm'] = normMap[str(data['message']['name'])]
                 raw.append(data)                    
                 output.append(data)
-        with open(output_file, 'w') as outfile:
+        with open(output_file, 'w', encoding='utf-8') as outfile:
             json.dump(raw, outfile, ensure_ascii=False, indent=True)  # ensure_ascii=False to output UTF-8 properly
         return output
 
