@@ -25,10 +25,25 @@ normMap = {
     "none": "None",
 }
 
+def try_open_file(input_file):
+    encodings = ['utf-8', 'latin-1', 'cp1252']
+    for encoding in encodings:
+        try:
+            with open(input_file, 'r', encoding=encoding) as infile:
+                data = infile.read()  # Test read to check if encoding works
+            print(f"Successfully read {input_file} with encoding: {encoding}")
+            return encoding  # Return the encoding that works
+        except UnicodeDecodeError:
+            print(f"Encoding {encoding} failed for file: {input_file}")
+    raise UnicodeDecodeError(f"None of the tested encodings worked for file: {input_file}")
+
+
 def remove_base64_from_jsonl(input_file, output_file):
     output = []
     raw = []
-    with open(input_file, 'r') as infile:
+    encoding = try_open_file(input_file)  # Find a working encoding
+
+    with open(input_file, 'r', encoding=encoding) as infile:
         for line in infile:
             if not line.strip().startswith('#'):  # Skip lines starting with #
                 data = json.loads(line)
