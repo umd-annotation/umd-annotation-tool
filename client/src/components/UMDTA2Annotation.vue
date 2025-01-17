@@ -76,6 +76,9 @@ export default defineComponent({
         if (props.name.includes('LC3')) {
           return 'LC3';
         }
+        if (props.name.includes('LC4')) {
+          return 'LC4';
+        }
       }
       return 'LC1';
     });
