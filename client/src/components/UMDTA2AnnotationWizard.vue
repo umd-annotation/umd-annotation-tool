@@ -36,7 +36,7 @@ export type NormsList =
 
 export const NormListMapping = [
   { named: 'No Norm', id: 100, groups: ['LC1', 'LC2', 'LC3', 'LC4'] },
-  { named: 'Apology', id: 101, groups: ['LC1', 'LC2', 'LC3'] },
+  { named: 'Apology', id: 101, groups: ['LC1', 'LC2', 'LC3', 'LC4'] },
   { named: 'Criticism', id: 102, groups: ['LC1', 'LC2'] },
   { named: 'Greeting', id: 103, groups: ['LC1', 'LC2', 'LC3', 'LC4'] },
   { named: 'Request', id: 104, groups: ['LC1'] },
