@@ -11,6 +11,11 @@ from girder.constants import AccessType
 from girder.models.folder import Folder
 from girder.models.user import User
 from girder.utility import ziputil
+from girder.models.setting import Setting
+from UMD_utils.constants import TA2_CONFIG, BASENORMMAP
+
+base_norm_map = Setting().get(TA2_CONFIG).get('normMap', None) or BASENORMMAP
+
 
 normMap = {
     "Apology": 101,
@@ -37,6 +42,10 @@ normMap = {
     "No Norm": 'none',
 }
 
+for item in base_norm_map:
+    normMap[item['named']] = item['id']
+
+normMap['No Norm'] = 'none'
 
 normValuesViolate = ['violate', 'violated']
 normValuesAdhere = ['adhere', 'adhered']
