@@ -35,13 +35,13 @@ BASENORMMAP = [
 
 
 class TA2NormMapping(BaseModel):
-    name: str
+    named: str
     id: int
     groups: List[str]
 
 
 class TA2Config(BaseModel):
-    normMapping: List[TA2NormMapping]
+    normMap: List[TA2NormMapping]
 
     class Config:
         extra = 'forbid'
@@ -74,7 +74,7 @@ class ConfigurationResource(Resource):
     @access.public
     @autoDescribeRoute(Description("Get TA2 Config"))
     def get_ta2_config(self):
-        return Setting().get(TA2_CONFIG) or BASENORMMAP
+        return Setting().get(TA2_CONFIG) or {'normMap': BASENORMMAP}
 
     @access.admin
     @autoDescribeRoute(

@@ -14,6 +14,7 @@ import {
 } from 'vue-media-annotator/provides';
 import { usePrompt } from 'dive-common/vue-utilities/prompt-service';
 import { UMDAnnotationMode } from 'platform/web-girder/store/types';
+import { getUMDTA2Config } from 'platform/web-girder/api/UMD.service';
 import UMDTA2Translation, { TA2Translation } from './UMDTA2Translation.vue';
 import UMDTA2AnnotationWizard, { TA2Annotation } from './UMDTA2AnnotationWizard.vue';
 
@@ -61,23 +62,13 @@ export default defineComponent({
     const userLogin = ref('');
     const loadedAttributes = ref(false);
     const annotation: Ref<TA2Annotation | null> = ref({});
-
+    const normFileNames: Ref<string[]> = ref([]);
     const LCName = computed(() => {
       if (props.name) {
-        if (props.name.includes('LC1')) {
-          return 'LC1';
-        }
-        if (props.name.includes('LC2')) {
-          return 'LC2';
-        }
-        if (props.name.includes('LC2')) {
-          return 'LC1';
-        }
-        if (props.name.includes('LC3')) {
-          return 'LC3';
-        }
-        if (props.name.includes('LC4')) {
-          return 'LC4';
+        for (let i = 0; i < normFileNames.value.length; i += 1) {
+          if (props.name.includes(normFileNames.value[i])) {
+            return normFileNames.value[i];
+          }
         }
       }
       return 'LC1';
@@ -230,6 +221,14 @@ export default defineComponent({
         getMaxSegmentAnnotated();
       }
       loadedAttributes.value = checkAttributes(selectedTrackIdRef.value, true);
+      const config = await getUMDTA2Config();
+      if (config.normMap) {
+        const fileNames = new Set<string>();
+        config.normMap.forEach((item) => {
+          item.groups.forEach((group) => fileNames.add(group));
+        });
+        normFileNames.value = Array.from(fileNames);
+      }
     };
     onMounted(() => initialize());
     watch(selectedTrackIdRef, () => {
