@@ -21,7 +21,7 @@ apiURL = "annotation.umd.edu"
 processingDirectory = './jsonProcessing'
 tracksDirectory = './tracks'
 
-normMap = {
+baseNormMap = {
     '101': "Apology",
     '102': "Criticism",
     '103': "Greeting",
@@ -43,12 +43,22 @@ normMap = {
     '119': 'Giving Advice',
     "none": "None",
 }
+normMap = {}
 
 
 def login():
     gc = girder_client.GirderClient(apiURL, port=443, apiRoot='girder/api/v1' )
     gc.authenticate(interactive=True)
     return gc
+
+def get_server_normMap(gc: girder_client.GirderClient):
+    global normMap
+    data = gc.get('/UMD_configuration/TA2_config')
+    norms = data['normMap']
+    normMap = baseNormMap
+    for item in norms:
+        print(item)
+        normMap[str(item['id'])] = item['named']
 
 
 def getFolderList(gc: girder_client.GirderClient, folderId, parentType = "folder"):
@@ -655,6 +665,7 @@ def replace_exising_alerts(gc: girder_client.GirderClient, existing_id, newTrack
 @click.command(name="cloneAndConvert", help="Load in ")
 def run_script():
     gc = login()
+    get_server_normMap()
     video_map = get_processVideos(gc)
     clng_videos = extract_CLNG_videos(video_map)
     existing_videos = get_existingVideos(gc, CloneDestinationFolderId)

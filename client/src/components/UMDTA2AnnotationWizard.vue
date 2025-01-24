@@ -10,6 +10,7 @@ import {
 import { cloneDeep } from 'lodash';
 import { UMDAnnotationMode } from 'platform/web-girder/store/types';
 import { useSelectedTrackId } from 'vue-media-annotator/provides';
+import { getUMDTA2Config, TA2Config } from 'platform/web-girder/api/UMD.service';
 import { TA2Translation } from './UMDTA2Translation.vue';
 
 export type NormsList =
@@ -32,9 +33,9 @@ export type NormsList =
   | 'No Norm'
   | 'Complaining'
   | 'Topic Closing'
-  | 'Giving Advice';
+  | 'Giving Advice' | string;
 
-export const NormListMapping = [
+export const BaseNormListMapping: TA2Config['normMap'] = [
   { named: 'No Norm', id: 100, groups: ['LC1', 'LC2', 'LC3', 'LC4'] },
   { named: 'Apology', id: 101, groups: ['LC1', 'LC2', 'LC3', 'LC4'] },
   { named: 'Criticism', id: 102, groups: ['LC1', 'LC2'] },
@@ -131,7 +132,7 @@ export default defineComponent({
       default: 'review',
     },
     LC: {
-      type: String as PropType<'LC1' | 'LC2' | 'LC3' | 'LC4' | 'LC5' | 'LC6'>,
+      type: String as PropType<string>,
       default: 'LC1',
     },
     translation: {
@@ -143,7 +144,7 @@ export default defineComponent({
   setup(props, { emit }) {
     const annotationState: Ref<'ASRMTQuality' | 'Norms' | 'AlertRephrasing'> = ref('ASRMTQuality');
     const selectedTrackIdRef = useSelectedTrackId();
-
+    const NormListMapping: Ref<{ named: string; id: number; groups: string[] }[]> = ref([]);
     const steps = ref([
       'ASR/Translation Quality',
       'Norm Adherence/Violation',
@@ -170,19 +171,21 @@ export default defineComponent({
       'Interrupting',
     ]);
     const calculateBaseNorms = () => {
-      const filtered = NormListMapping.filter((item) => (item.groups.includes(props.LC || 'LC1')));
+      const filtered = NormListMapping.value.filter((item) => (item.groups.includes(props.LC || 'LC1')));
       baseNorms.value = filtered.map((item) => item.named);
     };
 
-    onMounted(() => {
+    onMounted(async () => {
       if (props.mode === 'TA2Annotation_Norms') {
         stepper.value = 2;
       }
       if (props.mode === 'TA2Annotation_Remediation') {
         stepper.value = 3;
       }
+      NormListMapping.value = (await getUMDTA2Config()).normMap || BaseNormListMapping;
       calculateBaseNorms();
     });
+    watch(() => props.LC, () => calculateBaseNorms());
     const ASRQuality = ref(props.annotations.ASRQuality === undefined ? 0 : props.annotations.ASRQuality);
     const MTQuality = ref(props.annotations.MTQuality === undefined ? 0 : props.annotations.MTQuality);
     const AlertsQuality = ref(props.annotations.AlertsQuality === undefined ? 0 : props.annotations.AlertsQuality);

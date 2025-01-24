@@ -6,6 +6,7 @@ import UserRecents from './Admin/UserRecents.vue';
 import AdminJobs from './Admin/AdminJobs.vue';
 import AdminBranding from './Admin/AdminBranding.vue';
 import AdminUpdate from './Admin/AdminUpdate.vue';
+import AdminTA2ConfigVue from './Admin/AdminTA2Config.vue';
 
 export default {
   name: 'AdminPage',
@@ -16,6 +17,7 @@ export default {
     AdminJobs,
     AdminBranding,
     AdminUpdate,
+    AdminTA2ConfigVue,
   },
   props: {
   },
@@ -38,6 +40,7 @@ export default {
           <v-tab> Jobs </v-tab>
           <v-tab> Addons </v-tab>
           <v-tab> Branding </v-tab>
+          <v-tab> TA2 Config </v-tab>
           <v-tab> Update </v-tab>
         </v-tabs>
       </v-card-title>
@@ -56,6 +59,9 @@ export default {
         </v-tab-item>
         <v-tab-item>
           <AdminBranding />
+        </v-tab-item>
+        <v-tab-item>
+          <AdminTA2ConfigVue />
         </v-tab-item>
         <v-tab-item>
           <AdminUpdate />

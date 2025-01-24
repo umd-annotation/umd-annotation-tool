@@ -17,8 +17,25 @@ async function createFilterFolder(folderId: string) {
   return false;
 }
 
+type TA2NormMap = { named: string; id: number; groups: string[] };
+export interface TA2Config {
+  normMap: TA2NormMap[];
+}
+const configAPI = 'UMD_configuration';
+async function getUMDTA2Config() {
+  const result = await girderRest.get<TA2Config>(`${configAPI}/TA2_config`);
+  return result.data;
+}
+
+async function putUMDTA2Config(config: TA2Config) {
+  const result = await girderRest.put(`${configAPI}/TA2_config`, config);
+  return result;
+}
+
 export {
   ingestVideo,
   updateContainers,
   createFilterFolder,
+  getUMDTA2Config,
+  putUMDTA2Config,
 };

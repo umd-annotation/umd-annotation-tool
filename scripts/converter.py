@@ -1,6 +1,10 @@
 import json
 import click
-normMap = {
+import girder_client
+apiURL = "annotation.umd.edu" # localhost
+apiPort = 443 # 8000
+
+baseNormMap = {
     '101': "Apology",
     '102': "Criticism",
     '103': "Greeting",
@@ -23,7 +27,22 @@ normMap = {
     "none": "None",
 }
 
+normMap = {}
 
+
+def login():
+    gc = girder_client.GirderClient(apiURL, port=apiPort, apiRoot='girder/api/v1' )
+    gc.authenticate(interactive=True)
+    return gc
+
+
+def get_server_normMap(gc: girder_client.GirderClient):
+    global normMap
+    data = gc.get('/UMD_configuration/TA2_config')
+    norms = data['normMap']
+    normMap = baseNormMap
+    for item in norms:
+        normMap[str(item['id'])] = item['named']
 
 
 def remove_base64_from_jsonl(input_file, output_file):
@@ -306,6 +325,8 @@ def convert_output_to_tracks(output, width=1920, height=1080, framerate=30, offs
 @click.argument('input_file', type=click.Path(exists=True))
 @click.argument('output_file', type=click.Path())
 def main_script(input_file, output_file):
+    gc = login()
+    get_server_normMap()
     output = remove_base64_from_jsonl(input_file, output_file)
     turns = process_outputjson(output)
     with open('turns.json', 'w') as outfile:
