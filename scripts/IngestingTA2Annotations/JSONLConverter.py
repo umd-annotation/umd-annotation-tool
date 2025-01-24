@@ -1,8 +1,11 @@
 import argparse
 import json
 import os
+import girder_client
+apiURL = "localhost" # "annotation.umd.edu" # localhost
+apiPort = 8010
 
-normMap = {
+baseNormMap = {
     '101': "Apology",
     '102': "Criticism",
     '103': "Greeting",
@@ -24,6 +27,23 @@ normMap = {
     '119': 'Giving Advice',
     "none": "None",
 }
+normMap = {}
+
+def login():
+    gc = girder_client.GirderClient(apiURL, port=apiPort, apiRoot='girder/api/v1' )
+    gc.authenticate(interactive=True)
+    return gc
+
+
+def get_server_normMap(gc: girder_client.GirderClient):
+    global normMap
+    data = gc.get('/UMD_configuration/TA2_config')
+    norms = data['normMap']
+    normMap = baseNormMap
+    for item in norms:
+        print(item)
+        normMap[str(item['id'])] = item['named']
+
 
 def try_open_file(input_file):
     encodings = ['utf-8', 'latin-1', 'cp1252']
@@ -94,6 +114,8 @@ def process_folder(folder_path):
                 print("Base64 data removed and saved to:", output_file)
 
 def main():
+    gc = login()
+    get_server_normMap(gc)
     parser = argparse.ArgumentParser(description='Process JSONL files in a folder and remove base64 data from them.')
     parser.add_argument('folder_path', help='Folder path containing JSONL files')
     args = parser.parse_args()

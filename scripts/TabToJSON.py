@@ -4,8 +4,11 @@ import json
 import math
 import csv
 from collections import OrderedDict
+import girder_client
+apiURL = "annotation.umd.edu" # localhost
+apiPort = 443 # 8000
 
-normMap = {
+baseNormMap = {
     '101': "Apology",
     '102': "Criticism",
     '103': "Greeting",
@@ -25,7 +28,21 @@ normValMap = {
     'EMPTY_NA': 'EMPTY_NA',
     'adhere_violate': 'adhered_violated'
 }
+normMap = {}
 
+def login():
+    gc = girder_client.GirderClient(apiURL, port=apiPort, apiRoot='girder/api/v1' )
+    gc.authenticate(interactive=True)
+    return gc
+
+
+def get_server_normMap(gc: girder_client.GirderClient):
+    global normMap
+    data = gc.get('/UMD_configuration/TA2_config')
+    norms = data['normMap']
+    normMap = baseNormMap
+    for item in norms:
+        normMap[str(item['id'])] = item['named']
 
 
 def loadUserMap(csvfile):
@@ -198,6 +215,8 @@ def generate_tracks(videoinfo):
 )
 @click.argument("trackfile")
 def load_data(trackfile):
+    gc = login()
+    get_server_normMap()
    #tracks = loadExistingTracks(trackfile)
     videoinfo = {
         'width': 1920,

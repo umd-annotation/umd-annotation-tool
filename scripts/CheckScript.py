@@ -2,9 +2,12 @@ import os
 import click
 import json
 import math
+import girder_client
+apiURL = "annotation.umd.edu" # localhost
+apiPort = 443 # 8000
 
 
-normMap = {
+baseNormMap = {
     "Apology": 101,
     "Criticism": 102,
     "Greeting": 103,
@@ -16,6 +19,21 @@ normMap = {
     "Finalizing Negotiation/Deal": 109,
     "Refusing a Request": 110,
 }
+normMap = {}
+
+def login():
+    gc = girder_client.GirderClient(apiURL, port=apiPort, apiRoot='girder/api/v1' )
+    gc.authenticate(interactive=True)
+    return gc
+
+
+def get_server_normMap(gc: girder_client.GirderClient):
+    global normMap
+    data = gc.get('/UMD_configuration/TA2_config')
+    norms = data['normMap']
+    normMap = baseNormMap
+    for item in norms:
+        normMap[str(item['named'])] = int(item['id'])
 
 
 def bin_value(value):
@@ -227,6 +245,8 @@ def export_versions_per_file(tracks):
 )
 @click.argument("jsonfile")
 def load_data(jsonfile):
+    gc = login()
+    get_server_normMap(gc)
     with open(jsonfile, 'r') as myfile:
         file_data = myfile.read()
         data = json.loads(file_data)

@@ -7,7 +7,7 @@ export default defineComponent({
   setup() {
     const normMap = ref<TA2Config['normMap']>([]);
     const errorMessage = ref<string | null>(null);
-
+    const infoDialog = ref(false);
     const fetchConfig = async () => {
       try {
         const data = await getUMDTA2Config();
@@ -54,6 +54,7 @@ export default defineComponent({
     return {
       normMap,
       errorMessage,
+      infoDialog,
       handleFileUpload,
       downloadConfig,
     };
@@ -66,7 +67,12 @@ export default defineComponent({
     <v-card class="mt-5">
       <v-card-title>TA2 Configuration</v-card-title>
       <v-card-subtitle>
-        Manage and view the TA2 normalization map configuration.
+        Manage and view the TA2 normalization map configuration. <v-icon
+          class="mx-2"
+          @click="infoDialog = true"
+        >
+          mdi-information
+        </v-icon>
       </v-card-subtitle>
       <v-card-text>
         <v-alert
@@ -117,6 +123,34 @@ export default defineComponent({
         </v-btn>
       </v-card-text>
     </v-card>
+    <v-dialog
+      v-model="infoDialog"
+      width="500"
+    >
+      <v-card>
+        <v-card-title>TA2 Configuration Information</v-card-title>
+        <v-card-text>
+          <p>
+            The TA2 Configuration allows uploading a Configiuration JSON file.
+          </p>
+          <p> The file should have a root JSON object with a key of 'normMap' which is an array of items</p>
+          <p> These items should include a format like the following 'name: NormName, id: 101, groups: ['LC1', 'LC2']'</p>
+          <p> The normMap name will only appear in the interace for TA2 Annotations when the filename contains one of the text strings found in groups.  I.E. if the filename contains LC1 it will enable the norm for TA2 Norm annotations</p>
+        </v-card-text>
+        <v-card-actions>
+          <v-row dense>
+            <v-spacer />
+            <v-btn
+              color="primary"
+              @click="infoDialog = false"
+            >
+              Close
+            </v-btn>
+            <v-spacer />
+          </v-row>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 

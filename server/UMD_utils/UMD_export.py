@@ -14,7 +14,6 @@ from girder.utility import ziputil
 from girder.models.setting import Setting
 from UMD_utils.constants import TA2_CONFIG, BASENORMMAP
 
-base_norm_map = Setting().get(TA2_CONFIG).get('normMap', None) or BASENORMMAP
 
 
 normMap = {
@@ -42,8 +41,6 @@ normMap = {
     "No Norm": 'none',
 }
 
-for item in base_norm_map:
-    normMap[item['named']] = item['id']
 
 normMap['No Norm'] = 'none'
 
@@ -332,6 +329,10 @@ def handle_norms_export(session_id, user_norms, system_norms):
 
 
 def export_ta2_annotation(folders, userMap, user):
+    base_norm_map = Setting().get(TA2_CONFIG).get('normMap', None) or BASENORMMAP
+    for item in base_norm_map:
+        normMap[item['named']] = item['id']
+
     csvFile = io.StringIO()
     writer = csv.writer(csvFile, delimiter='\t')
     writer.writerow(
