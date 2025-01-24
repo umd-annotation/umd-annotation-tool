@@ -216,7 +216,7 @@ def generate_tracks(videoinfo):
 @click.argument("trackfile")
 def load_data(trackfile):
     gc = login()
-    get_server_normMap()
+    get_server_normMap(gc)
    #tracks = loadExistingTracks(trackfile)
     videoinfo = {
         'width': 1920,

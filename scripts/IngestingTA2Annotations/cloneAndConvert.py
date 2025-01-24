@@ -665,7 +665,7 @@ def replace_exising_alerts(gc: girder_client.GirderClient, existing_id, newTrack
 @click.command(name="cloneAndConvert", help="Load in ")
 def run_script():
     gc = login()
-    get_server_normMap()
+    get_server_normMap(gc)
     video_map = get_processVideos(gc)
     clng_videos = extract_CLNG_videos(video_map)
     existing_videos = get_existingVideos(gc, CloneDestinationFolderId)

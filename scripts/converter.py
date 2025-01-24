@@ -326,7 +326,7 @@ def convert_output_to_tracks(output, width=1920, height=1080, framerate=30, offs
 @click.argument('output_file', type=click.Path())
 def main_script(input_file, output_file):
     gc = login()
-    get_server_normMap()
+    get_server_normMap(gc)
     output = remove_base64_from_jsonl(input_file, output_file)
     turns = process_outputjson(output)
     with open('turns.json', 'w') as outfile:
