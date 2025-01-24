@@ -1,8 +1,11 @@
 import json
 import os
 import click
+import girder_client
+apiURL = "annotation.umd.edu"  # localhost
+apiPort = 443  # 8010
 
-normMap = {
+baseNormMap = {
     '101': "Apology",
     '102': "Criticism",
     '103': "Greeting",
@@ -24,6 +27,22 @@ normMap = {
     '119': 'Giving Advice',
     "none": "None",
 }
+normMap = {}
+
+def login():
+    gc = girder_client.GirderClient(apiURL, port=apiPort, apiRoot='girder/api/v1' )
+    gc.authenticate(interactive=True)
+    return gc
+
+
+def get_server_normMap(gc: girder_client.GirderClient):
+    global normMap
+    data = gc.get('/UMD_configuration/TA2_config')
+    norms = data['normMap']
+    normMap = baseNormMap
+    for item in norms:
+        normMap[str(item['id'])] = item['named']
+
 
 def remove_base64_from_jsonl(input_file, output_file):
     output = []
@@ -312,6 +331,8 @@ def load_json_file(input_file):
 @click.command()
 @click.argument('input_folder', type=click.Path(exists=True))
 def main_script(input_folder):
+    gc = login()
+    get_server_normMap(gc)
     for file in os.listdir(input_folder):
         if file.endswith(".json"):
             input_file = os.path.join(input_folder, file)

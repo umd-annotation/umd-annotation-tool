@@ -2,8 +2,8 @@ import argparse
 import json
 import os
 import girder_client
-apiURL = "localhost" # "annotation.umd.edu" # localhost
-apiPort = 8010
+apiURL = "annotation.umd.edu"  # localhost
+apiPort = 443
 
 baseNormMap = {
     '101': "Apology",
