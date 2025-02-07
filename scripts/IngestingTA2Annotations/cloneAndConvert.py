@@ -74,7 +74,7 @@ def get_processVideos(gc):
     for VideoSourceFolderId in VideoSourceFolderIds:
         videoList = getFolderList(gc, VideoSourceFolderId)
         for item in videoList:
-            if "THIRD-PERSON.mp4" in item["name"] and 'annotate' in item["meta"].keys():
+            if 'annotate' in item["meta"].keys():
                 updated_name = item["name"].replace("Video ", "").replace("_THIRD-PERSON.mp4", "")
                 video_dict[updated_name] = item["_id"]
     return video_dict
@@ -127,8 +127,9 @@ def download_and_process_json(gc: girder_client.GirderClient, itemId, name):
         os.mkdir(processingDirectory)
     gc.downloadItem(itemId, processingDirectory)
     # next we need to process the downloaded file and convert it into a track json
+    print(f'Processing converted JSON file: {name}')
     try: 
-        with open(f"{processingDirectory}/log_{name.replace('.json', '_converted.json')}", 'r', encoding='utf8') as f:
+        with open(f"{processingDirectory}/log_{name.replace('.json', '_converted.json')}", 'r', encoding='utf-8') as f:
             turns_output = json.load(f)
     except:
         with open(f"{processingDirectory}/log_{name.replace('.json', '_converted.json')}", 'r', encoding='latin-1') as f:
@@ -723,5 +724,3 @@ def run_script():
 
 if __name__ == '__main__':
     run_script()
-
-
