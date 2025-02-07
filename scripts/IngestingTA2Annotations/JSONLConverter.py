@@ -41,7 +41,6 @@ def get_server_normMap(gc: girder_client.GirderClient):
     norms = data['normMap']
     normMap = baseNormMap
     for item in norms:
-        print(item)
         normMap[str(item['id'])] = item['named']
 
 
